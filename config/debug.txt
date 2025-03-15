@@ -1,0 +1,17 @@
+{
+    arch = "arm",
+    buildir = "build",
+    ccache = true,
+    debug_strip = "no",
+    enable_lto = true,
+    host = "linux",
+    kind = "static",
+    march = "armv7-m",
+    mode = "debug",
+    ndk_stdcxx = true,
+    plat = "cross",
+    rtlib = "default",
+    sysroot = "detect",
+    toolchain = "armv7m-none-eabi-clang",
+    unwindlib = "default"
+}
