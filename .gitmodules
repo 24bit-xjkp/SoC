@@ -1,0 +1,4 @@
+[submodule "script/toolchains"]
+	path = script/toolchains
+	url = https://github.com/24bit-xjkp/toolchains
+	branch = llvm
