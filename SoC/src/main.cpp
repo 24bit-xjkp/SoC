@@ -1,5 +1,3 @@
 #include "../include/pch.hpp"
 
-int main()
-{
-}
+int main() {}
