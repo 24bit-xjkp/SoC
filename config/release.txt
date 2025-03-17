@@ -12,6 +12,6 @@
     plat = "cross",
     rtlib = "default",
     sysroot = "detect",
-    toolchain = "armv7m-none-eabi-clang",
+    toolchain = "armv7m-fpv4-none-eabi-clang",
     unwindlib = "default"
 }
