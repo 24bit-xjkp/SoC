@@ -1,0 +1,35 @@
+#include "../include/init.hpp"
+
+namespace SoC
+{
+    /**
+     * @brief 初始化系统时钟为168MHz
+     *
+     */
+    void system_clock_init() noexcept
+    {
+        using namespace ::SoC::literal;
+        ::LL_RCC_HSE_Enable();
+        ::SoC::wait_until(::LL_RCC_HSE_IsReady);
+        // 1周期/24MHz主频
+        ::LL_SetFlashLatency(LL_FLASH_LATENCY_5);
+        // PLL = HSE * N / M / P
+        ::LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_8, 336, LL_RCC_PLLP_DIV_2);
+        ::LL_RCC_PLL_Enable();
+        ::SoC::wait_until(::LL_RCC_PLL_IsReady);
+        // 以PLL为系统时钟
+        ::LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL);
+        ::SoC::wait_until([]() static noexcept { return ::LL_RCC_GetSysClkSource() == LL_RCC_SYS_CLKSOURCE_STATUS_PLL; });
+        // AHB时钟=168MHz
+        ::LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+        // APB1时钟=42MHz
+        ::LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_4);
+        // APB2时钟=84MHz
+        ::LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_2);
+        // 设置SysTick为1ms
+        ::SysTick_Config(168_M / 1_K);
+        ::SystemCoreClock = 168_M;
+        // 开启SysTick中断
+        SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+    }
+}  // namespace SoC

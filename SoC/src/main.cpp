@@ -1,3 +1,7 @@
-#include "../include/pch.hpp"
+#include "../include/init.hpp"
 
-int main() {}
+int main()
+{
+    ::SoC::system_clock_init();
+    while(true) {}
+}
