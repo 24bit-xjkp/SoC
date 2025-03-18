@@ -17,7 +17,7 @@ int main()
     while(true)
     {
 
-        ::SoC::detail::wait_for(16'000'000_cycle);
+        ::SoC::wait_for(1_s);
         ::LL_GPIO_TogglePin(GPIOF, LL_GPIO_PIN_10);
     }
 }

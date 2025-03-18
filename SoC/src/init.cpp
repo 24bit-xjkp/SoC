@@ -11,8 +11,8 @@ namespace SoC
         using namespace ::SoC::literal;
         ::LL_RCC_HSE_Enable();
         ::SoC::wait_until(::LL_RCC_HSE_IsReady);
-        // 1周期/24MHz主频
-        ::LL_SetFlashLatency(LL_FLASH_LATENCY_5);
+        // 1周期/24MHz主频，延迟为5周期
+        ::LL_SetFlashLatency(168_M);
         // PLL = HSE * N / M / P
         ::LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_8, 336, LL_RCC_PLLP_DIV_2);
         ::LL_RCC_PLL_Enable();
@@ -29,7 +29,5 @@ namespace SoC
         // 设置SysTick为1ms
         ::SysTick_Config(168_M / 1_K);
         ::SystemCoreClock = 168_M;
-        // 开启SysTick中断
-        SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
     }
 }  // namespace SoC
