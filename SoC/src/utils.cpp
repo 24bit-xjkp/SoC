@@ -9,8 +9,18 @@ namespace SoC::detail
 {
     void wait_for(::SoC::cycles cycles) noexcept
     {
-        // 每次循环约4周期
-        for(auto i{0zu}; i < cycles.rep / 4; i++);
+        if(cycles.rep < 1) [[unlikely]] { return; }
+        else
+        {
+            auto cnt{cycles.rep >> 1};
+            asm volatile (
+                "SoC_detail_wait_for_loop:\n"
+                "subs %[counter], #1\n"
+                "bne SoC_detail_wait_for_loop\n"
+                : [counter] "+r"(cnt)
+                :
+                : "cc");
+        }
     }
 
     void wait_for(::SoC::microseconds microseconds) noexcept

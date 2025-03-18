@@ -7,7 +7,7 @@ namespace SoC
     {
         template <typename type>
         constexpr inline bool is_ratio_impl{false};
-        template <::std::intptr_t num, ::std::intptr_t den>
+        template <::std::intmax_t num, ::std::intmax_t den>
         constexpr inline bool is_ratio_impl<::std::ratio<num, den>>{true};
 
         template <typename type>
@@ -20,7 +20,7 @@ namespace SoC
     {
         template <typename type>
         constexpr inline bool is_duration_impl{false};
-        template <::std::intptr_t num, ::std::intptr_t den>
+        template <::std::intmax_t num, ::std::intmax_t den>
         constexpr inline bool is_duration_impl<::SoC::duration<::std::ratio<num, den>>>{true};
 
         template <typename type>
@@ -65,7 +65,7 @@ namespace SoC
         }
     };
 
-    using cycles = ::SoC::duration<::std::ratio<1, 168>>;
+    using cycles = ::SoC::duration<::std::ratio<1, 16>>;
     using milliseconds = ::SoC::duration<::std::ratio<1>>;
     using microseconds = ::SoC::duration<::std::kilo>;
     using seconds = ::SoC::duration<::std::mega>;
