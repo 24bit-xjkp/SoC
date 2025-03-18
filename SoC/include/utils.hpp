@@ -166,10 +166,51 @@ namespace SoC
 namespace SoC
 {
     /**
+     * @brief 掩码，第shift位为1，其余为0
+     *
+     * @tparam shift 左移量
+     */
+    template <::std::size_t shift>
+        requires (shift < 32)
+    constexpr inline ::std::size_t mask_single_one{1 << shift};
+
+    /**
+     * @brief 掩码，低ones位为1，其余为0
+     *
+     * @tparam ones 掩码中1的数量
+     */
+    template <::std::size_t ones>
+        requires (ones <= 32)
+    constexpr inline ::std::size_t mask_all_one{::SoC::mask_single_one<ones> - 1};
+    template <>
+    constexpr inline ::std::size_t mask_all_one<32>{-1zu};
+
+    /**
+     * @brief 掩码，第shift位为0，其余为1
+     *
+     * @tparam shift 左移量
+     */
+    template <::std::size_t shift>
+        requires (shift < 32)
+    constexpr inline ::std::size_t mask_single_zero{~::SoC::mask_single_one<shift>};
+
+    /**
+     * @brief 掩码，低zeros位为1，其余为0
+     *
+     * @tparam zeros 掩码中1的数量
+     */
+    template <::std::size_t zeros>
+        requires (zeros <= 32)
+    constexpr inline ::std::size_t mask_all_zero{~::SoC::mask_all_one<zeros>};
+}  // namespace SoC
+
+namespace SoC
+{
+    /**
      * @brief 基于C++的断言函数
      *
      * @param expression 断言表达式
      * @param location 源代码位置
      */
     void assert(bool expression, ::std::source_location location = ::std::source_location::current()) noexcept;
-}
+}  // namespace SoC
