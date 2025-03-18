@@ -16,3 +16,5 @@
 #include <concepts>
 #include <ratio>
 #include <functional>
+#include <source_location>
+#include <stm32_assert.h>

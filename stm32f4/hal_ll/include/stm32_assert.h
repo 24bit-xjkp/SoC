@@ -1,7 +1,13 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C"
+namespace SoC
+{
+    extern "C" [[noreturn]] void
+        assert_failed(const char* file, ::std::uint_least32_t line, const char* func, ::std::uint_least32_t column);
+}
+#else
+    #include <stdint.h>
+[[noreturn]] void assert_failed(const char* file, uint_least32_t line, const char* func, uint_least32_t column);
 #endif
-[[noreturn]] void assert_failed(const char* file, int line, const char* func);
-#define assert_param(expr) ((expr) ? (void)0U : assert_failed(__FILE__, __LINE__, __func__))
+#define assert_param(expr) ((expr) ? (void)0U : assert_failed(__FILE__, __LINE__, __func__, 0))

@@ -162,3 +162,14 @@ namespace SoC
         ::SoC::detail::wait_for(cycles);
     }
 }  // namespace SoC
+
+namespace SoC
+{
+    /**
+     * @brief 基于C++的断言函数
+     *
+     * @param expression 断言表达式
+     * @param location 源代码位置
+     */
+    void assert(bool expression, ::std::source_location location = ::std::source_location::current()) noexcept;
+}
