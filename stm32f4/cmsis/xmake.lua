@@ -1,5 +1,5 @@
 target("cmsis")
-    set_kind("static")
+    set_kind("object")
     add_includedirs("include", {public = true})
     add_files("src/*.c", "src/*.s")
 target_end()
