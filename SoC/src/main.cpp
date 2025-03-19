@@ -1,23 +1,17 @@
 #include "../include/init.hpp"
+#include "../include/gpio.hpp"
 
 int main()
 {
     using namespace ::SoC::literal;
     ::SoC::system_clock_init();
-    ::LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOF);
-    ::LL_GPIO_ReadOutputPort(GPIOF);
-    ::LL_GPIO_InitTypeDef init{LL_GPIO_PIN_10,
-                               LL_GPIO_MODE_OUTPUT,
-                               LL_GPIO_SPEED_FREQ_LOW,
-                               LL_GPIO_OUTPUT_PUSHPULL,
-                               LL_GPIO_PULL_NO,
-                               0};
-    ::LL_GPIO_Init(GPIOF, &init);
+    auto gpio_f{::SoC::gpio_port(::SoC::gpio_port::gpio_f)};
+    auto gpio_f10{::SoC::gpio_pin(gpio_f, ::SoC::gpio_pin::pin_10, ::SoC::gpio_mode::output, ::SoC::gpio_speed::low)};
+    gpio_f10.set();
 
     while(true)
     {
-
         ::SoC::wait_for(1_s);
-        ::LL_GPIO_TogglePin(GPIOF, LL_GPIO_PIN_10);
+        gpio_f10.toggle();
     }
 }

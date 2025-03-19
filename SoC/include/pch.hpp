@@ -17,4 +17,5 @@
 #include <ratio>
 #include <functional>
 #include <source_location>
+#include <bit>
 #include <stm32_assert.h>
