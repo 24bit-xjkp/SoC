@@ -45,6 +45,7 @@ namespace SoC
             pin_13 = ::SoC::mask_single_one<13>,
             pin_14 = ::SoC::mask_single_one<14>,
             pin_15 = ::SoC::mask_single_one<15>,
+            pin_all = ::SoC::mask_all_one<16>,
         };
 
         constexpr inline ::SoC::detail::gpio_pin operator| (::SoC::detail::gpio_pin lhs, ::SoC::detail::gpio_pin rhs) noexcept
@@ -81,9 +82,8 @@ namespace SoC
          * @brief 初始化gpio端口并开启时钟
          *
          * @param port 要初始化的端口
-         * @param location 用于定位构造函数调用位置以便提供更准确的报错信息
          */
-        explicit gpio_port(port_enum port, ::std::source_location location = ::std::source_location::current()) noexcept;
+        explicit gpio_port(port_enum port) noexcept;
 
         /**
          * @brief 关闭端口的时钟
@@ -190,17 +190,15 @@ namespace SoC
          * @brief 断言输入引脚列表在已经初始化的引脚列表内
          *
          * @param pin_in 输入引脚列表
-         * @param location 源代码位置
          */
-        void check_pin(pin_enum pin_in, ::std::source_location location) noexcept;
+        void check_pin(pin_enum pin_in) noexcept;
 
         /**
          * @brief 断言当前对象中的引脚工作在指定模式下
          *
          * @param mode_in 指定模式
-         * @param location 源代码位置
          */
-        void check_mode(::SoC::gpio_mode mode_in, ::std::source_location location) noexcept;
+        void check_mode(::SoC::gpio_mode mode_in) noexcept;
 
     public:
         using enum pin_enum;
@@ -214,74 +212,83 @@ namespace SoC
          * @param speed gpio输出速度
          * @param pull gpio上下拉电阻
          * @param alternate_function gpio复用功能
-         * @param location 源代码位置
          */
-        gpio_pin(::SoC::gpio_port::port_view gpio_port,
-                 pin_enum pin,
-                 ::SoC::gpio_mode mode,
-                 ::SoC::gpio_speed speed,
-                 ::SoC::gpio_pull pull = ::SoC::gpio_pull::no_pull,
-                 ::SoC::gpio_output_type output_type = ::SoC::gpio_output_type::push_pull,
-                 ::SoC::gpio_alternate_function alternate_function = ::SoC::gpio_alternate_function::af0,
-                 ::std::source_location location = ::std::source_location::current()) noexcept;
+        explicit gpio_pin(::SoC::gpio_port::port_view gpio_port,
+                          pin_enum pin,
+                          ::SoC::gpio_mode mode,
+                          ::SoC::gpio_speed speed,
+                          ::SoC::gpio_pull pull = ::SoC::gpio_pull::no_pull,
+                          ::SoC::gpio_output_type output_type = ::SoC::gpio_output_type::push_pull,
+                          ::SoC::gpio_alternate_function alternate_function = ::SoC::gpio_alternate_function::af0) noexcept;
+
+        /**
+         * @brief 获取gpio结构体指针
+         *
+         */
+        constexpr inline ::GPIO_TypeDef* get_gpio() noexcept { return gpio; }
+
+        /**
+         * @brief 获取所有引脚
+         *
+         */
+        constexpr inline pin_enum get_pin() noexcept { return pin; }
+
+        /**
+         * @brief 获取引脚的工作模式
+         *
+         */
+        constexpr inline ::SoC::gpio_mode get_mode() noexcept { return mode; }
 
         /**
          * @brief 切换当前对象中所有引脚的状态
          *
-         * @param location 源代码位置
          */
-        void toggle(::std::source_location location = ::std::source_location::current()) noexcept;
+        void toggle() noexcept;
         /**
          * @brief 切换指定引脚的状态
          *
          * @note 引脚需要在当前对象中初始化
          * @param pin_in 输入引脚列表
-         * @param location 源代码位置
          */
-        void toggle(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) noexcept;
+        void toggle(pin_enum pin_in) noexcept;
 
         /**
-         * @brief 设置指定引脚的状态为高电平
+         * @brief 设置当前对象中所有引脚的状态为高电平
          *
          * @note 开漏输出下为高阻态
-         * @param location 源代码位置
          */
-        void set(::std::source_location location = ::std::source_location::current()) noexcept;
+        void set() noexcept;
         /**
          * @brief 设置指定引脚的状态为高电平
          *
          * @note 开漏输出下为高阻态
          * @note 引脚需要在当前对象中初始化
          * @param pin_in 输入引脚列表
-         * @param location 源代码位置
          */
-        void set(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) noexcept;
+        void set(pin_enum pin_in) noexcept;
 
         /**
-         * @brief 设置指定引脚的状态为低电平
+         * @brief 设置当前对象中所有引脚的状态为低电平
          *
          * @note 开漏输出下为接地
-         * @param location 源代码位置
          */
-        void reset(::std::source_location location = ::std::source_location::current()) noexcept;
+        void reset() noexcept;
         /**
          * @brief 设置指定引脚的状态为低电平
          *
          * @note 开漏输出下为接地
          * @note 引脚需要在当前对象中初始化
          * @param pin_in 输入引脚列表
-         * @param location 源代码位置
          */
-        void reset(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) noexcept;
+        void reset(pin_enum pin_in) noexcept;
 
         /**
-         * @brief 设置指定引脚的状态为指定电平
+         * @brief 设置当前对象中所有引脚的状态为指定电平
          *
          * @note 开漏输出下high_level为true设置引脚为高阻态，为false设置引脚为接地
          * @param high_level 为true设置引脚为高电平，为false设置引脚为低电平
-         * @param location 源代码位置
          */
-        void write(bool high_level, ::std::source_location location = ::std::source_location::current()) noexcept;
+        void write(bool high_level) noexcept;
         /**
          * @brief 设置指定引脚的状态为指定电平
          *
@@ -289,9 +296,26 @@ namespace SoC
          * @note 引脚需要在当前对象中初始化
          * @param high_level 为true设置引脚为高电平，为false设置引脚为低电平
          * @param pin_in 输入引脚列表
-         * @param location 源代码位置
          */
-        void
-            write(bool high_level, pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) noexcept;
+        void write(bool high_level, pin_enum pin_in) noexcept;
+
+        /**
+         * @brief 读取当前对象中所有引脚的状态
+         *
+         * @note 支持输入和输出模式，根据对象中引脚的状态自动选择
+         * @return true 所有引脚均为高电平
+         * @return false 有引脚为低电平
+         */
+        bool read() noexcept;
+        /**
+         * @brief 读取指定引脚的状态
+         *
+         * @note 支持输入和输出模式，根据对象中引脚的状态自动选择
+         * @note 引脚需要在当前对象中初始化
+         * @param pin_in 输入引脚列表
+         * @return true 所有指定引脚均为高电平
+         * @return false 有引脚为低电平
+         */
+        bool read(pin_enum pin_in) noexcept;
     };
 }  // namespace SoC
