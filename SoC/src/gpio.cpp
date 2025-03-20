@@ -34,16 +34,18 @@ namespace SoC
         // 断言端口有效
         ::SoC::assert(gpio_port.port != ::SoC::gpio_port::gpio_invalid);
         // 非复用模式下，复用号为0
-        ::SoC::assert(mode != ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::af0);
+        ::SoC::assert(mode != ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::default_af);
         if(mode == ::SoC::gpio_mode::output)
         {
-            // 推挽不应该有上下拉电阻
-            ::SoC::assert(output_type == ::SoC::gpio_output_type::open_drain || pull == ::SoC::gpio_pull::no_pull);
+            // 推挽不应该设置上下拉电阻，pull保持默认值
+            ::SoC::assert(output_type == ::SoC::gpio_output_type::open_drain || pull == ::SoC::gpio_pull::default_pull);
         }
         else
         {
             // 非输出模式下，output_type保持默认值
-            ::SoC::assert(output_type == ::SoC::gpio_output_type::push_pull);
+            ::SoC::assert(output_type == ::SoC::gpio_output_type::default_type);
+            // 非输出模式下，speed保持默认值
+            ::SoC::assert(speed == ::SoC::gpio_speed::default_speed);
         }
 
         auto pin_mask{::std::to_underlying(pin)};
@@ -71,72 +73,51 @@ namespace SoC
         }
     }
 
-    void ::SoC::gpio_pin::check_pin(pin_enum pin_in) noexcept { ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in)); }
+    auto ::SoC::gpio_pin::check_pin(pin_enum pin_in) noexcept -> pin_enum
+    {
+        if(pin_in == default_pins) { return pin; }
+        else
+        {
+            ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in));
+            return pin_in;
+        }
+    }
 
     void ::SoC::gpio_pin::check_mode(::SoC::gpio_mode mode_in) noexcept { ::SoC::assert(mode == mode_in); }
-
-    void ::SoC::gpio_pin::toggle() noexcept
-    {
-        check_mode(::SoC::gpio_mode::output);
-        ::LL_GPIO_TogglePin(gpio, ::std::to_underlying(pin));
-    }
 
     void ::SoC::gpio_pin::toggle(pin_enum pin_in) noexcept
     {
         check_mode(::SoC::gpio_mode::output);
-        check_pin(pin_in);
+        pin_in = check_pin(pin_in);
         ::LL_GPIO_TogglePin(gpio, ::std::to_underlying(pin_in));
-    }
-
-    void ::SoC::gpio_pin::set() noexcept
-    {
-        check_mode(::SoC::gpio_mode::output);
-        ::LL_GPIO_SetOutputPin(gpio, ::std::to_underlying(pin));
     }
 
     void ::SoC::gpio_pin::set(pin_enum pin_in) noexcept
     {
         check_mode(::SoC::gpio_mode::output);
-        check_pin(pin_in);
+        pin_in = check_pin(pin_in);
         ::LL_GPIO_SetOutputPin(gpio, ::std::to_underlying(pin_in));
-    }
-
-    void ::SoC::gpio_pin::reset() noexcept
-    {
-        check_mode(::SoC::gpio_mode::output);
-        ::LL_GPIO_ResetOutputPin(gpio, ::std::to_underlying(pin));
     }
 
     void ::SoC::gpio_pin::reset(pin_enum pin_in) noexcept
     {
         check_mode(::SoC::gpio_mode::output);
-        check_pin(pin_in);
+        pin_in = check_pin(pin_in);
         ::LL_GPIO_ResetOutputPin(gpio, ::std::to_underlying(pin_in));
     }
 
-    void ::SoC::gpio_pin::write(bool high_level) noexcept
+    void ::SoC::gpio_pin::write(bool level, pin_enum pin_in) noexcept
     {
-        if(high_level) { set(); }
-        else { reset(); }
-    }
-
-    void ::SoC::gpio_pin::write(bool high_level, pin_enum pin_in) noexcept
-    {
-        if(high_level) { set(pin_in); }
-        else { reset(pin_in); }
-    }
-
-    bool ::SoC::gpio_pin::read() noexcept
-    {
-        ::SoC::assert(mode == ::SoC::gpio_mode::input || mode == ::SoC::gpio_mode::output);
-        if(mode == ::SoC::gpio_mode::input) { return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin)); }
-        else { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin)); }
+        check_mode(::SoC::gpio_mode::output);
+        pin_in = check_pin(pin_in);
+        // 低16位置1，高16位清零
+        gpio->BSRR = ::std::to_underlying(pin) << !level * 16;
     }
 
     bool ::SoC::gpio_pin::read(pin_enum pin_in) noexcept
     {
         ::SoC::assert(mode == ::SoC::gpio_mode::input || mode == ::SoC::gpio_mode::output);
-        check_pin(pin_in);
+        pin_in = check_pin(pin_in);
         if(mode == ::SoC::gpio_mode::input) { return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in)); }
         else { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin_in)); }
     }
