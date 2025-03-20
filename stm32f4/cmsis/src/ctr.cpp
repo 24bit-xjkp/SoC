@@ -28,13 +28,21 @@ extern "C"
 
     void _init() noexcept
     {
-#pragma clang loop unroll_count(1)
+#ifdef __clang__
+    #pragma clang loop unroll_count(1)
+#else
+    #pragma GCC unroll 1
+#endif
         for(auto callback: ::std::ranges::subrange{__init_array_start, __init_array_end}) { callback(); }
     }
 
     void _fini() noexcept
     {
-#pragma clang loop unroll_count(1)
+#ifdef __clang__
+    #pragma clang loop unroll_count(1)
+#else
+    #pragma GCC unroll 1
+#endif
         for(auto i{::SoC::cxa_at_exit_callback_index}; i != -1zu; --i)
         {
             (::SoC::cxa_at_exit_callback_array[i])(::SoC::cxa_at_exit_callback_arg_array[i]);

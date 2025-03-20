@@ -144,7 +144,12 @@ namespace SoC
         requires (::std::invocable<func_t> && ::std::convertible_to<::std::invoke_result_t<func_t>, bool>)
     constexpr inline void wait_until(func_t&& func) noexcept
     {
-        while(!::std::invoke_r<bool>(::std::forward<func_t>(func))) { __yield(); }
+        while(!::std::invoke_r<bool>(::std::forward<func_t>(func)))
+        {
+#ifdef __clang__
+            ::__yield();
+#endif
+        }
     }
 
     /**

@@ -32,7 +32,11 @@ namespace SoC::detail
         volatile auto _{SysTick->CTRL};
         while(ms != 0)
         {
-            __wfi();
+#ifdef __clang__
+            ::__wfi();
+#else
+            __WFI();
+#endif
             if(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
             {
                 ::SoC::wait_until([start_value] noexcept { return SysTick->VAL < start_value; });

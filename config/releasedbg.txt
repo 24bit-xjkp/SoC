@@ -7,7 +7,7 @@
     host = "linux",
     kind = "static",
     march = "armv7-m",
-    mode = "release",
+    mode = "releasedbg",
     ndk_stdcxx = true,
     plat = "cross",
     rtlib = "default",
