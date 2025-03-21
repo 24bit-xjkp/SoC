@@ -18,7 +18,7 @@ namespace SoC
 
     ::SoC::gpio_port& ::SoC::gpio_port::operator= (gpio_port&& other) noexcept
     {
-        port = ::std::exchange(other.port, ::SoC::detail::gpio_port_invalid);
+        ::std::swap(*this, other);
         return *this;
     }
 
