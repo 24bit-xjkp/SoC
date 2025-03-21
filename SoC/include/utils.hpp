@@ -138,13 +138,15 @@ namespace SoC
      * @brief 阻塞直到func求值为true
      *
      * @tparam func_t 可调用类型
+     * @tparam args_t 参数类型列表
      * @param func 可调用对象
+     * @param args 参数列表
      */
-    template <typename func_t>
-        requires (::std::invocable<func_t> && ::std::convertible_to<::std::invoke_result_t<func_t>, bool>)
-    constexpr inline void wait_until(func_t&& func) noexcept
+    template <typename func_t, typename... args_t>
+        requires (::std::invocable<func_t, args_t...> && ::std::convertible_to<::std::invoke_result_t<func_t, args_t...>, bool>)
+    constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept
     {
-        while(!::std::invoke_r<bool>(::std::forward<func_t>(func)))
+        while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...))
         {
 #ifdef __clang__
             ::__yield();
