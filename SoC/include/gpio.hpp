@@ -19,9 +19,14 @@ namespace SoC
             gpio_f,
             gpio_g,
             gpio_h,
-            gpio_i,
-            gpio_invalid
+            gpio_i
         };
+
+        /**
+         * @brief 非法的gpio端口，用于实现gpio端口类的移动
+         *
+         */
+        constexpr inline static auto gpio_port_invalid{static_cast<::SoC::detail::gpio_port>(-1zu)};
 
         /**
          * @brief gpio引脚

@@ -4,20 +4,21 @@ namespace SoC
 {
     ::SoC::gpio_port::gpio_port(port_enum port) noexcept : port{port}
     {
-        ::SoC::assert(port != gpio_invalid);
         ::LL_AHB1_GRP1_EnableClock(1 << ::std::to_underlying(port));
     }
 
     ::SoC::gpio_port::~gpio_port() noexcept
     {
-        if(port != gpio_invalid) { ::LL_AHB1_GRP1_DisableClock(1 << ::std::to_underlying(port)); }
+        if(port != ::SoC::detail::gpio_port_invalid) { ::LL_AHB1_GRP1_DisableClock(1 << ::std::to_underlying(port)); }
     }
 
-    ::SoC::gpio_port::gpio_port(gpio_port&& other) noexcept : port{::std::exchange(other.port, gpio_invalid)} {}
+    ::SoC::gpio_port::gpio_port(gpio_port&& other) noexcept : port{::std::exchange(other.port, ::SoC::detail::gpio_port_invalid)}
+    {
+    }
 
     ::SoC::gpio_port& ::SoC::gpio_port::operator= (gpio_port&& other) noexcept
     {
-        port = ::std::exchange(other.port, gpio_invalid);
+        port = ::std::exchange(other.port, ::SoC::detail::gpio_port_invalid);
         return *this;
     }
 
@@ -31,8 +32,6 @@ namespace SoC
         gpio{reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400u * ::std::to_underlying(gpio_port.port))}, pin{pin},
         mode{mode}
     {
-        // 断言端口有效
-        ::SoC::assert(gpio_port.port != ::SoC::gpio_port::gpio_invalid);
         // 非复用模式下，复用号为0
         ::SoC::assert(mode != ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::default_af);
         switch(mode)
