@@ -33,7 +33,7 @@ namespace SoC
         mode{mode}
     {
         // 非复用模式下，复用号为0
-        ::SoC::assert(mode != ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::default_af);
+        ::SoC::assert(mode == ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::default_af);
         switch(mode)
         {
             case ::SoC::gpio_mode::alternate:
