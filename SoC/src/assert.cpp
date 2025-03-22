@@ -8,7 +8,7 @@ namespace SoC
         // 文件: file(line:column) `function`: 断言失败
 
         using namespace ::std::string_view_literals;
-        constexpr auto assert_prefix{"断言失败:\r\n文件: "sv};
+        constexpr auto assert_prefix{"\N{ESCAPE}[31m断言失败:\r\n文件: "sv};
         log_device.write(assert_prefix.begin(), assert_prefix.end());
         log_device.write(file, file + ::std::strlen(file));
         // 填入行号和列号
@@ -23,7 +23,7 @@ namespace SoC
         log_device.write(buffer, end);
         // 写入函数名
         log_device.write(func, func + ::std::strlen(func));
-        constexpr auto assert_suffix{"`: 断言失败\r\n"sv};
+        constexpr auto assert_suffix{"`: 断言失败\r\n\N{ESCAPE}[39m"sv};
         log_device.write(assert_suffix.begin(), assert_suffix.end());
 
         while(true) { __WFI(); }
