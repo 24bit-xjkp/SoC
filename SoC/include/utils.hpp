@@ -73,44 +73,44 @@ namespace SoC
 
 namespace SoC::literal
 {
-    constexpr inline ::std::size_t operator""_K (unsigned long long i) noexcept { return i * 1'000; }
+    consteval inline ::std::size_t operator""_K (unsigned long long i) noexcept { return i * 1'000; }
 
-    constexpr inline ::std::size_t operator""_K (long double i) noexcept { return i * 1'000; }
+    consteval inline ::std::size_t operator""_K (long double i) noexcept { return i * 1'000; }
 
-    constexpr inline ::std::size_t operator""_M (unsigned long long i) noexcept { return i * 1'000'000; }
+    consteval inline ::std::size_t operator""_M (unsigned long long i) noexcept { return i * 1'000'000; }
 
-    constexpr inline ::std::size_t operator""_M (long double i) noexcept { return i * 1'000'000; }
+    consteval inline ::std::size_t operator""_M (long double i) noexcept { return i * 1'000'000; }
 
-    constexpr inline ::SoC::seconds operator""_s (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::seconds operator""_s (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    constexpr inline ::SoC::microseconds operator""_s (long double i) noexcept { return {static_cast<::std::size_t>(i * 1'000)}; }
+    consteval inline ::SoC::microseconds operator""_s (long double i) noexcept { return {static_cast<::std::size_t>(i * 1'000)}; }
 
-    constexpr inline ::SoC::microseconds operator""_ms (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::microseconds operator""_ms (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    constexpr inline ::SoC::milliseconds operator""_ms (long double i) noexcept
+    consteval inline ::SoC::milliseconds operator""_ms (long double i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1'000)};
     }
 
-    constexpr inline ::SoC::milliseconds operator""_us (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::milliseconds operator""_us (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    constexpr inline ::SoC::cycles operator""_us (long double i) noexcept { return {static_cast<::std::size_t>(i * 168)}; }
+    consteval inline ::SoC::cycles operator""_us (long double i) noexcept { return {static_cast<::std::size_t>(i * 168)}; }
 
-    constexpr inline ::SoC::cycles operator""_cycle (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::cycles operator""_cycle (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    constexpr inline ::SoC::cycles operator""_Kcycle (unsigned long long i) noexcept
+    consteval inline ::SoC::cycles operator""_Kcycle (unsigned long long i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1000)};
     }
 
-    constexpr inline ::SoC::cycles operator""_Kcycle (long double i) noexcept { return {static_cast<::std::size_t>(i * 1'000)}; }
+    consteval inline ::SoC::cycles operator""_Kcycle (long double i) noexcept { return {static_cast<::std::size_t>(i * 1'000)}; }
 
-    constexpr inline ::SoC::cycles operator""_Mcycle (unsigned long long i) noexcept
+    consteval inline ::SoC::cycles operator""_Mcycle (unsigned long long i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1000'000)};
     }
 
-    constexpr inline ::SoC::cycles operator""_Mcycle (long double i) noexcept
+    consteval inline ::SoC::cycles operator""_Mcycle (long double i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1000'000)};
     }
