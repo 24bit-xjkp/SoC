@@ -1,0 +1,7 @@
+black
+pyocd
+matplotlib
+numpy
+scipy
+jupyter_client
+jupyter_core

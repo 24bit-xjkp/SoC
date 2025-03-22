@@ -1,6 +1,7 @@
 target("SoC")
     add_deps("hal_ll")
     add_files("src/*.cpp", "src/*.ld")
+    add_extrafiles("assets/*")
     add_includedirs("include")
     set_pcxxheader("include/pch.hpp")
     set_extension(".elf")
