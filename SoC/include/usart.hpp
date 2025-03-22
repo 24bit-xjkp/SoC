@@ -184,6 +184,7 @@ namespace SoC
          *
          * @param buffer 数据缓冲区首指针
          * @param end 数据缓冲区尾哨位
+         * @return 写入是否成功
          */
         void write(const void* buffer, const void* end) const noexcept;
 
@@ -193,7 +194,21 @@ namespace SoC
          * @note 仅限数据宽度为9位且未启用校验位时使用
          * @param buffer 数据缓冲区首指针
          * @param end 数据缓冲区尾哨位
+         * @return 写入是否成功
          */
         void write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept;
+
+        /**
+         * @brief 通过usart写入数据
+         *
+         * @param usart usart设备对象
+         * @param buffer 缓冲区首指针
+         * @param end 缓冲区尾哨位
+         * @return 写入是否成功
+         */
+        inline static void write_wrapper(void* usart, const void* buffer, const void* end) noexcept
+        {
+            return reinterpret_cast<::SoC::usart*>(usart)->write(buffer, end);
+        }
     };
 }  // namespace SoC

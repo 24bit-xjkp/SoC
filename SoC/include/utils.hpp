@@ -220,4 +220,55 @@ namespace SoC
      * @param location 源代码位置
      */
     void assert(bool expression, ::std::source_location location = ::std::source_location::current()) noexcept;
+
+    /**
+     * @brief 日志设备类
+     *
+     */
+    struct log_device_t
+    {
+    private:
+        using write_callback_t = void (*)(void*, const void*, const void*) noexcept;
+        write_callback_t write_callback{};
+        void* device{};
+
+    public:
+        constexpr inline log_device_t() noexcept = default;
+
+        /**
+         * @brief 设置日志设备
+         *
+         * @param write_callback 写入回调函数
+         * @param device 日志设备指针
+         */
+        constexpr inline void set(write_callback_t write_callback, void* device) noexcept
+        {
+            this->write_callback = write_callback;
+            this->device = device;
+        }
+
+        /**
+         * @brief 获取日志设备
+         *
+         * @return std::pair<write_callback_t, void*> 回调函数和设备指针
+         */
+        constexpr inline auto get() const noexcept { return ::std::pair{write_callback, device}; }
+
+        /**
+         * @brief 尝试写入数据
+         *
+         * @param buffer 缓冲区首指针
+         * @param end 缓冲区尾哨位
+         * @return 是否进行了写入，有已注册的设备则为true，反之为false
+         */
+        constexpr inline bool write(const void* buffer, const void* end) const noexcept
+        {
+            if(write_callback != nullptr && device != nullptr) [[likely]]
+            {
+                write_callback(device, buffer, end);
+                return true;
+            }
+            else { return false; }
+        }
+    } inline constinit log_device{};
 }  // namespace SoC

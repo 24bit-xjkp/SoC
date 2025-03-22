@@ -20,4 +20,5 @@
 #include <bit>
 #include <span>
 #include <ranges>
+#include <string_view>
 #include <stm32_assert.h>
