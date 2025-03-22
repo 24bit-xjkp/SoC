@@ -18,14 +18,17 @@ int main()
                       ::SoC::gpio_alternate_function::af7,
                       ::SoC::gpio_speed::high};
 
-    ::SoC::usart usart1{::SoC::usart::usart1, 9.6_K};
+    ::SoC::usart usart1{::SoC::usart::usart1, 115.2_K};
+    const char prefix[]{"当前计数器："};
 
     while(true)
     {
         ::SoC::wait_for(1_s);
         auto&& [end, _]{::std::to_chars(buffer, buffer + 32, cnt++)};
         *end++ = '\r';
+        *end++ = '\n';
         gpio_f10.toggle();
-        usart1.write(reinterpret_cast<::std::byte*>(buffer), reinterpret_cast<::std::byte*>(end));
+        usart1.write(prefix, prefix + sizeof(prefix) - 1);
+        usart1.write(buffer, end);
     }
 }
