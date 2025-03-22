@@ -225,19 +225,19 @@ namespace SoC
          * @param gpio_port gpio端口
          * @param pin gpio引脚
          * @param mode gpio工作模式
+         * @param alternate_function gpio复用功能，仅复用模式下可设置此参数
          * @param speed gpio输出速度，仅输出模式下可设置此参数
          * @param pull gpio上下拉电阻，仅开漏输出下可设置此参数
          * @param output_type gpio输出类型，仅输出模式下可配置此参数
-         * @param alternate_function gpio复用功能，仅复用模式下可设置此参数
          */
         explicit gpio_pin(
             ::SoC::gpio_port::port_view gpio_port,
             pin_enum pin,
             ::SoC::gpio_mode mode,
+            ::SoC::gpio_alternate_function alternate_function = ::SoC::gpio_alternate_function::default_af,
             ::SoC::gpio_speed speed = ::SoC::gpio_speed::default_speed,
             ::SoC::gpio_pull pull = ::SoC::gpio_pull::default_pull,
-            ::SoC::gpio_output_type output_type = ::SoC::gpio_output_type::default_type,
-            ::SoC::gpio_alternate_function alternate_function = ::SoC::gpio_alternate_function::default_af) noexcept;
+            ::SoC::gpio_output_type output_type = ::SoC::gpio_output_type::default_type) noexcept;
 
         /**
          * @brief 获取gpio结构体指针

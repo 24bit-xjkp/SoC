@@ -25,10 +25,10 @@ namespace SoC
     ::SoC::gpio_pin::gpio_pin(::SoC::gpio_port::port_view gpio_port,
                               pin_enum pin,
                               ::SoC::gpio_mode mode,
+                              ::SoC::gpio_alternate_function alternate_function,
                               ::SoC::gpio_speed speed,
                               ::SoC::gpio_pull pull,
-                              ::SoC::gpio_output_type output_type,
-                              ::SoC::gpio_alternate_function alternate_function) noexcept :
+                              ::SoC::gpio_output_type output_type) noexcept :
         gpio{reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400u * ::std::to_underlying(gpio_port.port))}, pin{pin},
         mode{mode}
     {
@@ -36,10 +36,7 @@ namespace SoC
         ::SoC::assert(mode == ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::default_af);
         switch(mode)
         {
-            case ::SoC::gpio_mode::alternate:
-                // 非输出模式下，speed保持默认值
-                ::SoC::assert(speed == ::SoC::gpio_speed::default_speed);
-                [[fallthrough]];
+            case ::SoC::gpio_mode::alternate: break;
             case ::SoC::gpio_mode::output:
                 // 推挽不应该设置上下拉电阻，pull保持默认值
                 ::SoC::assert(output_type == ::SoC::gpio_output_type::open_drain || pull == ::SoC::gpio_pull::default_pull);
