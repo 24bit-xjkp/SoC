@@ -169,9 +169,9 @@ namespace SoC
             constexpr auto mini_wait_cycles{6zu};
 
             if(cycles < mini_wait_cycles) { return; }
-            else if(cycles < 1_K)
+            else if(cycles < 2_K)
             {
-                ::SoC::detail::wait_for(cycles - mini_wait_cycles);
+                ::SoC::detail::wait_for(::SoC::cycles{cycles - mini_wait_cycles});
                 return;
             }
         }

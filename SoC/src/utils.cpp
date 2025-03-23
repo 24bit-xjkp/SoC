@@ -9,7 +9,7 @@ namespace SoC::detail
 {
     void wait_for(::SoC::cycles cycles) noexcept
     {
-        if(cycles.rep < 1) [[unlikely]] { return; }
+        if(cycles.rep <= 1) [[unlikely]] { return; }
         else
         {
             auto cnt{cycles.rep >> 1};
