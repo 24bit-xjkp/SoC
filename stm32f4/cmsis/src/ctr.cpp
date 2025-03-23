@@ -1,21 +1,36 @@
-#include <cstddef>
-#include <ranges>
+#include "common.hpp"
 
 namespace SoC
 {
     using cxa_atexit_callback_t = void (*)(void*);
     using cxa_atexit_callback_arg_t = void*;
-    using init_callback_t = void (*)();
+    using init_fini_callback_t = void (*)();
+
     constexpr inline ::std::size_t max_cxa_at_exit_callback{32};
     ::SoC::cxa_atexit_callback_t cxa_at_exit_callback_array[::SoC::max_cxa_at_exit_callback];
     ::SoC::cxa_atexit_callback_arg_t cxa_at_exit_callback_arg_array[::SoC::max_cxa_at_exit_callback];
     ::std::size_t cxa_at_exit_callback_index{};
+    using cursor = ::SoC::cursor_t<::SoC::init_fini_callback_t>;
+
+    void do_init_fini(::SoC::cursor begin, ::SoC::cursor end) noexcept
+    {
+#ifdef __clang__
+    #pragma clang loop unroll_count(1)
+#else
+    #pragma GCC unroll 1
+#endif
+        while(begin != end) { (*begin)(); }
+    }
 }  // namespace SoC
 
 extern "C"
 {
-    extern ::SoC::init_callback_t __init_array_start[];
-    extern ::SoC::init_callback_t __init_array_end[];
+    extern ::SoC::cursor __preinit_array_start;
+    extern ::SoC::cursor __preinit_array_end;
+    extern ::SoC::cursor __init_array_start;
+    extern ::SoC::cursor __init_array_end;
+    extern ::SoC::cursor __fini_array_start;
+    extern ::SoC::cursor __fini_array_end;
 
     int __cxa_atexit(::SoC::cxa_atexit_callback_t callback, ::SoC::cxa_atexit_callback_arg_t arg, void*) noexcept
     {
@@ -25,15 +40,14 @@ extern "C"
         ::SoC::cxa_at_exit_callback_arg_array[current_index] = arg;
         return 0;
     }
+}
 
+namespace SoC
+{
     void _init() noexcept
     {
-#ifdef __clang__
-    #pragma clang loop unroll_count(1)
-#else
-    #pragma GCC unroll 1
-#endif
-        for(auto callback: ::std::ranges::subrange{__init_array_start, __init_array_end}) { callback(); }
+        ::SoC::do_init_fini(::__preinit_array_start, ::__preinit_array_end);
+        ::SoC::do_init_fini(::__init_array_start, ::__init_array_end);
     }
 
     void _fini() noexcept
@@ -47,5 +61,7 @@ extern "C"
         {
             (::SoC::cxa_at_exit_callback_array[i])(::SoC::cxa_at_exit_callback_arg_array[i]);
         }
+
+        ::SoC::do_init_fini(::__fini_array_start, ::__fini_array_end);
     }
-}
+}  // namespace SoC
