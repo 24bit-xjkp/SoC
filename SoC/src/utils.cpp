@@ -13,13 +13,21 @@ namespace SoC::detail
         else
         {
             auto cnt{cycles.rep >> 1};
-            asm volatile (
+            if constexpr(::SoC::current_build_mode == ::SoC::build_mode::debug)
+            {
+                // 可能是lld的bug，在使用#embed的情况下，使用汇编会导致SoC_detail_wait_for_loop符号冲突
+                asm volatile (
                 "SoC_detail_wait_for_loop:\n"
                 "subs %[counter], #1\n"
                 "bne SoC_detail_wait_for_loop\n"
                 : [counter] "+r"(cnt)
                 :
                 : "cc");
+            }
+            else
+            {
+                while(cnt-- != 0) { asm volatile(""); }
+            }
         }
     }
 

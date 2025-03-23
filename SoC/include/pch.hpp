@@ -23,3 +23,28 @@
 #include <string_view>
 #include <cstring>
 #include <stm32_assert.h>
+
+namespace SoC
+{
+    /**
+     * @brief 当前构建模式
+     *
+     */
+    enum class build_mode : ::std::size_t
+    {
+        debug,
+        release,
+        releasedbg,
+        minsizerel
+    };
+
+#ifdef SOC_BUILD_MODE_DEBUG
+    inline constexpr auto current_build_mode{::SoC::build_mode::debug};
+#elifdef SOC_BUILD_MODE_RELEASE
+    inline constexpr auto current_build_mode{::SoC::build_mode::release};
+#elifdef SOC_BUILD_MODE_RELEASEDBG
+    inline constexpr auto current_build_mode{::SoC::build_mode::releasedbg};
+#else
+    inline constexpr auto current_build_mode{::SoC::build_mode::minsizerel};
+#endif
+}  // namespace SoC
