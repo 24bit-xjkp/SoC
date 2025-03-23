@@ -161,6 +161,21 @@ namespace SoC
      */
     inline void wait_for(::SoC::detail::is_duration auto duration) noexcept
     {
+        // 提供一个快速通道，降低延迟偏差
+        if constexpr(::std::same_as<decltype(duration), ::SoC::cycles>)
+        {
+            using namespace ::SoC::literal;
+            auto cycles{duration.rep};
+            constexpr auto mini_wait_cycles{6zu};
+
+            if(cycles < mini_wait_cycles) { return; }
+            else if(cycles < 1_K)
+            {
+                ::SoC::detail::wait_for(cycles - mini_wait_cycles);
+                return;
+            }
+        }
+
         auto microseconds{duration.template duration_cast<::SoC::microseconds>()};
         auto tmp{duration - microseconds};
         auto cycles{tmp.template duration_cast<::SoC::cycles>()};
