@@ -29,7 +29,7 @@ namespace SoC
         while(true) { __WFI(); }
     }
 
-    void assert(bool expression, ::std::source_location location) noexcept
+    [[gnu::noinline]] void assert(bool expression, ::std::source_location location) noexcept
     {
         if(!expression) [[unlikely]]
         {
