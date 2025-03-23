@@ -7,5 +7,5 @@ target("cmsis")
         end
     end)
     add_includedirs("include", {public = true})
-    add_files("src/*.c", "src/*.cpp", "src/*.s")
+    add_files("src/*.c", "src/*.cpp")
 target_end()
