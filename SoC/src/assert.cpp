@@ -2,7 +2,7 @@
 
 namespace SoC
 {
-    [[noreturn]] void assert_failed(const char* file, ::std::uint_least32_t line, const char* func, ::std::uint_least32_t column)
+    [[noreturn, gnu::noinline]] void assert_failed(const char* file, ::std::uint_least32_t line, const char* func, ::std::uint_least32_t column)
     {
         // 断言失败:
         // 文件: file(line:column) `function`: 断言失败
@@ -29,7 +29,7 @@ namespace SoC
         while(true) { __WFI(); }
     }
 
-    [[gnu::noinline]] void assert(bool expression, ::std::source_location location) noexcept
+    void assert(bool expression, ::std::source_location location) noexcept
     {
         if(!expression) [[unlikely]]
         {
