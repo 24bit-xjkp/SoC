@@ -244,13 +244,22 @@ namespace SoC
 
 namespace SoC
 {
+    namespace detail
+    {
+        using namespace ::std::string_view_literals;
+        constexpr auto default_assert_message{"断言失败"sv};
+    }  // namespace detail
+
     /**
      * @brief 基于C++的断言函数
      *
      * @param expression 断言表达式
+     * @param message 要输出的消息
      * @param location 源代码位置
      */
-    void assert(bool expression, ::std::source_location location = ::std::source_location::current()) noexcept;
+    void assert(bool expression,
+                const ::std::string_view message = ::SoC::detail::default_assert_message,
+                ::std::source_location location = ::std::source_location::current()) noexcept;
 
     /**
      * @brief 日志设备类
@@ -315,4 +324,13 @@ namespace SoC
     {
         return ::std::bit_cast<::std::array<target_type, bytes / sizeof(target_type)>>(array);
     }
+}  // namespace SoC
+
+namespace SoC
+{
+    /**
+     * @brief 快速终止程序
+     *
+     */
+    [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept { __builtin_trap(); }
 }  // namespace SoC
