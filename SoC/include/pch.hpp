@@ -22,6 +22,7 @@
 #include <ranges>
 #include <string_view>
 #include <cstring>
+#include <compare>
 #include <stm32_assert.h>
 
 namespace SoC

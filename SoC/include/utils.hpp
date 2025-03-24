@@ -25,6 +25,12 @@ namespace SoC
 
         template <typename type>
         concept is_duration = ::SoC::detail::is_duration_impl<type>;
+
+        template <::SoC::detail::is_duration lhs_t, ::SoC::detail::is_duration rhs_t>
+        using duration_downcast =
+            ::SoC::duration<::std::conditional_t<::std::ratio_less_v<typename lhs_t::ratio, typename rhs_t::ratio>,
+                                                 typename lhs_t::ratio,
+                                                 typename rhs_t::ratio>>;
     }  // namespace detail
 
     template <::SoC::detail::is_ratio ratio_t>
@@ -46,9 +52,7 @@ namespace SoC
         template <typename operator_t>
         constexpr inline auto duration_operation(this auto self, ::SoC::detail::is_duration auto other) noexcept
         {
-            using lhs_t = decltype(self)::ratio;
-            using rhs_t = decltype(other)::ratio;
-            using downcast_t = duration<::std::conditional_t<::std::ratio_less_v<lhs_t, rhs_t>, lhs_t, rhs_t>>;
+            using downcast_t = ::SoC::detail::duration_downcast<decltype(self), decltype(other)>;
             constexpr operator_t op{};
             return downcast_t{op(self.template duration_cast<downcast_t>().rep, other.template duration_cast<downcast_t>().rep)};
         }
@@ -62,6 +66,12 @@ namespace SoC
         constexpr inline friend auto operator- (duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
         {
             return lhs.duration_operation<::std::minus<>>(rhs);
+        }
+
+        constexpr inline friend ::std::strong_ordering operator<=> (duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
+        {
+            using downcast_t = ::SoC::detail::duration_downcast<decltype(lhs), decltype(rhs)>;
+            return lhs.duration_cast<downcast_t>().rep <=> rhs.template duration_cast<downcast_t>().rep;
         }
     };
 
