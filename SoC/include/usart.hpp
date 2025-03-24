@@ -99,8 +99,8 @@ namespace SoC
      */
     enum class usart_oversampling : ::std::size_t
     {
-        by16,
-        by8 = ::SoC::mask_single_one<15>,
+        by16 = 4,
+        by8 = 3,
         default_oversampling = by16
     };
 
