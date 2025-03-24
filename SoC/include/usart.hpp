@@ -210,5 +210,21 @@ namespace SoC
         {
             return reinterpret_cast<::SoC::usart*>(usart)->write(buffer, end);
         }
+
+        /**
+         * @brief 从usart读取数据
+         *
+         * @note 仅限数据宽度为8位时使用
+         * @return 读取到的数据
+         */
+        ::std::byte read8() const noexcept;
+
+        /**
+         * @brief 从usart读取数据
+         *
+         * @note 仅限数据宽度为9位时使用
+         * @return 读取到的数据
+         */
+         ::std::uint16_t read9() const noexcept;
     };
 }  // namespace SoC

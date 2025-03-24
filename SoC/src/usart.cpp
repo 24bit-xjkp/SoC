@@ -116,4 +116,18 @@ namespace SoC
             ::LL_USART_TransmitData9(usart_ptr, data);
         }
     }
+
+    ::std::byte SoC::usart::read8() const noexcept
+    {
+        ::SoC::assert(data_width == ::SoC::usart_data_width::bit8);
+        ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
+        return static_cast<::std::byte>(::LL_USART_ReceiveData8(usart_ptr));
+    }
+
+    ::std::uint16_t SoC::usart::read9() const noexcept
+    {
+        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9);
+        ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
+        return ::LL_USART_ReceiveData9(usart_ptr);
+    }
 }  // namespace SoC
