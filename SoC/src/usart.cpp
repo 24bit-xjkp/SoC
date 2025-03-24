@@ -1,4 +1,5 @@
 #include "../include/usart.hpp"
+#include "../include/init.hpp"
 
 namespace SoC
 {
@@ -14,40 +15,38 @@ namespace SoC
         usart_ptr{reinterpret_cast<::USART_TypeDef*>(usart)}, mode{mode}, data_width{data_width}, parity{parity}
     {
         ::SoC::assert(!::LL_USART_IsEnabled(usart_ptr));
-        ::LL_RCC_ClocksTypeDef rcc_clocks;
-        ::LL_RCC_GetSystemClocksFreq(&rcc_clocks);
         ::std::uint32_t clk{};
         switch(usart)
         {
             case usart1:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
                 callback = dtor_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART1};
-                clk = rcc_clocks.PCLK2_Frequency;
+                clk = ::SoC::rcc::apb2_freq;
                 break;
             case usart2:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART2};
-                clk = rcc_clocks.PCLK1_Frequency;
+                clk = ::SoC::rcc::apb1_freq;
                 break;
             case usart3:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART3);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART3};
-                clk = rcc_clocks.PCLK1_Frequency;
+                clk = ::SoC::rcc::apb1_freq;
                 break;
             case uart4:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART4);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART4};
-                clk = rcc_clocks.PCLK1_Frequency;
+                clk = ::SoC::rcc::apb1_freq;
                 break;
             case uart5:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART5);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART5};
-                clk = rcc_clocks.PCLK1_Frequency;
+                clk = ::SoC::rcc::apb1_freq;
                 break;
             case usart6:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART6);
                 callback = dtor_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART6};
-                clk = rcc_clocks.PCLK2_Frequency;
+                clk = ::SoC::rcc::apb2_freq;
                 break;
         }
 

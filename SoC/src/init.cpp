@@ -11,16 +11,10 @@ namespace SoC
         using namespace ::SoC::literal;
         ::LL_RCC_HSE_Enable();
         ::SoC::wait_until(::LL_RCC_HSE_IsReady);
-        constexpr auto frequency{::SoC::seconds{1}.duration_cast<::SoC::cycles>().rep};
-        ::LL_SetFlashLatency(frequency);
+        ::LL_SetFlashLatency(::SoC::rcc::sys_clock_freq);
         // PLL = HSE * N / M / R
-        constexpr auto hse_frequency{HSE_VALUE};
-        constexpr auto pll_m{8zu};
-        constexpr auto pll_r{2zu};
-        constexpr auto pll_in_frequency{hse_frequency / pll_m};
-        constexpr auto pll_n{frequency / pll_in_frequency * pll_r};
-        constexpr auto pllp_r{(pll_r - 2) / 2 << 16};
-        ::LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, pll_m, pll_n, pllp_r);
+        constexpr auto pll_pr{(::SoC::rcc::pll_pr - 2) / 2 << 16};
+        ::LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, ::SoC::rcc::pll_m, ::SoC::rcc::pll_n, pll_pr);
         ::LL_RCC_PLL_Enable();
         ::SoC::wait_until(::LL_RCC_PLL_IsReady);
         // 以PLL为系统时钟
@@ -32,9 +26,9 @@ namespace SoC
         ::LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_4);
         // APB2时钟=84MHz
         ::LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_2);
-        constexpr auto systick_cnt{::SoC::systicks{1}.duration_cast<::SoC::cycles>().rep};
+        constexpr auto systick_cnt{::SoC::rcc::sys_clock_freq / ::SoC::rcc::sys_tick_freq};
         // 设置SysTick
         ::SysTick_Config(systick_cnt);
-        ::SystemCoreClock = frequency;
+        ::SystemCoreClock = ::SoC::rcc::sys_clock_freq;
     }
 }  // namespace SoC
