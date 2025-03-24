@@ -67,6 +67,7 @@ namespace SoC
 
     using cycles = ::SoC::duration<::std::ratio<1, 168>>;
     using milliseconds = ::SoC::duration<::std::ratio<1>>;
+    using systicks = ::SoC::duration<::std::hecto>;
     using microseconds = ::SoC::duration<::std::kilo>;
     using seconds = ::SoC::duration<::std::mega>;
 }  // namespace SoC
@@ -119,11 +120,11 @@ namespace SoC::literal
 namespace SoC::detail
 {
     /**
-     * @brief 等待指定毫秒数
+     * @brief 等待指定tick
      *
-     * @param microseconds 要等待的毫秒数
+     * @param ticks 要等待的tick
      */
-    void wait_for(::SoC::microseconds microseconds) noexcept;
+    void wait_for(::SoC::systicks ticks) noexcept;
     /**
      * @brief 等待指定周期数
      *
@@ -183,11 +184,11 @@ namespace SoC
             }
         }
 
-        auto microseconds{duration.template duration_cast<::SoC::microseconds>()};
-        auto tmp{duration - microseconds};
+        auto ticks{duration.template duration_cast<::SoC::systicks>()};
+        auto tmp{duration - ticks};
         auto cycles{tmp.template duration_cast<::SoC::cycles>()};
 
-        ::SoC::detail::wait_for(microseconds);
+        ::SoC::detail::wait_for(ticks);
         ::SoC::detail::wait_for(cycles);
     }
 }  // namespace SoC

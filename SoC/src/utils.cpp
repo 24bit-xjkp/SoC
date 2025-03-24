@@ -23,10 +23,10 @@ namespace SoC::detail
         }
     }
 
-    void wait_for(::SoC::microseconds microseconds) noexcept
+    void wait_for(::SoC::systicks ticks) noexcept
     {
-        auto ms{microseconds.rep};
-        if(ms == 0) [[unlikely]] { return; }
+        auto tick{ticks.rep};
+        if(tick == 0) [[unlikely]] { return; }
         auto start_value{SysTick->VAL};
         // 清除溢出标记
         volatile auto _{SysTick->CTRL};
@@ -36,7 +36,7 @@ namespace SoC::detail
 #else
     #pragma GCC unroll 1
 #endif
-        while(ms != 0)
+        while(tick != 0)
         {
 #ifdef __clang__
             ::__wfi();
@@ -46,7 +46,7 @@ namespace SoC::detail
             if(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
             {
                 ::SoC::wait_until([start_value] noexcept { return SysTick->VAL < start_value; });
-                ms--;
+                tick--;
             }
         }
     }
