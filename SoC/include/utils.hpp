@@ -174,14 +174,10 @@ namespace SoC
         {
             using namespace ::SoC::literal;
             auto cycles{duration.rep};
-            constexpr auto mini_wait_cycles{6zu};
+            constexpr auto mini_wait_cycles{10zu};
 
             if(cycles < mini_wait_cycles) { return; }
-            else if(cycles < 2_K)
-            {
-                ::SoC::detail::wait_for(::SoC::cycles{cycles - mini_wait_cycles});
-                return;
-            }
+            else if(cycles < 2_K) { return ::SoC::detail::wait_for(duration); }
         }
 
         auto ticks{duration.template duration_cast<::SoC::systicks>()};

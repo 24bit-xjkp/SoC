@@ -9,7 +9,7 @@ namespace SoC::detail
 {
     [[gnu::noinline]] void wait_for(::SoC::cycles cycles) noexcept
     {
-        if(cycles.rep <= 1) [[unlikely]] { return; }
+        if(cycles.rep <= 1) { return; }
         else
         {
             auto cnt{cycles.rep >> 1};
@@ -45,7 +45,7 @@ namespace SoC::detail
 #endif
             if(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
             {
-                ::SoC::wait_until([start_value] noexcept { return SysTick->VAL < start_value; });
+                ::SoC::wait_until([start_value] noexcept { return SysTick->VAL < start_value || SysTick->CTRL; });
                 tick--;
             }
         }
