@@ -2,7 +2,7 @@
 
 namespace SoC
 {
-    extern "C" void SysTick_Handler() noexcept {}
+    extern "C" void SysTick_Handler() noexcept { ::SoC::systick++; }
 }  // namespace SoC
 
 namespace SoC::detail
