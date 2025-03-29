@@ -26,6 +26,8 @@ namespace SoC
         ::LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_4);
         // APB2时钟=84MHz
         ::LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_2);
+        // ADC时钟=21MHz
+        ::LL_ADC_SetCommonClock(ADC, LL_ADC_CLOCK_SYNC_PCLK_DIV4);
         constexpr auto systick_cnt{::SoC::rcc::sys_clock_freq / ::SoC::rcc::sys_tick_freq};
         // 设置SysTick
         ::SysTick_Config(systick_cnt);
