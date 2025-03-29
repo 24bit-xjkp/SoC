@@ -217,7 +217,7 @@ namespace SoC
          * @note 仅限数据宽度为8位时使用
          * @return 读取到的数据
          */
-        ::std::byte read8() const noexcept;
+        ::std::byte read() const noexcept;
 
         /**
          * @brief 从usart读取数据
@@ -225,6 +225,6 @@ namespace SoC
          * @note 仅限数据宽度为9位时使用
          * @return 读取到的数据
          */
-         ::std::uint16_t read9() const noexcept;
+        ::std::uint16_t read9() const noexcept;
     };
 }  // namespace SoC

@@ -117,7 +117,7 @@ namespace SoC
         }
     }
 
-    ::std::byte SoC::usart::read8() const noexcept
+    ::std::byte SoC::usart::read() const noexcept
     {
         ::SoC::assert(data_width == ::SoC::usart_data_width::bit8);
         ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
