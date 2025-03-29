@@ -8,11 +8,13 @@
 #include <stm32f4xx_ll_usart.h>
 #include <stm32f4xx_ll_utils.h>
 #include <stm32f4xx_ll_rcc.h>
+#include <stm32f4xx_ll_adc.h>
 #include <cstdint>
 #include <cstddef>
 #include <utility>
 #include <charconv>
 #include <cmath>
+#include <numbers>
 #include <concepts>
 #include <ratio>
 #include <functional>

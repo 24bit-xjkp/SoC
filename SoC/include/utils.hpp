@@ -334,3 +334,24 @@ namespace SoC
      */
     [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept { __builtin_trap(); }
 }  // namespace SoC
+
+namespace SoC
+{
+    /**
+     * @brief 将浮点数正则化，转化为科学记数法形式
+     *
+     * @param in 输入浮点数，要求是一个正数
+     * @return std::pair<int, float>{指数, 小数}
+     */
+    ::std::pair<int, float> normalize(float in) noexcept;
+
+    /**
+     * @brief 将浮点数转化为字符串
+     *
+     * @param buffer 输出缓冲区
+     * @param in 输入浮点数
+     * @param precision 小数位数，最多8位
+     * @return char* 缓冲区尾指针
+     */
+    char* ftoa(char* buffer, float in, ::std::size_t precision) noexcept;
+}  // namespace SoC
