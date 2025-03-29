@@ -72,6 +72,11 @@ namespace SoC
             *buffer++ = '-';
             in = ::std::abs(in);
         }
+        if(in < 1e-8)
+        {
+            *buffer++ = '0';
+            return buffer;
+        }
         constexpr char table[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
         using namespace ::SoC::literal;
         constexpr float pow_table[]{1, 10, 100, 1_K, 10_K, 100_K, 1_M, 10_M, 100_M};
