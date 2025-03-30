@@ -14,7 +14,7 @@ task("flash", function()
         usage = "xmake flash [option]",
         description = "Program target to the flash of the mcu.",
         options = {
-            { "f", "frequency", "kv", "2m",           "Set the frequency of the SWD clock." },
+            { "f", "frequency", "kv", "2m",            "Set the frequency of the SWD clock." },
             { "t", "type",      "kv", "stm32f407zgtx", "Set the type of the mcu." }
         }
     }
@@ -65,18 +65,27 @@ task_end()
 task("com", function()
     on_run(function()
         import("core.base.option")
-        os.execv("minicom",
-            { "-D", option.get("device"), "-b", option.get("baud-rate"), "-w", "-c", "on", "-8" },
+        os.execv("picocom",
+            { "-b", option.get("baud-rate"), "-f", option.get("flow-control"), "--echo", "--databits", "8", "--parity",
+                option.get("parity"), "--stopbits", "1", option.get("device") },
             { envs = { LANG = "en_US" } }
         )
     end)
 
     set_menu {
         usage = "xmake com [option]",
-        description = "Connect to a serial device using minicom.",
+        description = "Connect to a serial device using picocom.",
         options = {
             { "b", "baud-rate", "kv", "115200",       "Set the baud rate of the uart port." },
             { "d", "device",    "kv", "/dev/ttyACM0", "Set the path of the serial device." },
+            { "f", "flow-control", "kv", "n", "Set the flow control of the uart port.",
+                "\t- x: software flow control, xon/xoff",
+                "\t- h: hardware flow control",
+                "\t- n: no flow control" },
+            { "p", "parity", "kv", "n", "Set the parity of the uart port.",
+                "\t- o: odd parity",
+                "\t- e: even parity",
+                "\t- n: no parity" }
         }
     }
 end)

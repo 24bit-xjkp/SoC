@@ -17,7 +17,7 @@ namespace SoC
         // 文件: file(line:column) `function`: message
 
         using namespace ::std::string_view_literals;
-        ::SoC::write_string("\N{ESCAPE}[31m断言失败:\r\n文件: "sv);
+        ::SoC::write_string("\N{ESCAPE}[31m文件: "sv);
         // 填入文件名
         ::SoC::write_string(location.file_name());
         // 填入行号和列号
