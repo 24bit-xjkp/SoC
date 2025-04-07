@@ -28,21 +28,13 @@ namespace SoC
 
     void copy(::SoC::no_optimize_cursor begin, ::SoC::no_optimize_cursor end, ::SoC::no_optimize_cursor from) noexcept
     {
-#ifdef __clang__
-    #pragma clang loop unroll_count(1)
-#else
-    #pragma GCC unroll 1
-#endif
+#pragma GCC nounroll
         while(begin != end) { *begin++ = *from++; }
     }
 
     void fill(::SoC::no_optimize_cursor begin, ::SoC::no_optimize_cursor end) noexcept
     {
-#ifdef __clang__
-    #pragma clang loop unroll_count(1)
-#else
-    #pragma GCC unroll 1
-#endif
+#pragma GCC nounroll
         while(begin != end) { *begin++ = 0; }
     }
 

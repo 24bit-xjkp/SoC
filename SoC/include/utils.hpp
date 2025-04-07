@@ -77,8 +77,8 @@ namespace SoC
 
     using cycles = ::SoC::duration<::std::ratio<1, 168>>;
     using milliseconds = ::SoC::duration<::std::ratio<1>>;
-    using systicks = ::SoC::duration<::std::hecto>;
     using microseconds = ::SoC::duration<::std::kilo>;
+    using systicks = ::SoC::duration<::std::hecto>;
     using seconds = ::SoC::duration<::std::mega>;
 }  // namespace SoC
 
@@ -146,6 +146,19 @@ namespace SoC::detail
 namespace SoC
 {
     /**
+     * @brief 等待直到发生中断
+     *
+     */
+    [[using gnu: always_inline, artificial]] inline void wait_for_interpret() noexcept
+    {
+#ifdef __clang__
+        ::__wfi();
+#else
+        __WFI();
+#endif
+    }
+
+    /**
      * @brief 阻塞直到func求值为true
      *
      * @tparam func_t 可调用类型
@@ -157,19 +170,8 @@ namespace SoC
         requires (::std::invocable<func_t, args_t...> && ::std::convertible_to<::std::invoke_result_t<func_t, args_t...>, bool>)
     constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept
     {
-#ifdef __clang__
-    #pragma clang loop unroll_count(1)
-#else
-    #pragma GCC unroll 1
-#endif
-        while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...))
-        {
-#ifdef __clang__
-            ::__yield();
-#else
-            asm volatile("yield");
-#endif
-        }
+#pragma GCC nounroll
+        while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...));
     }
 
     /**

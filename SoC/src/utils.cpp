@@ -28,27 +28,15 @@ namespace SoC::detail
         auto tick{ticks.rep};
         if(tick == 0) [[unlikely]] { return; }
         auto start_value{SysTick->VAL};
+        auto end_tick{::SoC::systick + tick};
         // 清除溢出标记
         volatile auto _{SysTick->CTRL};
 
-#ifdef __clang__
-    #pragma clang loop unroll_count(1)
-#else
-    #pragma GCC unroll 1
-#endif
-        while(tick != 0)
-        {
-#ifdef __clang__
-            ::__wfi();
-#else
-            __WFI();
-#endif
-            if(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
-            {
-                ::SoC::wait_until([start_value] noexcept { return SysTick->VAL < start_value || SysTick->CTRL; });
-                tick--;
-            }
-        }
+#pragma GCC nounroll
+        // 等待直到系统时刻到达预定值
+        while(::SoC::systick < end_tick) { ::SoC::wait_for_interpret(); }
+        // 自旋以补偿start_value带来的时间误差
+        ::SoC::wait_until([start_value, end_tick] noexcept { return SysTick->VAL < start_value || ::SoC::systick > end_tick; });
     }
 }  // namespace SoC::detail
 
