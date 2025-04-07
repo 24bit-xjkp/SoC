@@ -2,7 +2,7 @@
     arch = "arm",
     buildir = "build",
     ccache = true,
-    debug_strip = "no",
+    debug_strip = "none",
     enable_lto = true,
     host = "linux",
     kind = "static",
