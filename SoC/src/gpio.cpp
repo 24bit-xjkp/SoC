@@ -117,7 +117,7 @@ namespace SoC
 
     bool ::SoC::gpio_pin::read(pin_enum pin_in) const noexcept
     {
-        ::SoC::assert(mode != ::SoC::gpio_mode::alternate);
+        ::SoC::assert(mode != ::SoC::gpio_mode::analog);
         pin_in = check_pin(pin_in);
         if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin_in)); }
         else { return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in)); }
