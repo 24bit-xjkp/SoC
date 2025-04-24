@@ -127,6 +127,7 @@ namespace SoC
         ::SoC::usart_data_width data_width{};
         ::SoC::usart_parity parity{};
         dtor_callback_t callback;
+        IRQn_Type irqn{};
 
         void wait_until_write_complete() const noexcept;
 
@@ -182,9 +183,15 @@ namespace SoC
         /**
          * @brief 向usart外设写入数据
          *
+         * @param byte 要写入的1字节数据
+         */
+        void write(::std::uint8_t byte) const noexcept;
+
+        /**
+         * @brief 向usart外设写入数据
+         *
          * @param buffer 数据缓冲区首指针
          * @param end 数据缓冲区尾哨位
-         * @return 写入是否成功
          */
         void write(const void* buffer, const void* end) const noexcept;
 
@@ -194,7 +201,6 @@ namespace SoC
          * @note 仅限数据宽度为9位且未启用校验位时使用
          * @param buffer 数据缓冲区首指针
          * @param end 数据缓冲区尾哨位
-         * @return 写入是否成功
          */
         void write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept;
 
@@ -204,7 +210,6 @@ namespace SoC
          * @param usart usart设备对象
          * @param buffer 缓冲区首指针
          * @param end 缓冲区尾哨位
-         * @return 写入是否成功
          */
         inline static void write_wrapper(void* usart, const void* buffer, const void* end) noexcept
         {
@@ -217,7 +222,7 @@ namespace SoC
          * @note 仅限数据宽度为8位时使用
          * @return 读取到的数据
          */
-        ::std::byte read() const noexcept;
+        ::std::uint8_t read() const noexcept;
 
         /**
          * @brief 从usart读取数据
@@ -226,5 +231,81 @@ namespace SoC
          * @return 读取到的数据
          */
         ::std::uint16_t read9() const noexcept;
+
+        /**
+         * @brief 开启串口中断源
+         *
+         * @param priority
+         */
+        void enable_irq(::std::size_t priority) const noexcept;
+
+        /**
+         * @brief 设置TXE中断状态
+         *
+         * @param enable 是否使能中断
+         */
+        void set_it_txe(bool enable) const noexcept;
+
+        /**
+         * @brief 获取TXE中断状态
+         *
+         * @return 中断是否使能
+         */
+        bool get_it_txe() const noexcept;
+
+        /**
+         * @brief 获取TXE标记
+         *
+         * @return TXE标记状态
+         */
+        bool get_flag_txe() const noexcept;
+
+        /**
+         * @brief 设置RXNE中断状态
+         *
+         * @param enable 是否使能中断
+         */
+        void set_it_rxne(bool enable) const noexcept;
+
+        /**
+         * @brief 获取RXNE中断状态
+         *
+         * @return 中断是否使能
+         */
+        bool get_it_rxne() const noexcept;
+
+        /**
+         * @brief 获取RXNE标记
+         *
+         * @return RXNE标记状态
+         */
+        bool get_flag_rxne() const noexcept;
+
+        /**
+         * @brief 设置IDLE中断状态
+         *
+         * @param enable 中断是否使能
+         */
+        void set_it_idle(bool enable) const noexcept;
+
+        /**
+         * @brief 获取IDLE中断状态
+         *
+         * @return 中断是否使能
+         */
+        bool get_it_idle() const noexcept;
+
+        /**
+         * @brief 获取IDLE标记
+         *
+         * @return IDLE标记状态
+         */
+        bool get_flag_idle() const noexcept;
+
+        /**
+         * @brief 清除IDLE标记
+         *
+         */
+        void clear_flag_idle() const noexcept;
     };
 }  // namespace SoC

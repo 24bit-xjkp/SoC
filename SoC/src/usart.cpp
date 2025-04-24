@@ -22,31 +22,37 @@ namespace SoC
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
                 callback = dtor_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART1};
                 clk = ::SoC::rcc::apb2_freq;
+                irqn = USART1_IRQn;
                 break;
             case usart2:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART2};
                 clk = ::SoC::rcc::apb1_freq;
+                irqn = USART2_IRQn;
                 break;
             case usart3:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART3);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART3};
                 clk = ::SoC::rcc::apb1_freq;
+                irqn = USART3_IRQn;
                 break;
             case uart4:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART4);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART4};
                 clk = ::SoC::rcc::apb1_freq;
+                irqn = UART4_IRQn;
                 break;
             case uart5:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART5);
                 callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART5};
                 clk = ::SoC::rcc::apb1_freq;
+                irqn = UART5_IRQn;
                 break;
             case usart6:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART6);
                 callback = dtor_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART6};
                 clk = ::SoC::rcc::apb2_freq;
+                irqn = USART6_IRQn;
                 break;
         }
 
@@ -87,6 +93,13 @@ namespace SoC
 
     void ::SoC::usart::wait_until_write_complete() const noexcept { ::SoC::wait_until(::LL_USART_IsActiveFlag_TC, usart_ptr); }
 
+    void ::SoC::usart::write(::std::uint8_t byte) const noexcept
+    {
+        if(data_width == ::SoC::usart_data_width::bit8) [[likely]] { ::LL_USART_TransmitData8(usart_ptr, byte); }
+        else { ::LL_USART_TransmitData9(usart_ptr, byte); }
+        wait_until_write_complete();
+    }
+
     void ::SoC::usart::write(const void* buffer, const void* end) const noexcept
     {
         if(data_width == ::SoC::usart_data_width::bit8) [[likely]]
@@ -117,17 +130,55 @@ namespace SoC
         }
     }
 
-    ::std::byte SoC::usart::read() const noexcept
+    ::std::uint8_t(::SoC::usart::read)() const noexcept
     {
         ::SoC::assert(data_width == ::SoC::usart_data_width::bit8);
         ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
-        return static_cast<::std::byte>(::LL_USART_ReceiveData8(usart_ptr));
+        return ::LL_USART_ReceiveData8(usart_ptr);
     }
 
-    ::std::uint16_t SoC::usart::read9() const noexcept
+    ::std::uint16_t(::SoC::usart::read9)() const noexcept
     {
         ::SoC::assert(data_width == ::SoC::usart_data_width::bit9);
         ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
         return ::LL_USART_ReceiveData9(usart_ptr);
     }
+
+    void ::SoC::usart::enable_irq(::std::size_t priority) const noexcept
+    {
+        ::NVIC_EnableIRQ(irqn);
+        ::NVIC_SetPriority(irqn, priority);
+    }
+
+    void ::SoC::usart::set_it_txe(bool enable) const noexcept
+    {
+        if(enable) { ::LL_USART_EnableIT_TXE(usart_ptr); }
+        else { ::LL_USART_DisableIT_TXE(usart_ptr); }
+    }
+
+    bool ::SoC::usart::get_it_txe() const noexcept { return ::LL_USART_IsEnabledIT_TXE(usart_ptr); }
+
+    bool ::SoC::usart::get_flag_txe() const noexcept { return ::LL_USART_IsActiveFlag_TXE(usart_ptr); }
+
+    void ::SoC::usart::set_it_rxne(bool enable) const noexcept
+    {
+        if(enable) { ::LL_USART_EnableIT_RXNE(usart_ptr); }
+        else { ::LL_USART_DisableIT_RXNE(usart_ptr); }
+    }
+
+    bool ::SoC::usart::get_it_rxne() const noexcept { return ::LL_USART_IsEnabledIT_RXNE(usart_ptr); }
+
+    bool ::SoC::usart::get_flag_rxne() const noexcept { return ::LL_USART_IsActiveFlag_RXNE(usart_ptr); }
+
+    void ::SoC::usart::set_it_idle(bool enable) const noexcept
+    {
+        if(enable) { ::LL_USART_EnableIT_IDLE(usart_ptr); }
+        else { ::LL_USART_DisableIT_IDLE(usart_ptr); }
+    }
+
+    bool ::SoC::usart::get_it_idle() const noexcept { return ::LL_USART_IsEnabledIT_IDLE(usart_ptr); }
+
+    bool ::SoC::usart::get_flag_idle() const noexcept { return ::LL_USART_IsActiveFlag_IDLE(usart_ptr); }
+
+    void ::SoC::usart::clear_flag_idle() const noexcept { ::LL_USART_ClearFlag_IDLE(usart_ptr); }
 }  // namespace SoC
