@@ -357,3 +357,26 @@ namespace SoC
      */
     char* ftoa(char* buffer, float in, ::std::size_t precision) noexcept;
 }  // namespace SoC
+
+namespace SoC
+{
+    template <::std::invocable<bool> callback_t>
+        requires requires(callback_t&& callback) {
+            { callback(true) } noexcept -> ::std::same_as<void>;
+        }
+    struct irq_guard
+    {
+    private:
+        callback_t callback{};
+
+    public:
+        /**
+         * @brief 构造irq_guard对象并执行callback(false)
+         *
+         * @param callback 回调函数，满足void callback(bool enable) noexcept，其中enable表示是否启用中断
+         */
+        constexpr irq_guard(callback_t&& callback) noexcept : callback{::std::forward<callback_t>(callback)} { callback(false); }
+
+        constexpr ~irq_guard() noexcept { callback(true); }
+    };
+}  // namespace SoC
