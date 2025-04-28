@@ -65,11 +65,13 @@ task_end()
 task("com", function()
     on_run(function()
         import("core.base.option")
-        os.execv("picocom",
-            { "-b", option.get("baud-rate"), "-f", option.get("flow-control"), "--echo", "--databits", "8", "--parity",
-                option.get("parity"), "--stopbits", "1", option.get("device") },
-            { envs = { LANG = "en_US" } }
-        )
+        local args = { "-b", option.get("baud-rate"), "-f", option.get("flow-control"), "--databits", "8", "--parity",
+            option.get("parity"), "--stopbits", "1" }
+        if option.get("echo") then
+            table.insert(args, "--echo")
+        end
+        table.insert(args, option.get("device"))
+        os.execv("picocom", args, { envs = { LANG = "en_US" } })
     end)
 
     set_menu {
@@ -85,7 +87,8 @@ task("com", function()
             { "p", "parity", "kv", "n", "Set the parity of the uart port.",
                 "\t- o: odd parity",
                 "\t- e: even parity",
-                "\t- n: no parity" }
+                "\t- n: no parity" },
+            { nil, "echo", "k", nil, "Enable local echo for tty." }
         }
     }
 end)
