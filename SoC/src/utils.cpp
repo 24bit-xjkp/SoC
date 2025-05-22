@@ -32,7 +32,7 @@ namespace SoC::detail
         // 清除溢出标记
         volatile auto _{SysTick->CTRL};
 
-#pragma GCC nounroll
+#pragma GCC unroll 0
         // 等待直到系统时刻到达预定值
         while(::SoC::systick < end_tick) { ::SoC::wait_for_interpret(); }
         // 自旋以补偿start_value带来的时间误差

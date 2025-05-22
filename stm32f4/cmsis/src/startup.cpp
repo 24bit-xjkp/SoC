@@ -28,13 +28,13 @@ namespace SoC
 
     void copy(::SoC::no_optimize_cursor begin, ::SoC::no_optimize_cursor end, ::SoC::no_optimize_cursor from) noexcept
     {
-#pragma GCC nounroll
+#pragma GCC unroll 0
         while(begin != end) { *begin++ = *from++; }
     }
 
     void fill(::SoC::no_optimize_cursor begin, ::SoC::no_optimize_cursor end) noexcept
     {
-#pragma GCC nounroll
+#pragma GCC unroll 0
         while(begin != end) { *begin++ = 0; }
     }
 
@@ -52,7 +52,7 @@ namespace SoC
         while(true);
     }
 
-    extern "C" [[noreturn, gnu::weak]] void Default_Handler() noexcept { while(true); }
+    extern "C" [[gnu::weak]] void Default_Handler() noexcept { while(true); }
 
     extern "C" [[using gnu: weak, alias("Default_Handler")]] void NMI_Handler() noexcept;
     extern "C" [[using gnu: weak, alias("Default_Handler")]] void HardFault_Handler() noexcept;

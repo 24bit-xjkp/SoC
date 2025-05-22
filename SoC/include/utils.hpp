@@ -176,7 +176,7 @@ namespace SoC
         requires (::std::invocable<func_t, args_t...> && ::std::convertible_to<::std::invoke_result_t<func_t, args_t...>, bool>)
     constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept
     {
-#pragma GCC nounroll
+#pragma GCC unroll 0
         while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...));
     }
 

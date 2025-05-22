@@ -14,7 +14,7 @@ namespace SoC
 
     void do_init_fini(::SoC::cursor begin, ::SoC::cursor end) noexcept
     {
-#pragma GCC nounroll
+#pragma GCC unroll 0
         while(begin != end) { (*begin)(); }
     }
 }  // namespace SoC
@@ -48,7 +48,7 @@ namespace SoC
 
     void _fini() noexcept
     {
-#pragma GCC nounroll
+#pragma GCC unroll 0
         for(auto i{::SoC::cxa_at_exit_callback_index}; i != -1zu; --i)
         {
             (::SoC::cxa_at_exit_callback_array[i])(::SoC::cxa_at_exit_callback_arg_array[i]);
