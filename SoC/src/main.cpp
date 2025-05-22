@@ -22,14 +22,15 @@ int main()
     gpio_f10.set();
 
     constexpr auto prefix{"当前计数器："sv};
-    auto cnt{0zu};
+    auto cnt{0.f};
     char buffer[32];
     while(true)
     {
         ::SoC::wait_for(1_s);
         gpio_f10.toggle();
         usart1.write(prefix.begin(), prefix.end());
-        auto&& [end, _]{::std::to_chars(buffer, buffer + 32, cnt++)};
+        auto&& [end, _]{::std::to_chars(buffer, buffer + 32, cnt)};
+        cnt += 0.5f;
         *end++ = '\r';
         *end++ = '\n';
         usart1.write(buffer, end);

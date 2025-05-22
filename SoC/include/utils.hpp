@@ -49,29 +49,35 @@ namespace SoC
         }
 
     private:
-        template <typename operator_t>
-        constexpr inline auto duration_operation(this auto self, ::SoC::detail::is_duration auto other) noexcept
+        constexpr inline friend auto preprocess(duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
         {
-            using downcast_t = ::SoC::detail::duration_downcast<decltype(self), decltype(other)>;
-            constexpr operator_t op{};
-            return downcast_t{op(self.template duration_cast<downcast_t>().rep, other.template duration_cast<downcast_t>().rep)};
+            using downcast_t = ::SoC::detail::duration_downcast<duration, decltype(rhs)>;
+            return ::std::pair{lhs.template duration_cast<downcast_t>(), rhs.template duration_cast<downcast_t>()};
         }
 
     public:
         constexpr inline friend auto operator+ (duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
         {
-            return lhs.duration_operation<::std::plus<>>(rhs);
+            auto&& [lhs_p, rhs_p]{preprocess(lhs, rhs)};
+            return decltype(lhs_p){lhs_p.rep + rhs_p.rep};
         }
 
         constexpr inline friend auto operator- (duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
         {
-            return lhs.duration_operation<::std::minus<>>(rhs);
+            auto&& [lhs_p, rhs_p]{preprocess(lhs, rhs)};
+            return decltype(lhs_p){lhs_p.rep - rhs_p.rep};
         }
 
         constexpr inline friend ::std::strong_ordering operator<=> (duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
         {
-            using downcast_t = ::SoC::detail::duration_downcast<decltype(lhs), decltype(rhs)>;
-            return lhs.duration_cast<downcast_t>().rep <=> rhs.template duration_cast<downcast_t>().rep;
+            auto&& [lhs_p, rhs_p]{preprocess(lhs, rhs)};
+            return lhs_p.rep <=> rhs_p.rep;
+        }
+
+        constexpr inline friend bool operator== (duration lhs, ::SoC::detail::is_duration auto rhs) noexcept
+        {
+            auto&& [lhs_p, rhs_p]{preprocess(lhs, rhs)};
+            return lhs_p.rep == rhs_p.rep;
         }
     };
 
@@ -310,7 +316,10 @@ namespace SoC
                 write_callback(device, buffer, end);
                 return true;
             }
-            else { return false; }
+            else
+            {
+                return false;
+            }
         }
     } inline constinit log_device{};
 }  // namespace SoC
@@ -335,27 +344,6 @@ namespace SoC
      *
      */
     [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept { __builtin_trap(); }
-}  // namespace SoC
-
-namespace SoC
-{
-    /**
-     * @brief 将浮点数正则化，转化为科学记数法形式
-     *
-     * @param in 输入浮点数，要求是一个正数
-     * @return std::pair<int, float>{指数, 小数}
-     */
-    ::std::pair<int, float> normalize(float in) noexcept;
-
-    /**
-     * @brief 将浮点数转化为字符串
-     *
-     * @param buffer 输出缓冲区
-     * @param in 输入浮点数
-     * @param precision 小数位数，最多8位
-     * @return char* 缓冲区尾指针
-     */
-    char* ftoa(char* buffer, float in, ::std::size_t precision) noexcept;
 }  // namespace SoC
 
 namespace SoC
