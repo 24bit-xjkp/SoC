@@ -206,7 +206,8 @@ namespace SoC
         ::SoC::detail::wait_for(cycles);
     }
 
-    inline constinit ::std::size_t systick{};
+    // 系统时刻数
+    inline constinit ::std::uint64_t systick{};
 }  // namespace SoC
 
 namespace SoC

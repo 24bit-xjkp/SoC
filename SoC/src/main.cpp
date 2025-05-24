@@ -22,7 +22,6 @@ int main()
     ::SoC::gpio_pin gpio_f10{gpio_f, ::SoC::gpio_pin::pin_10, ::SoC::gpio_mode::output};
     gpio_f10.set();
 
-
     ::SoC::text_ofile file{usart1, {}};
     for(auto cnt{0.f};; cnt += 0.5f)
     {
