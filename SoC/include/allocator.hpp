@@ -62,13 +62,29 @@ namespace SoC::detail
 
 namespace SoC
 {
+#ifdef __cpp_lib_allocate_at_least
     /**
      * @brief 分配连续多个元素时分配器返回的结果
      *
      * @tparam type 要分配的类型
      */
     template <typename type>
+        requires (::std::is_pointer_v<type>)
     using allocation_result = ::std::allocation_result<type>;
+#else
+    /**
+     * @brief 分配连续多个元素时分配器返回的结果
+     *
+     * @tparam type 要分配的类型
+     */
+    template <typename type>
+        requires (::std::is_pointer_v<type>)
+    struct allocation_result
+    {
+        type ptr;
+        ::std::size_t count;
+    };
+#endif
 
     /**
      * @brief 判断type是否为分配器，要求满足：

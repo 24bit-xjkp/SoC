@@ -15,7 +15,7 @@ namespace SoC
     void do_init_fini(::SoC::cursor begin, ::SoC::cursor end) noexcept
     {
 #pragma GCC unroll 0
-        while(begin != end) { (*begin)(); }
+        while(begin != end) { (*begin++)(); }
     }
 }  // namespace SoC
 

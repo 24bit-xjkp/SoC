@@ -6,7 +6,7 @@ namespace SoC
 {
     extern "C"
     {
-        extern "C" [[using gnu: naked]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b startup\n"); }
+        extern "C" [[gnu::naked, noreturn]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b startup\n"); }
 
         using cursor = ::SoC::cursor_t<::std::size_t>;
 

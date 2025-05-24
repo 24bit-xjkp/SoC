@@ -9,6 +9,7 @@
 #include <stm32f4xx_ll_utils.h>
 #include <stm32f4xx_ll_rcc.h>
 #include <stm32f4xx_ll_adc.h>
+#include <version>
 #include <cstdint>
 #include <cstddef>
 #include <utility>
@@ -26,6 +27,7 @@
 #include <cstring>
 #include <compare>
 #include <array>
+#include <functional>
 #include <stm32_assert.h>
 
 namespace SoC

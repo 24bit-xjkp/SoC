@@ -14,7 +14,7 @@ task("flash", function()
         usage = "xmake flash [option]",
         description = "Program target to the flash of the mcu.",
         options = {
-            { "f", "frequency", "kv", "2m",            "Set the frequency of the SWD clock." },
+            { "f", "frequency", "kv", "10m",           "Set the frequency of the SWD clock." },
             { "t", "type",      "kv", "stm32f407zgtx", "Set the type of the mcu." }
         }
     }
