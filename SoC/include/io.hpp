@@ -139,9 +139,9 @@ namespace SoC
             using pointer = value_type*;
             using allocator_t = allocator_type;
 
-            // 分配器
+            /// 分配器
             [[no_unique_address]] allocator_t allocator;
-            // 缓冲区首指针
+            /// 缓冲区首指针
             const pointer begin;
 
             constexpr inline buffer_impl(allocator_t alloc = allocator_t{}) noexcept :
@@ -159,7 +159,7 @@ namespace SoC
             using pointer = value_type*;
             using allocator_t = void;
 
-            // 缓冲区数组，可退化为首指针
+            /// 缓冲区数组，可退化为首指针
             value_type begin[buffer_size];
 
             constexpr inline buffer_impl() noexcept {}
@@ -183,9 +183,9 @@ namespace SoC
         using const_pointer = const value_type*;
         using allocator_t = allocator_type;
 
-        // 缓冲区当前游标
+        /// 缓冲区当前游标
         pointer current{begin};
-        // 有效输入缓冲区的尾哨位
+        /// 有效输入缓冲区的尾哨位
         pointer end{begin};
 
         constexpr inline buffer() noexcept {}
@@ -487,11 +487,11 @@ namespace SoC
      */
     enum class end_line_sequence
     {
-        // 回车
+        /// 回车
         cr,
-        // 换行
+        /// 换行
         lf,
-        // 回车换行
+        /// 回车换行
         crlf
     };
 
