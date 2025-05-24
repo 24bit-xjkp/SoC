@@ -1,6 +1,7 @@
 #include "../include/init.hpp"
 #include "../include/gpio.hpp"
 #include "../include/usart.hpp"
+#include "../include/io.hpp"
 
 int main()
 {
@@ -21,18 +22,12 @@ int main()
     ::SoC::gpio_pin gpio_f10{gpio_f, ::SoC::gpio_pin::pin_10, ::SoC::gpio_mode::output};
     gpio_f10.set();
 
-    constexpr auto prefix{"当前计数器："sv};
-    auto cnt{0.f};
-    char buffer[32];
-    while(true)
+
+    ::SoC::text_ofile file{usart1, {}};
+    for(auto cnt{0.f};; cnt += 0.5f)
     {
-        ::SoC::wait_for(1_s);
+        ::SoC::wait_for(0.5_s);
         gpio_f10.toggle();
-        usart1.write(prefix.begin(), prefix.end());
-        auto&& [end, _]{::std::to_chars(buffer, buffer + 32, cnt)};
-        cnt += 0.5f;
-        *end++ = '\r';
-        *end++ = '\n';
-        usart1.write(buffer, end);
+        ::SoC::println<true>(file, "当前计数器："sv, cnt);
     }
 }

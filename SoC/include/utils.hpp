@@ -368,3 +368,31 @@ namespace SoC
         constexpr ~irq_guard() noexcept { callback(true); }
     };
 }  // namespace SoC
+
+namespace SoC::detail
+{
+    /**
+     * @brief 判断type是否在list中
+     *
+     * @tparam type 要判断的类型
+     * @tparam list 类型列表
+     */
+    template <typename type, typename... list>
+    concept either = (::std::same_as<type, list> || ...);
+
+    /**
+     * @brief 判断type是否是io的目标类型，要求为字符或std::byte
+     *
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_io_target_type = ::SoC::detail::either<type, char, ::std::byte>;
+
+    /**
+     * @brief 判断type是否是整数、浮点
+     *
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_int_fp = ::std::integral<type> || ::std::floating_point<type>;
+}  // namespace SoC::detail

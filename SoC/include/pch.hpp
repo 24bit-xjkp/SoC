@@ -17,7 +17,7 @@
 #include <numbers>
 #include <concepts>
 #include <ratio>
-#include <functional>
+#include <memory>
 #include <source_location>
 #include <bit>
 #include <span>
@@ -25,6 +25,7 @@
 #include <string_view>
 #include <cstring>
 #include <compare>
+#include <array>
 #include <stm32_assert.h>
 
 namespace SoC

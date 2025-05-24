@@ -1,0 +1,554 @@
+#pragma once
+#include "allocator.hpp"
+
+namespace SoC
+{
+    /**
+     * @brief 判断device_t是否是type类型的输出设备,要求满足：
+     * - auto device::write(const type*, const type*) noexcept，或
+     * - auto write(device_t&, const type*, const type*) noexcept，考虑adl
+     * @tparam device_t 设备类型
+     * @tparam type 输出类型
+     */
+    template <typename device_t, typename type>
+    concept is_output_device =
+        ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, const type* begin, const type* end) {
+            { dev.write(begin, end) } noexcept;
+        } || requires(device_t& dev, const type* begin, const type* end) {
+            { write(dev, begin, end) } noexcept;
+        });
+
+    /**
+     * @brief 将[begin, end)内的数据写入到device
+     *
+     * @tparam type 输出类型
+     * @param device 输出设备
+     * @param begin 缓冲区首指针
+     * @param end 缓冲区尾哨位
+     */
+    template <::SoC::detail::is_io_target_type type>
+    constexpr inline void write_to_device(::SoC::is_output_device<type> auto& device, const type* begin, const type* end) noexcept
+    {
+        if constexpr(requires { device.write(begin, end); }) { device.write(begin, end); }
+        else
+        {
+            write(device, begin, end);
+        }
+    }
+
+    /**
+     * @brief 将字符串视图输出到device
+     *
+     * @param device 输出设备
+     * @param string 要输出的字符串视图
+     */
+    constexpr inline void print_to_device(::SoC::is_output_device<char> auto& device, ::std::string_view string) noexcept
+    {
+        ::SoC::write_to_device<char>(device, string.begin(), string.end());
+    }
+
+    namespace detail
+    {
+        /**
+         * @brief 获取输出num_t所需的最大缓冲区大小
+         *
+         * @tparam num_t 整数或浮点类型
+         * @return 最大缓冲区大小
+         */
+        template <::SoC::detail::is_int_fp num_t>
+        inline consteval auto get_max_output_size() noexcept
+        {
+            using limit_t = ::std::numeric_limits<num_t>;
+            constexpr auto digits{::std::floating_point<num_t> ? limit_t::digits10 : limit_t::max_digits10};
+            if constexpr(::std::signed_integral<num_t>)
+            {
+                // 符号占1字符
+                return digits + 1;
+            }
+            else if(::std::floating_point<num_t>)
+            {
+                // 符号和小数点占2字符
+                return digits + 2;
+            }
+            else
+            {
+                return digits;
+            }
+        }
+
+        /**
+         * @brief 将num转化为字符
+         *
+         * @param num 要转化的整数或浮点数
+         * @return std::pair{缓冲数组, 字符数}
+         */
+        constexpr inline auto to_chars(::SoC::detail::is_int_fp auto num) noexcept
+        {
+            constexpr auto buffer_size{(::SoC::detail::get_max_output_size<decltype(num)>() + 3) / 4 * 4};
+            ::std::array<char, buffer_size> buffer;
+            auto ptr{::std::to_chars(buffer.begin(), buffer.end(), num).ptr};
+            auto output_size{static_cast<::std::size_t>(ptr - buffer.begin())};
+            return ::std::pair{buffer, output_size};
+        }
+    }  // namespace detail
+
+    /**
+     * @brief 将num输出到设备
+     *
+     * @param device 输出设备
+     * @param num 要输出的整数或浮点数
+     */
+    constexpr inline void print_to_device(::SoC::is_output_device<char> auto& device, ::SoC::detail::is_int_fp auto num) noexcept
+    {
+        auto&& [buffer, output_size]{::SoC::detail::to_chars(num)};
+        ::SoC::write_to_device<char>(device, {buffer, output_size});
+    }
+
+    /**
+     * @brief 判断类型arg_t能否输出到device_t类型的设备，要求满足：
+     * - device_t是文本类输出设备，且
+     * - void print_to_device(device_t&, arg_t) noexcept，考虑adl
+     * @tparam arg_t 要判断的类型
+     * @tparam device_t 输出设备类型
+     */
+    template <typename arg_t, typename device_t>
+    concept is_printable_to_device = ::SoC::is_output_device<device_t, char> && requires(device_t& device, arg_t arg) {
+        { print_to_device(device, arg) } noexcept -> ::std::same_as<void>;
+    };
+
+    namespace detail
+    {
+        /**
+         * @brief 判断type是否是缓冲区分配器，要求满足：
+         * - 满足SoC::is_allocator概念，或
+         * - 是void类型，用于静态缓冲区
+         * @tparam type 要判断的类型
+         */
+        template <typename type>
+        concept is_buffer_allocator = ::SoC::is_allocator<type> || ::std::same_as<type, void>;
+    }  // namespace detail
+
+    namespace detail
+    {
+        template <::SoC::detail::is_io_target_type type,
+                  ::std::size_t buffer_size,
+                  ::SoC::detail::is_buffer_allocator allocator_type>
+        struct buffer_impl
+        {
+            using value_type = type;
+            using pointer = value_type*;
+            using allocator_t = allocator_type;
+
+            // 分配器
+            [[no_unique_address]] allocator_t allocator;
+            // 缓冲区首指针
+            const pointer begin;
+
+            constexpr inline buffer_impl(allocator_t alloc = allocator_t{}) noexcept :
+                allocator{alloc}, begin{allocator.template allocate<value_type>(buffer_size).ptr}
+            {
+            }
+
+            constexpr inline ~buffer_impl() noexcept { allocator.deallocate(begin, buffer_size); }
+        };
+
+        template <::SoC::detail::is_io_target_type type, ::std::size_t buffer_size>
+        struct buffer_impl<type, buffer_size, void>
+        {
+            using value_type = type;
+            using pointer = value_type*;
+            using allocator_t = void;
+
+            // 缓冲区数组，可退化为首指针
+            value_type begin[buffer_size];
+
+            constexpr inline buffer_impl() noexcept {}
+        };
+    }  // namespace detail
+
+    /**
+     * @brief 缓冲区类型
+     *
+     * @tparam type io目标类型
+     * @tparam buffer_size 缓冲区大小
+     * @tparam allocator_t 分配器类型，void为静态缓冲区，满足SoC::is_allocator概念的分配器类型为动态缓冲区
+     */
+    template <::SoC::detail::is_io_target_type type, ::std::size_t buffer_size, ::SoC::detail::is_buffer_allocator allocator_type>
+        requires (buffer_size != 0)
+    struct buffer : ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>
+    {
+        using ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>::begin;
+        using value_type = type;
+        using pointer = value_type*;
+        using const_pointer = const value_type*;
+        using allocator_t = allocator_type;
+
+        // 缓冲区当前游标
+        pointer current{begin};
+        // 有效输入缓冲区的尾哨位
+        pointer end{begin};
+
+        constexpr inline buffer() noexcept {}
+
+        /**
+         * @brief 获取缓冲区尾哨位
+         *
+         * @return 缓冲区尾哨位
+         */
+        constexpr inline pointer get_buffer_end() noexcept { return begin + buffer_size; }
+
+        /**
+         * @brief 获取输出缓冲区剩余容量
+         *
+         * @return 输出缓冲区剩余容量
+         */
+        constexpr inline ::std::size_t get_obuffer_left() noexcept { return get_buffer_end() - current; }
+
+        /**
+         * @brief 获取输入缓冲区剩余容量
+         *
+         * @return 输入缓冲区剩余容量
+         */
+        constexpr inline ::std::size_t get_ibuffer_left() noexcept { return end - current; }
+
+        /**
+         * @brief 将游标向前移动len个元素
+         *
+         * @param len 要前进的距离
+         * @return 游标的旧值
+         */
+        constexpr inline pointer advance(::std::size_t len) noexcept { return ::std::exchange(current, current + len); }
+
+        /**
+         * @brief 将src处的len个元素写入缓冲区
+         *
+         * @param src 源指针
+         * @param len 要写入的元素个数
+         */
+        constexpr inline void write(const_pointer src, ::std::size_t len) noexcept
+        {
+            ::std::memcpy(current, src, len);
+            current += len;
+        }
+
+        /**
+         * @brief 将缓冲区中的len个元素读取到dst处
+         *
+         * @param dst 目标指针
+         * @param len 要读取的元素个数
+         */
+        constexpr inline void read(pointer dst, ::std::size_t len) noexcept
+        {
+            ::std::memcpy(dst, current, len);
+            current += len;
+        }
+
+        /**
+         * @brief 清空缓冲区
+         *
+         */
+        constexpr inline void clear() noexcept
+        {
+            current = begin;
+            end = begin;
+        }
+    };
+
+    /**
+     * @brief 静态缓冲区
+     *
+     * @tparam type io元素类型
+     * @tparam buffer_size 缓冲区容量
+     */
+    template <::SoC::detail::is_io_target_type type, ::std::size_t buffer_size = 64>
+    using static_buffer = ::SoC::buffer<type, buffer_size, void>;
+    /**
+     * @brief 动态缓冲区
+     *
+     * @tparam type io元素类型
+     * @tparam allocator 分配器
+     * @tparam buffer_size 缓冲区容量
+     */
+    template <::SoC::detail::is_io_target_type type, ::SoC::is_allocator allocator, ::std::size_t buffer_size = 64>
+    using dynamic_buffer = ::SoC::buffer<type, buffer_size, allocator>;
+    /**
+     * @brief 默认缓冲区类型，即静态缓冲区
+     *
+     * @tparam type io元素类型
+     */
+    template <::SoC::detail::is_io_target_type type>
+    using default_buffer = ::SoC::static_buffer<type>;
+
+    /**
+     * @brief 判断type是否是一个缓冲区，要求满足：
+     * - 类型别名value_type，且
+     * - 类型别名pointer，且
+     * - 类型别名const_pointer，且
+     * - 类型别名allocator_t，且
+     * - std::decay_t<decltype(type::begin)>为pointer，且
+     * - pointer type::current，且
+     * - pointer type::end，且
+     * - pointer type::get_buffer_end() noexcept，且
+     * - std::size_t type::get_obuffer_left() noexcept，且
+     * - std::size_t type::get_ibuffer_left() noexcept，且
+     * - pointer type::advance(std::size_t) noexcept，且
+     * - void type::write(const_pointer, std::size_t) noexcept，且
+     * - void type::read(pointer, std::size_t) noexcept，且
+     * - void type::clear() noexcept
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_buffer = requires(type& buffer) {
+        typename type::value_type;
+        typename type::pointer;
+        typename type::const_pointer;
+        typename type::allocator_t;
+
+        requires ::std::same_as<::std::decay_t<decltype(buffer.begin)>, typename type::pointer>;
+        requires ::std::same_as<decltype(buffer.current), typename type::pointer>;
+        requires ::std::same_as<decltype(buffer.end), typename type::pointer>;
+
+        { buffer.get_buffer_end() } noexcept -> ::std::same_as<typename type::pointer>;
+        { buffer.get_obuffer_left() } noexcept -> ::std::same_as<::std::size_t>;
+        { buffer.get_ibuffer_left() } noexcept -> ::std::same_as<::std::size_t>;
+        { buffer.advance(1zu) } noexcept -> ::std::same_as<typename type::pointer>;
+        { buffer.write(typename type::const_pointer{}, 1zu) } noexcept -> ::std::same_as<void>;
+        { buffer.read(typename type::pointer{}, 1zu) } noexcept -> ::std::same_as<void>;
+        { buffer.clear() } noexcept -> ::std::same_as<void>;
+    };
+
+    /**
+     * @brief 输出文件类型
+     *
+     * @tparam type io元素类型
+     * @tparam device_t 输出设备类型
+     * @tparam buffer_t 缓冲区类型
+     */
+    template <::SoC::detail::is_io_target_type type,
+              ::SoC::is_output_device<type> device_t,
+              ::SoC::is_buffer buffer_t = ::SoC::default_buffer<type>>
+    struct ofile
+    {
+        using value_type = type;
+        // 输出设备
+        device_t& device;
+        // 输出缓冲区
+        buffer_t obuffer;
+
+        /**
+         * @brief 刷新缓冲区，将缓冲区内数据写入设备后清空缓冲区
+         *
+         */
+        constexpr inline void flush() noexcept
+        {
+            ::SoC::write_to_device(device, obuffer.begin, obuffer.current);
+            obuffer.clear();
+        }
+    };
+
+    /**
+     * @brief 文本类输出文件类型
+     *
+     * @tparam device_t 文本类输出设备
+     * @tparam buffer_t 文本类输出缓冲区
+     */
+    template <::SoC::is_output_device<char> device_t, ::SoC::is_buffer buffer_t = ::SoC::default_buffer<char>>
+    using text_ofile = ::SoC::ofile<char, device_t, buffer_t>;
+    /**
+     * @brief 二进制输出文件类型
+     *
+     * @tparam device_t 二进制输出设备
+     * @tparam buffer_t 二进制输出缓冲区
+     */
+    template <::SoC::is_output_device<::std::byte> device_t, ::SoC::is_buffer buffer_t = ::SoC::default_buffer<::std::byte>>
+    using bin_ofile = ::SoC::ofile<::std::byte, device_t, buffer_t>;
+
+    /**
+     * @brief 判断type是否是输出文件，要求满足：
+     * - type::device是输出设备的左值引用
+     * - type::obuffer是输出缓冲区对象
+     * - void type::flush() noexcept
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_ofile = ::std::is_lvalue_reference_v<decltype(type::device)> &&
+                       ::SoC::is_output_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
+                       ::SoC::is_buffer<decltype(type::obuffer)> && requires(type& file) {
+                           { file.flush() } noexcept -> ::std::same_as<void>;
+                       };
+
+    /**
+     * @brief 从输出文件中萃取设备和缓冲区
+     *
+     * @param file 要萃取的文件
+     * @return std::pair{设备引用, 缓冲区引用}
+     */
+    constexpr inline auto ofile_trait(::SoC::is_ofile auto& file) noexcept
+    {
+        return ::std::pair<decltype((file.device)), decltype((file.obuffer))>{file.device, file.obuffer};
+    }
+
+    /**
+     * @brief 将字符串视图输出到file
+     *
+     * @param file 输出文件
+     * @param string 字符串视图
+     */
+    constexpr inline void print_to_file(::SoC::is_ofile auto& file, ::std::string_view string) noexcept
+    {
+        auto&& [device, buffer]{::SoC::ofile_trait(file)};
+        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= string.size()) [[likely]]
+        {
+            buffer.write(string.data(), string.size());
+        }
+        else
+        {
+            buffer.write(string.data(), buffer_size_left);
+            file.flush();
+            auto output_size_left{string.size() - buffer_size_left};
+            buffer.write(string.data() + buffer_size_left, output_size_left);
+        }
+    }
+
+    /**
+     * @brief 将整数或浮点数输出到file
+     *
+     * @param file 输出文件
+     * @param num 整数或浮点数
+     */
+    constexpr inline void print_to_file(::SoC::is_ofile auto& file, ::SoC::detail::is_int_fp auto num) noexcept
+    {
+        auto&& [device, buffer]{::SoC::ofile_trait(file)};
+        constexpr auto max_output_size{::SoC::detail::get_max_output_size<decltype(num)>()};
+        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_output_size) [[likely]]
+        {
+            auto&& current{buffer.current};
+            current = ::std::to_chars(current, buffer.get_buffer_end(), num).ptr;
+        }
+        else
+        {
+            auto&& [temp_buffer, output_size]{::SoC::detail::to_chars(num)};
+            buffer.write(temp_buffer.begin(), ::std::min(output_size, buffer_size_left));
+            if(output_size >= buffer_size_left) { file.flush(); }
+            else [[likely]]
+            {
+                return;
+            }
+            auto output_size_left{output_size - buffer_size_left};
+            buffer.write(temp_buffer.begin() + buffer_size_left, output_size_left);
+        }
+    }
+
+    /**
+     * @brief 判断类型arg_t能否输出到file_t类型的文件，要求满足：
+     * - file_t是文本类输出文件，且
+     * - void print_to_file(file_t&, arg_t) noexcept，考虑adl
+     * @tparam arg_t 要判断的类型
+     * @tparam file_t 输出文件类型
+     */
+    template <typename arg_t, typename file_t>
+    concept is_printable_to_file = ::SoC::is_ofile<file_t> && requires(file_t& file, arg_t arg) {
+        { print_to_file(file, arg) } noexcept -> ::std::same_as<void>;
+    };
+
+    /**
+     * @brief 将参数列表输出到设备
+     *
+     * @tparam device_t 输出设备类型
+     * @tparam args_t 参数类型列表
+     * @param device 输出设备
+     * @param args 参数列表
+     */
+    template <::SoC::is_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void print(device_t& device, args_t&&... args) noexcept
+    {
+        (print_to_device(device, ::std::forward<args_t>(args)), ...);
+    }
+
+    /**
+     * @brief 将参数列表输出到文件
+     *
+     * @tparam flush 输出结束后是否刷新缓冲区
+     * @tparam file_t 输出文件类型
+     * @tparam args_t 参数类型列表
+     * @param file 输出文件
+     * @param args 参数列表
+     */
+    template <bool flush = false, ::SoC::is_ofile file_t, ::SoC::is_printable_to_file<file_t>... args_t>
+    constexpr inline void print(file_t& file, args_t&&... args) noexcept
+    {
+        (print_to_file(file, ::std::forward<args_t>(args)), ...);
+        if constexpr(flush) { file.flush(); }
+    }
+
+    /**
+     * @brief 行尾序列
+     *
+     */
+    enum class end_line_sequence
+    {
+        // 回车
+        cr,
+        // 换行
+        lf,
+        // 回车换行
+        crlf
+    };
+
+    namespace detail
+    {
+        /**
+         * @brief 获取行尾序列endl对应的字符串视图
+         *
+         * @tparam endl 行尾序列
+         * @return 字符串视图
+         */
+        template <::SoC::end_line_sequence endl>
+        consteval ::std::string_view get_endl() noexcept
+        {
+            using namespace ::std::string_view_literals;
+            switch(endl)
+            {
+                case ::SoC::end_line_sequence::cr: return "\r"sv;
+                case ::SoC::end_line_sequence::lf: return "\n"sv;
+                case ::SoC::end_line_sequence::crlf: return "\r\n"sv;
+            }
+        }
+    }  // namespace detail
+
+    /**
+     * @brief 将参数列表输出到设备，输出完成后换行
+     *
+     * @tparam endl 行尾序列
+     * @tparam device_t 输出设备类型
+     * @tparam args_t 参数类型列表
+     * @param device 输出设备
+     * @param args 参数列表
+     */
+    template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::is_output_device<char> device_t,
+              ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void println(device_t& device, args_t&&... args) noexcept
+    {
+        ::SoC::print(device, ::std::forward<args_t>(args)..., ::SoC::detail::get_endl<endl>());
+    }
+
+    /**
+     * @brief 将参数列表输出到文件，输出完成后换行
+     *
+     * @tparam flush 输出结束后是否刷新缓冲区
+     * @tparam endl 行尾序列
+     * @tparam file_t 输出文件类型
+     * @tparam args_t 参数类型列表
+     * @param file 输出文件
+     * @param args 参数列表
+     */
+    template <bool flush = false,
+              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::is_ofile file_t,
+              ::SoC::is_printable_to_file<file_t>... args_t>
+    constexpr inline void println(file_t& file, args_t&&... args) noexcept
+    {
+        ::SoC::print<flush>(file, ::std::forward<args_t>(args)..., ::SoC::detail::get_endl<endl>());
+    }
+}  // namespace SoC
