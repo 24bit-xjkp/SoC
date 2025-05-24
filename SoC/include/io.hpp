@@ -44,7 +44,7 @@ namespace SoC
      */
     constexpr inline void print_to_device(::SoC::is_output_device<char> auto& device, ::std::string_view string) noexcept
     {
-        ::SoC::write_to_device<char>(device, string.begin(), string.end());
+        ::SoC::write_to_device(device, string.begin(), string.end());
     }
 
     namespace detail
@@ -59,7 +59,7 @@ namespace SoC
         inline consteval auto get_max_output_size() noexcept
         {
             using limit_t = ::std::numeric_limits<num_t>;
-            constexpr auto digits{::std::floating_point<num_t> ? limit_t::digits10 : limit_t::max_digits10};
+            constexpr auto digits{::std::floating_point<num_t> ? limit_t::max_digits10 : limit_t::digits10};
             if constexpr(::std::signed_integral<num_t>)
             {
                 // 符号占1字符
@@ -101,7 +101,7 @@ namespace SoC
     constexpr inline void print_to_device(::SoC::is_output_device<char> auto& device, ::SoC::detail::is_int_fp auto num) noexcept
     {
         auto&& [buffer, output_size]{::SoC::detail::to_chars(num)};
-        ::SoC::write_to_device<char>(device, {buffer, output_size});
+        ::SoC::write_to_device(device, buffer.begin(), buffer.begin() + output_size);
     }
 
     /**
