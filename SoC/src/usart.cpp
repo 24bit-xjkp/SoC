@@ -74,7 +74,11 @@ namespace SoC
         ::LL_USART_Enable(usart_ptr);
     }
 
-    ::SoC::usart::usart(usart&& other) noexcept : usart_ptr{::std::exchange(other.usart_ptr, nullptr)}, mode{other.mode} {}
+    ::SoC::usart::usart(usart&& other) noexcept
+    {
+        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(*this));
+        other.usart_ptr = nullptr;
+    }
 
     ::SoC::usart& ::SoC::usart::operator= (usart&& other) noexcept
     {
