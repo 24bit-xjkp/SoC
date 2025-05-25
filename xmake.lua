@@ -18,7 +18,8 @@ if build_mode then
 end
 set_config("march", "armv7-m")
 add_defines("STM32F407xx", "USE_FULL_ASSERT", "USE_FULL_LL_DRIVER", "HSE_VALUE=8000000u")
-add_cxflags("-mtune=cortex-m4", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16", "-ffunction-sections", "-fdata-sections", "-Wno-c23-extensions")
+add_cxflags("-mtune=cortex-m4", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16", "-ffunction-sections", "-fdata-sections",
+            "-Wno-c23-extensions", "-Wimplicit-fallthrough", "-Wno-unknown-pragmas")
 add_cxxflags("-fno-rtti")
 add_ldflags("-Wl,--gc-sections", "-nostartfiles", { force = true })
 includes("*/xmake.lua")

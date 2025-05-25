@@ -4,7 +4,7 @@ namespace SoC
 {
     extern "C" [[noreturn]] void c_assert_failed() noexcept { ::SoC::fast_fail(); }
 
-    [[noreturn, gnu::noinline]] void assert_failed(const ::std::string_view message, ::std::source_location location) noexcept
+    [[noreturn, gnu::noinline]] void assert_failed(::std::string_view message, ::std::source_location location) noexcept
     {
         // 断言内容如下：
         // 文件: file_name(line:column) `function_name`: message
@@ -25,7 +25,7 @@ namespace SoC
         ::SoC::fast_fail();
     }
 
-    void assert(bool expression, const ::std::string_view message, ::std::source_location location) noexcept
+    void assert(bool expression, ::std::string_view message, ::std::source_location location) noexcept
     {
         if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
     }

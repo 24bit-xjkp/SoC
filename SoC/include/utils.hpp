@@ -255,8 +255,7 @@ namespace SoC
 {
     namespace detail
     {
-        using namespace ::std::string_view_literals;
-        constexpr auto default_assert_message{"断言失败"sv};
+        constexpr ::std::string_view default_assert_message{"断言失败"};
     }  // namespace detail
 
     /**
@@ -267,7 +266,7 @@ namespace SoC
      * @param location 源代码位置
      */
     void assert(bool expression,
-                const ::std::string_view message = ::SoC::detail::default_assert_message,
+                ::std::string_view message = ::SoC::detail::default_assert_message,
                 ::std::source_location location = ::std::source_location::current()) noexcept;
 
     /**
