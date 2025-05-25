@@ -6,8 +6,6 @@ namespace SoC
 {
     extern "C"
     {
-        extern "C" [[gnu::naked, noreturn]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b startup\n"); }
-
         using cursor = ::SoC::cursor_t<::std::size_t>;
 
         extern ::SoC::cursor _sdata;
@@ -22,6 +20,101 @@ namespace SoC
         extern ::SoC::cursor _siccmram;
 
         extern ::SoC::cursor _estack;
+
+        [[gnu::weak]] void Default_Handler() noexcept { while(true); }
+
+        [[gnu::naked, noreturn]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b SoC_startup\n"); }
+
+        [[using gnu: weak, alias("Default_Handler")]] void NMI_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void HardFault_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void MemManage_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void BusFault_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void UsageFault_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void SVC_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DebugMon_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void PendSV_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void SysTick_Handler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void WWDG_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void PVD_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TAMP_STAMP_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void RTC_WKUP_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void FLASH_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void RCC_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI0_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI2_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI3_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI4_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream0_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream2_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream3_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream4_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream5_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream6_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void ADC_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN1_TX_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN1_RX0_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN1_RX1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN1_SCE_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI9_5_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM1_BRK_TIM9_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM1_UP_TIM10_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM1_TRG_COM_TIM11_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM1_CC_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM2_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM3_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM4_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void I2C1_EV_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void I2C1_ER_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void I2C2_EV_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void I2C2_ER_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void SPI1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void SPI2_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void USART1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void USART2_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void USART3_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void EXTI15_10_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void RTC_Alarm_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void OTG_FS_WKUP_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM8_BRK_TIM12_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM8_UP_TIM13_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM8_TRG_COM_TIM14_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM8_CC_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream7_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void FSMC_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void SDIO_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM5_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void SPI3_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void UART4_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void UART5_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM6_DAC_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void TIM7_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream0_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream2_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream3_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream4_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void ETH_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void ETH_WKUP_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN2_TX_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN2_RX0_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN2_RX1_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void CAN2_SCE_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void OTG_FS_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream5_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream6_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream7_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void USART6_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void I2C3_EV_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void I2C3_ER_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_EP1_OUT_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_EP1_IN_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_WKUP_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void DCMI_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void HASH_RNG_IRQHandler() noexcept;
+        [[using gnu: weak, alias("Default_Handler")]] void FPU_IRQHandler() noexcept;
     }
 
     using no_optimize_cursor = volatile ::std::size_t*;
@@ -38,7 +131,7 @@ namespace SoC
         while(begin != end) { *begin++ = 0; }
     }
 
-    extern "C" [[noreturn, gnu::used]] void startup() noexcept
+    extern "C" [[noreturn, gnu::used]] void SoC_startup() noexcept
     {
         ::SoC::SystemInit();
         ::SoC::copy(::SoC::_sdata, ::SoC::_edata, ::SoC::_sidata);
@@ -52,102 +145,9 @@ namespace SoC
         while(true);
     }
 
-    extern "C" [[gnu::weak]] void Default_Handler() noexcept { while(true); }
+    using isr_t = void (*const)();
 
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void NMI_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void HardFault_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void MemManage_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void BusFault_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void UsageFault_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void SVC_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DebugMon_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void PendSV_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void SysTick_Handler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void WWDG_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void PVD_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TAMP_STAMP_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void RTC_WKUP_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void FLASH_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void RCC_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI0_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI2_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI3_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI4_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream0_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream2_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream3_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream4_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream5_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream6_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void ADC_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN1_TX_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN1_RX0_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN1_RX1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN1_SCE_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI9_5_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM1_BRK_TIM9_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM1_UP_TIM10_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM1_TRG_COM_TIM11_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM1_CC_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM2_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM3_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM4_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void I2C1_EV_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void I2C1_ER_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void I2C2_EV_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void I2C2_ER_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void SPI1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void SPI2_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void USART1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void USART2_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void USART3_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void EXTI15_10_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void RTC_Alarm_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void OTG_FS_WKUP_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM8_BRK_TIM12_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM8_UP_TIM13_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM8_TRG_COM_TIM14_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM8_CC_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA1_Stream7_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void FSMC_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void SDIO_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM5_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void SPI3_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void UART4_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void UART5_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM6_DAC_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void TIM7_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream0_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream2_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream3_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream4_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void ETH_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void ETH_WKUP_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN2_TX_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN2_RX0_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN2_RX1_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void CAN2_SCE_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void OTG_FS_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream5_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream6_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DMA2_Stream7_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void USART6_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void I2C3_EV_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void I2C3_ER_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_EP1_OUT_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_EP1_IN_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_WKUP_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void OTG_HS_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void DCMI_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void HASH_RNG_IRQHandler() noexcept;
-    extern "C" [[using gnu: weak, alias("Default_Handler")]] void FPU_IRQHandler() noexcept;
-
-    using isr_t = void (*)();
-
-    [[using gnu: section(".isr_vector"), used]] isr_t table[]{
+    [[using gnu: section(".isr_vector"), used]] isr_t isr_table[]{
         reinterpret_cast<isr_t>(_estack),
         Reset_Handler,
         NMI_Handler,
