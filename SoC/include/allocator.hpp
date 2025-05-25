@@ -40,47 +40,7 @@ namespace SoC
          * @tparam type 对象类型
          */
         template <typename type>
-        constexpr inline ::std::allocator<type> constexpr_allocator{};
-
-        /**
-         * @brief 在常量表达式中分配内存
-         *
-         * @tparam type 对象类型
-         * @param n 分配对象个数
-         * @return 分配内存区域首指针
-         */
-        template <typename type>
-        inline consteval type* constexpr_allocate(::std::size_t n) noexcept
-        {
-            return ::SoC::detail::constexpr_allocator<type>.allocate(n);
-        }
-
-        /**
-         * @brief 在常量表达式中分配内存
-         *
-         * @tparam type 对象类型
-         * @param n 分配对象个数
-         * @return 分配内存区域首指针
-         */
-        template <typename type>
-            requires (::SoC::std_allocation_result_available)
-        inline consteval auto constexpr_allocate_at_least(::std::size_t n) noexcept
-        {
-            return ::SoC::detail::constexpr_allocator<type>.allocate_at_least(n);
-        }
-
-        /**
-         * @brief 在常量表达式中释放内存
-         *
-         * @tparam type 对象类型
-         * @param ptr 分配内存区域首指针
-         * @param n 分配对象个数
-         */
-        template <typename type>
-        inline consteval void constexpr_deallocate(type* ptr, ::std::size_t n) noexcept
-        {
-            ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n);
-        }
+        [[gnu::unused]] constinit inline ::std::allocator<type> constexpr_allocator{};
     }  // namespace detail
 
     /**
@@ -151,4 +111,65 @@ namespace SoC
             return lhs.allocator == rhs.allocator;
         }
     };
+
+    /**
+     * @brief 适用于常量表达式的分配器
+     *
+     */
+    struct constexpr_allocator_t
+    {
+        /**
+         * @brief 在常量表达式中分配内存
+         *
+         * @tparam type 对象类型
+         * @return 分配内存区域首指针
+         */
+        template <typename type>
+        inline consteval auto allocate() const noexcept
+        {
+            return ::SoC::detail::constexpr_allocator<type>.allocate(1);
+        }
+
+        /**
+         * @brief 在常量表达式中分配内存
+         *
+         * @tparam type 对象类型
+         * @param n 分配对象个数
+         * @return 分配内存区域首指针
+         */
+        template <typename type>
+        inline consteval auto allocate(::std::size_t n) const noexcept
+        {
+            if constexpr(::SoC::std_allocation_result_available)
+            {
+                return ::SoC::detail::constexpr_allocator<type>.allocate_at_least(n);
+            }
+            else
+            {
+                return ::SoC::allocation_result<type>{::SoC::detail::constexpr_allocator<type>.allocate(n), n};
+            }
+        }
+
+        /**
+         * @brief 在常量表达式中释放内存
+         *
+         * @tparam type 对象类型
+         * @param ptr 分配内存区域首指针
+         * @param n 分配对象个数
+         */
+        template <typename type>
+        inline consteval void deallocate(type* ptr, ::std::size_t n = 1) const noexcept
+        {
+            ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n);
+        }
+
+        /**
+         * @brief 比较两个分配器对象是否相等
+         *
+         */
+        constexpr inline friend bool operator== (::SoC::constexpr_allocator_t, ::SoC::constexpr_allocator_t) noexcept
+        {
+            return true;
+        }
+    } inline constexpr constexpr_allocator;
 }  // namespace SoC
