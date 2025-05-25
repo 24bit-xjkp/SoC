@@ -153,7 +153,7 @@ namespace SoC
         constexpr inline usart& operator= (const usart&) noexcept = delete;
 
         usart(usart&& other) noexcept;
-        usart& operator= (usart&&) noexcept;
+        usart& operator= (usart&&) noexcept = delete;
 
         ~usart() noexcept;
 

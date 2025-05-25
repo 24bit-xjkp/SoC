@@ -16,12 +16,6 @@ namespace SoC
     {
     }
 
-    ::SoC::gpio_port& ::SoC::gpio_port::operator= (gpio_port&& other) noexcept
-    {
-        ::std::swap(*this, other);
-        return *this;
-    }
-
     ::SoC::gpio_pin::gpio_pin(::SoC::gpio_port::port_view gpio_port,
                               pin_enum pin,
                               ::SoC::gpio_mode mode,
@@ -65,7 +59,10 @@ namespace SoC
             if(mode == ::SoC::gpio_mode::alternate)
             {
                 if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::std::to_underlying(alternate_function)); }
-                else { ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(alternate_function)); }
+                else
+                {
+                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(alternate_function));
+                }
             }
 
             ::LL_GPIO_SetPinMode(gpio, current_pin, ::std::to_underlying(mode));
@@ -120,6 +117,9 @@ namespace SoC
         ::SoC::assert(mode != ::SoC::gpio_mode::analog);
         pin_in = check_pin(pin_in);
         if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin_in)); }
-        else { return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in)); }
+        else
+        {
+            return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in));
+        }
     }
 }  // namespace SoC

@@ -80,12 +80,6 @@ namespace SoC
         other.usart_ptr = nullptr;
     }
 
-    ::SoC::usart& ::SoC::usart::operator= (usart&& other) noexcept
-    {
-        ::std::swap(*this, other);
-        return *this;
-    }
-
     ::SoC::usart::~usart() noexcept
     {
         if(usart_ptr != nullptr)

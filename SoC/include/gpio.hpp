@@ -100,7 +100,7 @@ namespace SoC
         gpio_port& operator= (const gpio_port&) noexcept = delete;
 
         gpio_port(gpio_port&& other) noexcept;
-        gpio_port& operator= (gpio_port&& other) noexcept;
+        gpio_port& operator= (gpio_port&& other) noexcept = delete;
 
         /**
          * @brief 转化为不具有raii的端口视图
