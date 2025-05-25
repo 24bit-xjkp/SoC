@@ -182,13 +182,13 @@ namespace SoC
          * @brief 使能arr预装载功能
          *
          */
-        void enable_preload() const noexcept;
+        void enable_arr_preload() const noexcept;
 
         /**
          * @brief 失能arr预装载功能
          *
          */
-        void disable_preload() const noexcept;
+        void disable_arr_preload() const noexcept;
 
         /**
          * @brief 设置自动重装值

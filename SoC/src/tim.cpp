@@ -184,9 +184,9 @@ namespace SoC
         ::LL_TIM_DisableCounter(tim_ptr);
     }
 
-    void ::SoC::tim::enable_preload() const noexcept { ::LL_TIM_EnableARRPreload(tim_ptr); }
+    void ::SoC::tim::enable_arr_preload() const noexcept { ::LL_TIM_EnableARRPreload(tim_ptr); }
 
-    void ::SoC::tim::disable_preload() const noexcept { ::LL_TIM_DisableARRPreload(tim_ptr); }
+    void ::SoC::tim::disable_arr_preload() const noexcept { ::LL_TIM_DisableARRPreload(tim_ptr); }
 
     void ::SoC::tim::set_auto_reload(::std::size_t auto_reload, bool force_update) const noexcept
     {
