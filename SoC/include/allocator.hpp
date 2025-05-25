@@ -1,65 +1,6 @@
 #pragma once
 #include "utils.hpp"
 
-namespace SoC::detail
-{
-    constexpr auto dynamic_extent{::std::dynamic_extent};
-    template <::std::size_t extent>
-    using bitmap = ::std::span<::std::size_t, extent>;
-
-    /**
-     * @brief 查找1个空闲位并标记为已分配
-     *
-     * @tparam extent 位图大小
-     * @param bitmap 位图对象
-     * @return ::std::size_t 位索引，-1表示未找到
-     */
-    template <::std::size_t extent>
-    constexpr inline ::std::size_t find(::SoC::detail::bitmap<extent> bitmap) noexcept
-    {
-        for(auto block_index{0zu}; block_index != bitmap.size(); ++block_index)
-        {
-            if(auto& block{bitmap[block_index]}; block != -1)
-            {
-                auto index{::std::countr_one(block)};
-                block |= 1zu << index;
-                return block_index * 32 + index;
-            }
-        }
-        return -1zu;
-    }
-
-    /**
-     * @brief 填充位图中的连续空间
-     *
-     * @param block_begin 起始块引用
-     * @param block_end 结束块引用
-     * @param begin_index 起始块内索引
-     * @param end_index 结束块内索引
-     */
-    constexpr inline void
-        set(::std::size_t& block_begin, ::std::size_t& block_end, ::std::size_t begin_index, ::std::size_t end_index) noexcept
-    {
-        block_begin |= -1zu << begin_index;
-        block_end |= -1zu >> (31 - end_index);
-        for(auto begin{&block_begin + 1}, end{&block_end - 1}; begin < end; ++begin) { *begin = -1zu; }
-    }
-
-    /**
-     * @brief 查找连续len个空闲位并标记为已分配
-     *
-     * @tparam extent 位图大小
-     * @param bitmap 位图对象
-     * @param len 连续位数量
-     * @return ::std::size_t 位索引
-     */
-    template <::std::size_t extent>
-    constexpr inline ::std::size_t find(::SoC::detail::bitmap<extent> bitmap, ::std::size_t len) noexcept
-    {
-        return 0;
-    }
-}  // namespace SoC::detail
-
 namespace SoC
 {
 #ifdef __cpp_lib_allocate_at_least
@@ -71,6 +12,8 @@ namespace SoC
     template <typename type>
         requires (::std::is_pointer_v<type>)
     using allocation_result = ::std::allocation_result<type>;
+
+    constexpr inline bool std_allocation_result_available{true};
 #else
     /**
      * @brief 分配连续多个元素时分配器返回的结果
@@ -84,23 +27,128 @@ namespace SoC
         type ptr;
         ::std::size_t count;
     };
+
+    constexpr inline bool std_allocation_result_available{false};
 #endif
+
+    namespace detail
+    {
+
+        /**
+         * @brief 适用于常量表达式的分配器
+         *
+         * @tparam type 对象类型
+         */
+        template <typename type>
+        constexpr inline ::std::allocator<type> constexpr_allocator{};
+
+        /**
+         * @brief 在常量表达式中分配内存
+         *
+         * @tparam type 对象类型
+         * @param n 分配对象个数
+         * @return 分配内存区域首指针
+         */
+        template <typename type>
+        inline consteval type* constexpr_allocate(::std::size_t n) noexcept
+        {
+            return ::SoC::detail::constexpr_allocator<type>.allocate(n);
+        }
+
+        /**
+         * @brief 在常量表达式中分配内存
+         *
+         * @tparam type 对象类型
+         * @param n 分配对象个数
+         * @return 分配内存区域首指针
+         */
+        template <typename type>
+            requires (::SoC::std_allocation_result_available)
+        inline consteval auto constexpr_allocate_at_least(::std::size_t n) noexcept
+        {
+            return ::SoC::detail::constexpr_allocator<type>.allocate_at_least(n);
+        }
+
+        /**
+         * @brief 在常量表达式中释放内存
+         *
+         * @tparam type 对象类型
+         * @param ptr 分配内存区域首指针
+         * @param n 分配对象个数
+         */
+        template <typename type>
+        inline consteval void constexpr_deallocate(type* ptr, ::std::size_t n) noexcept
+        {
+            ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n);
+        }
+    }  // namespace detail
 
     /**
      * @brief 判断type是否为分配器，要求满足：
      * - 是无状态分配器，即大小不超过一个指针，且
      * - 可默认构造和复制构造，且
+     * - 可相等性比较，且
      * - template<typename t> t* type::allocate() noexcept，且
      * - template<typename t> SoC::allocation_result<t*> type::allocate(std::size_t) noexcept，且
      * - void type::deallocate(auto* ptr, std::size_t = 1) noexcept
      * @tparam type 要判断的类型
      */
     template <typename type>
-    concept is_allocator = sizeof(type) <= sizeof(void*) && ::std::is_trivially_copy_constructible_v<type> &&
-                           ::std::is_default_constructible_v<type> && requires(type& allocator, int* ptr) {
-                               { allocator.template allocate<int>() } noexcept -> ::std::same_as<int*>;
-                               { allocator.template allocate<int>(2) } noexcept -> ::std::same_as<::SoC::allocation_result<int*>>;
-                               { allocator.deallocate(ptr) } noexcept -> ::std::same_as<void>;
-                               { allocator.deallocate(ptr, 2) } noexcept -> ::std::same_as<void>;
-                           };
+    concept is_allocator =
+        sizeof(type) <= sizeof(void*) && ::std::is_trivially_copy_constructible_v<type> &&
+        ::std::is_default_constructible_v<type> && ::std::equality_comparable<type> && requires(type& allocator, int* ptr) {
+            { allocator.template allocate<int>() } noexcept -> ::std::same_as<int*>;
+            { allocator.template allocate<int>(2) } noexcept -> ::std::same_as<::SoC::allocation_result<int*>>;
+            { allocator.deallocate(ptr) } noexcept -> ::std::same_as<void>;
+            { allocator.deallocate(ptr, 2) } noexcept -> ::std::same_as<void>;
+        };
+
+    /**
+     * @brief 将SoC分配器包装为标准分配器
+     *
+     * @tparam allocator_t 分配器类型
+     * @tparam type 对象类型
+     */
+    template <::SoC::is_allocator allocator_t, typename type>
+    struct allocator_wrapper
+    {
+        [[no_unique_address]] allocator_t allocator;
+
+        using value_type = type;
+        using size_type = ::std::size_t;
+        using difference_type = ::std::ptrdiff_t;
+        using propagate_on_container_move_assignment = ::std::true_type;
+
+        /**
+         * @brief 分配内存
+         *
+         * @param n 分配对象个数
+         * @return 分配内存区域首指针
+         */
+        constexpr inline type* allocate(::std::size_t n) noexcept { return allocator.template allocate<type>(n).ptr; }
+
+        constexpr inline auto allocate_at_least(::std::size_t n) noexcept
+            requires (::SoC::std_allocation_result_available)
+        {
+            return allocator.template allocate<type>(n);
+        }
+
+        /**
+         * @brief 释放内存
+         *
+         * @param ptr 分配内存区域首指针
+         * @param n 分配对象个数
+         */
+        constexpr inline void deallocate(type* ptr, ::std::size_t n) noexcept { return allocator.deallocate(ptr, n); }
+
+        /**
+         * @brief 比较两个分配器对象是否相等
+         *
+         */
+        constexpr inline friend bool operator== (::SoC::allocator_wrapper<allocator_t, type> lhs,
+                                                 ::SoC::allocator_wrapper<allocator_t, type> rhs) noexcept
+        {
+            return lhs.allocator == rhs.allocator;
+        }
+    };
 }  // namespace SoC
