@@ -198,8 +198,8 @@ namespace SoC
 
 namespace SoC
 {
-    ::SoC::tim_channel::tim_channel(::SoC::tim::tim_view tim,
-                                    tim_channel_enum channel,
+    ::SoC::tim_channel::tim_channel(::SoC::tim& tim,
+                                    ::SoC::tim_channel::tim_channel_enum channel,
                                     ::SoC::tim_oc_mode mode,
                                     ::std::uint32_t compare_value,
                                     bool init_state,
@@ -229,19 +229,13 @@ namespace SoC
     void ::SoC::tim_channel::enable() const noexcept
     {
         ::LL_TIM_CC_EnableChannel(tim_ptr, ::std::to_underlying(channel));
-        if(compl_channel != ::SoC::detail::tim_channel{})
-        {
-            ::LL_TIM_CC_EnableChannel(tim_ptr, ::std::to_underlying(compl_channel));
-        }
+        if(has_compl_channel()) { ::LL_TIM_CC_EnableChannel(tim_ptr, ::std::to_underlying(compl_channel)); }
     }
 
     void ::SoC::tim_channel::disable() const noexcept
     {
         ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(channel));
-        if(compl_channel != ::SoC::detail::tim_channel{})
-        {
-            ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(compl_channel));
-        }
+        if(has_compl_channel()) { ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(compl_channel)); }
     }
 
     void ::SoC::tim_channel::check_mode_oc() const noexcept
@@ -249,12 +243,21 @@ namespace SoC
         ::SoC::assert(channel_mode == ::SoC::tim_channel::tim_channel_mode::oc, "此通道应处于输出比较模式"sv);
     }
 
-    void ::SoC::tim_channel::configure_comp_channel(::SoC::tim_oc_polarity polarity) noexcept
+    void ::SoC::tim_channel::configure_compl_channel(::SoC::tim_oc_polarity polarity) noexcept
     {
         check_mode_oc();
         ::SoC::assert(channel != ::SoC::tim_channel::ch4, "定时器的通道4不具有互补通道"sv);
         compl_channel = static_cast<::SoC::detail::tim_channel>(::std::to_underlying(channel) << 2);
         ::LL_TIM_OC_SetPolarity(tim_ptr, ::std::to_underlying(compl_channel), ::std::to_underlying(polarity));
+    }
+
+    void ::SoC::tim_channel::remove_compl_channel() noexcept
+    {
+        if(has_compl_channel()) [[likely]]
+        {
+            ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(compl_channel));
+            compl_channel = ::SoC::tim_channel::tim_channel_enum{};
+        }
     }
 
     void ::SoC::tim_channel::enable_oc_preload() const noexcept

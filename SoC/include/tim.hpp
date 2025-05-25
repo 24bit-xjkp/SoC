@@ -119,22 +119,13 @@ namespace SoC
     struct tim
     {
     private:
+        friend struct tim_channel;
         using tim_enum = ::SoC::detail::tim;
         ::TIM_TypeDef* tim_ptr;
         ::SoC::detail::dtor_close_clock_callback_t callback;
 
-        struct view
-        {
-            ::TIM_TypeDef* tim_ptr;
-            friend struct tim;
-
-        private:
-            constexpr inline view(TIM_TypeDef* tim_ptr) noexcept : tim_ptr{tim_ptr} {}
-        };
-
     public:
         using enum tim_enum;
-        using tim_view = view;
 
         /**
          * @brief 初始化tim外设，不启动计数
@@ -160,11 +151,11 @@ namespace SoC
         ~tim() noexcept;
 
         /**
-         * @brief 转化为不具有raii的定时器视图
+         * @brief 获取tim外设指针
          *
-         * @return 定时器视图
+         * @return tim外设指针
          */
-        constexpr inline operator tim_view() const& noexcept { return tim_ptr; }
+        constexpr inline ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
 
         /**
          * @brief 使能tim外设
@@ -245,8 +236,8 @@ namespace SoC
          * @param init_state 初始状态，true表示使能，false表示失能
          * @param polarity 输出极性
          */
-        explicit tim_channel(::SoC::tim::tim_view tim,
-                             tim_channel_enum channel,
+        explicit tim_channel(::SoC::tim& tim,
+                             ::SoC::tim_channel::tim_channel_enum channel,
                              ::SoC::tim_oc_mode mode,
                              ::std::uint32_t compare_value,
                              bool init_state = true,
@@ -257,6 +248,27 @@ namespace SoC
         tim_channel(tim_channel&& other) noexcept;
         tim_channel& operator= (tim_channel&& other) noexcept = delete;
         ~tim_channel() noexcept;
+
+        /**
+         * @brief 获取tim外设指针
+         *
+         * @return tim外设指针
+         */
+        constexpr inline ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
+
+        /**
+         * @brief 获取tim主通道枚举
+         *
+         * @return tim主通道枚举
+         */
+        constexpr inline tim_channel_enum get_channel() const noexcept { return channel; }
+
+        /**
+         * @brief 判断当前tim通道对象是否有绑定互补通道
+         *
+         * @return 是否绑定互补通道
+         */
+        constexpr inline bool has_compl_channel() const noexcept { return compl_channel == tim_channel_enum{}; }
 
         /**
          * @brief 使能tim外设通道，同时处理关联的互补通道
@@ -275,7 +287,14 @@ namespace SoC
          *
          * @param polarity 互补通道输出极性
          */
-        void configure_comp_channel(::SoC::tim_oc_polarity polarity = ::SoC::tim_oc_polarity::low) noexcept;
+        void configure_compl_channel(::SoC::tim_oc_polarity polarity = ::SoC::tim_oc_polarity::low) noexcept;
+
+        /**
+         * @brief 关闭并移除绑定的互补通道
+         *
+         * @note 若不存在互补通道则不进行操作
+         */
+        void remove_compl_channel() noexcept;
 
         /**
          * @brief 使能输出比较模式下ccr预装载

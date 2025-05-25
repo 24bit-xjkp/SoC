@@ -16,18 +16,17 @@ namespace SoC
     {
     }
 
-    ::SoC::gpio_pin::gpio_pin(::SoC::gpio_port::port_view gpio_port,
+    ::SoC::gpio_pin::gpio_pin(::SoC::gpio_port& gpio_port,
                               pin_enum pin,
                               ::SoC::gpio_mode mode,
-                              ::SoC::gpio_alternate_function alternate_function,
+                              ::SoC::gpio_af af,
                               ::SoC::gpio_speed speed,
                               ::SoC::gpio_pull pull,
-                              ::SoC::gpio_output_type output_type) noexcept :
-        gpio{reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400u * ::std::to_underlying(gpio_port.port))}, pin{pin},
-        mode{mode}
+                              ::SoC::gpio_output_type output_type) noexcept : gpio{gpio_port.get_port()}, pin{pin}, mode{mode}
     {
-        // 非复用模式下，复用号为0
-        ::SoC::assert(mode == ::SoC::gpio_mode::alternate || alternate_function == ::SoC::gpio_alternate_function::default_af);
+        // 非复用模式下，复用号为非法值；复用模式下，复用号不能为非法值
+        ::SoC::assert((mode == ::SoC::gpio_mode::alternate && af != ::SoC::gpio_af::default_af) ||
+                      af == ::SoC::gpio_af::default_af);
         switch(mode)
         {
             case ::SoC::gpio_mode::alternate: break;
@@ -58,10 +57,10 @@ namespace SoC
 
             if(mode == ::SoC::gpio_mode::alternate)
             {
-                if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::std::to_underlying(alternate_function)); }
+                if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::std::to_underlying(af)); }
                 else
                 {
-                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(alternate_function));
+                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(af));
                 }
             }
 
