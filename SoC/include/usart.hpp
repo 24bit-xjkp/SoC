@@ -208,20 +208,38 @@ namespace SoC
         }
 
         /**
-         * @brief 从usart读取数据
+         * @brief 从usart读取8位数据
          *
-         * @note 仅限数据宽度为8位时使用
+         * @note 这会忽略第9位
          * @return 读取到的数据
          */
         ::std::uint8_t read() const noexcept;
 
         /**
-         * @brief 从usart读取数据
+         * @brief 从usart读取9位数据
          *
          * @note 仅限数据宽度为9位时使用
          * @return 读取到的数据
          */
         ::std::uint16_t read9() const noexcept;
+
+        /**
+         * @brief 从串口中读取数据并填充[begin, end)范围内的缓冲区
+         *
+         * @param begin 缓冲区首指针
+         * @param end 缓冲区尾哨位
+         * @return 缓冲区当前游标
+         */
+        void* read(void* begin, void* end) const noexcept;
+
+        /**
+         * @brief 从串口中读取数据并填充[begin, end)范围内的缓冲区
+         *
+         * @param begin 缓冲区首指针
+         * @param end 缓冲区尾哨位
+         * @return 缓冲区当前游标
+         */
+        ::std::uint16_t* read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept;
 
         /**
          * @brief 开启串口中断源
@@ -298,5 +316,24 @@ namespace SoC
          *
          */
         void clear_flag_idle() const noexcept;
+
+        /**
+         * @brief 使能usart外设
+         *
+         */
+        void enable() const noexcept;
+
+        /**
+         * @brief 失能usart外设，不会关闭时钟
+         *
+         */
+        void disable() const noexcept;
+
+        /**
+         * @brief 判断usart外设是否使能
+         *
+         * @return usart外设是否使能
+         */
+        bool is_enabled() const noexcept;
     };
 }  // namespace SoC

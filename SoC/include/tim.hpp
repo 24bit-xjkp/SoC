@@ -158,16 +158,31 @@ namespace SoC
         constexpr inline ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
 
         /**
-         * @brief 使能tim外设
+         * @brief 使能tim外设，包括计数和高级定时器的输出
          *
          */
         void enable() const noexcept;
 
         /**
-         * @brief 失能tim外设
+         * @brief 失能tim外设，包括计数和高级定时器的输出，不会关闭时钟
          *
          */
         void disable() const noexcept;
+
+        /**
+         * @brief 判断tim外设计数是否使能
+         *
+         * @return tim外设计数是否使能
+         */
+        bool is_enabled() const noexcept;
+
+        /**
+         * @brief 判断tim外设的输出是否使能
+         *
+         * @note 高级定时器的输出使能才有意义，但此函数不会检查定时器类型
+         * @return tim外设的输出是否使能
+         */
+        bool is_output_enabled() const noexcept;
 
         /**
          * @brief 使能arr预装载功能
@@ -281,6 +296,21 @@ namespace SoC
          *
          */
         void disable() const noexcept;
+
+        /**
+         * @brief 判断tim外设主通道是否使能
+         *
+         * @return tim外设通道是否使能
+         */
+        bool is_enabled() const noexcept;
+
+        /**
+         * @brief 判断tim外设互补通道是否使能
+         *
+         * @return true 关联的互补通道已使能
+         * @return false 关联的互补通道未使能或未关联互补通道
+         */
+        bool is_compl_enabled() const noexcept;
 
         /**
          * @brief 配置互补通道，将互补通道关联到此对象

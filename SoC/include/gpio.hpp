@@ -74,6 +74,13 @@ namespace SoC
         using port_enum = ::SoC::detail::gpio_port;
         port_enum port{};
 
+        /**
+         * @brief 获取gpio在AHB总线上的外设号
+         *
+         * @return gpio外设号
+         */
+        ::std::size_t get_periphs() const noexcept;
+
     public:
         using enum port_enum;
 
@@ -111,6 +118,25 @@ namespace SoC
         {
             return reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400u * ::std::to_underlying(port));
         }
+
+        /**
+         * @brief 使能gpio端口时钟
+         *
+         */
+        void enable() const noexcept;
+
+        /**
+         * @brief 失能gpio端口时钟
+         *
+         */
+        void disable() const noexcept;
+
+        /**
+         * @brief 判断gpio端口时钟是否使能
+         *
+         * @return gpio端口时钟是否使能
+         */
+        bool is_enabled() const noexcept;
     };
 
     /**
@@ -230,11 +256,10 @@ namespace SoC
         pin_enum check_pin(pin_enum pin_in) const noexcept;
 
         /**
-         * @brief 断言当前对象中的引脚工作在指定模式下
+         * @brief 断言当前对象中的引脚工作在输出模式下
          *
-         * @param mode_in 指定模式
          */
-        void check_mode(::SoC::gpio_mode mode_in) const noexcept;
+        void check_output_mode() const noexcept;
 
     public:
         using enum pin_enum;

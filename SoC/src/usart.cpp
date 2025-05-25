@@ -3,6 +3,8 @@
 
 namespace SoC
 {
+    using namespace ::std::string_view_literals;
+
     ::SoC::usart::usart(usart_enum usart,
                         ::std::uint32_t baud_rate,
                         ::SoC::usart_mode mode,
@@ -14,7 +16,7 @@ namespace SoC
                         ::SoC::usart_oversampling oversampling) noexcept :
         usart_ptr{reinterpret_cast<::USART_TypeDef*>(usart)}, mode{mode}, data_width{data_width}, parity{parity}
     {
-        ::SoC::assert(!::LL_USART_IsEnabled(usart_ptr));
+        ::SoC::assert(!is_enabled(), "初始化前此串口不应处于使能状态"sv);
         ::std::uint32_t clk{};
         switch(usart)
         {
@@ -71,7 +73,7 @@ namespace SoC
             case ::SoC::usart_mode::sync: ::LL_USART_ConfigSyncMode(usart_ptr); break;
         }
 
-        ::LL_USART_Enable(usart_ptr);
+        enable();
     }
 
     ::SoC::usart::usart(usart&& other) noexcept
@@ -84,7 +86,7 @@ namespace SoC
     {
         if(usart_ptr != nullptr)
         {
-            ::LL_USART_Disable(usart_ptr);
+            disable();
             callback();
         }
     }
@@ -123,7 +125,8 @@ namespace SoC
 
     void ::SoC::usart::write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept
     {
-        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && parity == ::SoC::usart_parity::none);
+        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && parity == ::SoC::usart_parity::none,
+                      "只有数据宽度为8位且未启用校验时支持9位输出"sv);
         for(auto data: ::std::ranges::subrange{buffer, end})
         {
             wait_until_write_complete();
@@ -133,16 +136,31 @@ namespace SoC
 
     ::std::uint8_t(::SoC::usart::read)() const noexcept
     {
-        ::SoC::assert(data_width == ::SoC::usart_data_width::bit8);
         ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
         return ::LL_USART_ReceiveData8(usart_ptr);
     }
 
     ::std::uint16_t(::SoC::usart::read9)() const noexcept
     {
-        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9);
+        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9, "此函数仅限数据宽度为9位时使用"sv);
         ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
         return ::LL_USART_ReceiveData9(usart_ptr);
+    }
+
+    void* ::SoC::usart::read(void* begin, void* end) const noexcept
+    {
+        auto ptr{reinterpret_cast<::std::uint8_t*>(begin)};
+        while(ptr != end && !get_flag_idle()) { *ptr++ = read(); }
+        clear_flag_idle();
+        return ptr;
+    }
+
+    ::std::uint16_t* ::SoC::usart::read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept
+    {
+        auto ptr{reinterpret_cast<::std::uint16_t*>(begin)};
+        while(ptr != end && !get_flag_idle()) { *ptr++ = read9(); }
+        clear_flag_idle();
+        return ptr;
     }
 
     void ::SoC::usart::enable_irq(::std::size_t priority) const noexcept
@@ -191,4 +209,10 @@ namespace SoC
     bool ::SoC::usart::get_flag_idle() const noexcept { return ::LL_USART_IsActiveFlag_IDLE(usart_ptr); }
 
     void ::SoC::usart::clear_flag_idle() const noexcept { ::LL_USART_ClearFlag_IDLE(usart_ptr); }
+
+    void ::SoC::usart::enable() const noexcept { ::LL_USART_Enable(usart_ptr); }
+
+    void ::SoC::usart::disable() const noexcept { ::LL_USART_Disable(usart_ptr); }
+
+    bool ::SoC::usart::is_enabled() const noexcept { return ::LL_USART_IsEnabled(usart_ptr); }
 }  // namespace SoC

@@ -58,6 +58,7 @@ namespace SoC
             { ::SoC::assert(rep_cnt <= ::std::numeric_limits<::std::uint8_t>::max(), "此计数器重复次数上限为255."sv); }};
         const auto check_upcnt_only{[mode] noexcept -> void
                                     { ::SoC::assert(mode == ::SoC::tim_mode::up, "此计数器仅支持向上计数"sv); }};
+        ::SoC::assert(!is_enabled(), "初始化前此定时器不应处于使能状态"sv);
 
         switch(tim)
         {
@@ -184,6 +185,10 @@ namespace SoC
         ::LL_TIM_DisableCounter(tim_ptr);
     }
 
+    bool ::SoC::tim::is_enabled() const noexcept { return ::LL_TIM_IsEnabledCounter(tim_ptr); }
+
+    bool ::SoC::tim::is_output_enabled() const noexcept { return ::LL_TIM_IsEnabledAllOutputs(tim_ptr); }
+
     void ::SoC::tim::enable_arr_preload() const noexcept { ::LL_TIM_EnableARRPreload(tim_ptr); }
 
     void ::SoC::tim::disable_arr_preload() const noexcept { ::LL_TIM_DisableARRPreload(tim_ptr); }
@@ -206,9 +211,10 @@ namespace SoC
                                     ::SoC::tim_oc_polarity polarity) noexcept :
         tim_ptr{tim.tim_ptr}, channel{channel}, channel_mode{::SoC::tim_channel::tim_channel_mode::oc}
     {
+        ::SoC::assert(!is_enabled(), "初始化前此通道不应处于使能状态"sv);
         ::LL_TIM_OC_SetMode(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(mode));
 
-        ::SoC::assert(channel <= ::SoC::get_max_channel(tim_ptr), "此定时器不具有输入通道"sv);
+        ::SoC::assert(channel <= ::SoC::get_max_channel(tim_ptr), "此定时器不具有指定的通道"sv);
         set_compare_value(compare_value);
 
         ::LL_TIM_OC_SetPolarity(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(polarity));
@@ -238,6 +244,16 @@ namespace SoC
         if(has_compl_channel()) { ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(compl_channel)); }
     }
 
+    bool ::SoC::tim_channel::is_enabled() const noexcept
+    {
+        return ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::std::to_underlying(channel));
+    }
+
+    bool ::SoC::tim_channel::is_compl_enabled() const noexcept
+    {
+        return has_compl_channel() && ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::std::to_underlying(compl_channel));
+    }
+
     void ::SoC::tim_channel::check_mode_oc() const noexcept
     {
         ::SoC::assert(channel_mode == ::SoC::tim_channel::tim_channel_mode::oc, "此通道应处于输出比较模式"sv);
@@ -245,6 +261,7 @@ namespace SoC
 
     void ::SoC::tim_channel::configure_compl_channel(::SoC::tim_oc_polarity polarity) noexcept
     {
+        ::SoC::assert(!has_compl_channel(), "初始化互补通道前此对象不应该有关联的互补通道"sv);
         check_mode_oc();
         ::SoC::assert(channel != ::SoC::tim_channel::ch4, "定时器的通道4不具有互补通道"sv);
         compl_channel = static_cast<::SoC::detail::tim_channel>(::std::to_underlying(channel) << 2);
