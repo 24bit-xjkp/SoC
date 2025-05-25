@@ -20,39 +20,39 @@ namespace SoC
         {
             case usart1:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
-                callback = dtor_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART1};
+                callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART1};
                 clk = ::SoC::rcc::apb2_freq;
-                irqn = USART1_IRQn;
+                irqn = ::USART1_IRQn;
                 break;
             case usart2:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
-                callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART2};
+                callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART2};
                 clk = ::SoC::rcc::apb1_freq;
-                irqn = USART2_IRQn;
+                irqn = ::USART2_IRQn;
                 break;
             case usart3:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART3);
-                callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART3};
+                callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_USART3};
                 clk = ::SoC::rcc::apb1_freq;
-                irqn = USART3_IRQn;
+                irqn = ::USART3_IRQn;
                 break;
             case uart4:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART4);
-                callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART4};
+                callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART4};
                 clk = ::SoC::rcc::apb1_freq;
-                irqn = UART4_IRQn;
+                irqn = ::UART4_IRQn;
                 break;
             case uart5:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART5);
-                callback = dtor_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART5};
+                callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_UART5};
                 clk = ::SoC::rcc::apb1_freq;
-                irqn = UART5_IRQn;
+                irqn = ::UART5_IRQn;
                 break;
             case usart6:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART6);
-                callback = dtor_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART6};
+                callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_USART6};
                 clk = ::SoC::rcc::apb2_freq;
-                irqn = USART6_IRQn;
+                irqn = ::USART6_IRQn;
                 break;
         }
 
@@ -96,7 +96,10 @@ namespace SoC
     void ::SoC::usart::write(::std::uint8_t byte) const noexcept
     {
         if(data_width == ::SoC::usart_data_width::bit8) [[likely]] { ::LL_USART_TransmitData8(usart_ptr, byte); }
-        else { ::LL_USART_TransmitData9(usart_ptr, byte); }
+        else
+        {
+            ::LL_USART_TransmitData9(usart_ptr, byte);
+        }
         wait_until_write_complete();
     }
 
@@ -153,7 +156,10 @@ namespace SoC
     void ::SoC::usart::set_it_txe(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_TXE(usart_ptr); }
-        else { ::LL_USART_DisableIT_TXE(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_TXE(usart_ptr);
+        }
     }
 
     bool ::SoC::usart::get_it_txe() const noexcept { return ::LL_USART_IsEnabledIT_TXE(usart_ptr); }
@@ -163,7 +169,10 @@ namespace SoC
     void ::SoC::usart::set_it_rxne(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_RXNE(usart_ptr); }
-        else { ::LL_USART_DisableIT_RXNE(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_RXNE(usart_ptr);
+        }
     }
 
     bool ::SoC::usart::get_it_rxne() const noexcept { return ::LL_USART_IsEnabledIT_RXNE(usart_ptr); }
@@ -173,7 +182,10 @@ namespace SoC
     void ::SoC::usart::set_it_idle(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_IDLE(usart_ptr); }
-        else { ::LL_USART_DisableIT_IDLE(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_IDLE(usart_ptr);
+        }
     }
 
     bool ::SoC::usart::get_it_idle() const noexcept { return ::LL_USART_IsEnabledIT_IDLE(usart_ptr); }

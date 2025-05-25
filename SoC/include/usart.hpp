@@ -113,21 +113,12 @@ namespace SoC
     private:
         using usart_enum = ::SoC::detail::usart;
 
-        struct dtor_callback_t
-        {
-            using callback_t = void (*)(::std::uint32_t);
-            callback_t callback;
-            ::std::uint32_t param;
-
-            constexpr inline void operator() () const noexcept { callback(param); }
-        };
-
         ::USART_TypeDef* usart_ptr{};
         ::SoC::usart_mode mode{};
         ::SoC::usart_data_width data_width{};
         ::SoC::usart_parity parity{};
-        dtor_callback_t callback;
-        IRQn_Type irqn{};
+        ::SoC::detail::dtor_close_clock_callback_t callback;
+        ::IRQn_Type irqn{};
 
         void wait_until_write_complete() const noexcept;
 

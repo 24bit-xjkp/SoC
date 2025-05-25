@@ -397,3 +397,21 @@ namespace SoC::detail
     template <typename type>
     concept is_int_fp = ::std::integral<type> || ::std::floating_point<type>;
 }  // namespace SoC::detail
+
+namespace SoC::detail
+{
+    /**
+     * @brief 外设对象析构时关闭时钟使用的回调对象类型
+     *
+     */
+    struct dtor_close_clock_callback_t
+    {
+        using callback_t = void (*)(::std::uint32_t);
+        /// 回调函数
+        callback_t close_clock_callback;
+        /// 回调函数的参数，是时钟枚举
+        ::std::uint32_t clock_enum;
+
+        constexpr inline void operator() () const noexcept { close_clock_callback(clock_enum); }
+    };
+}  // namespace SoC::detail
