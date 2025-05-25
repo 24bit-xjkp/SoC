@@ -42,5 +42,27 @@ namespace SoC
 
         /// APB2总线频率
         constexpr inline auto apb2_freq{::SoC::rcc::sys_clock_freq / 2};
+
+        namespace detail
+        {
+            /**
+             * @brief 计算定时器频率
+             *
+             * @tparam bus_freq 总线时钟频率
+             * @return 总线上定时器的时钟频率
+             */
+            template <::std::size_t bus_freq>
+            inline consteval auto get_tim_freq() noexcept
+            {
+                // APB总线预分频系数>1则定时器时钟频率翻倍
+                return ::SoC::rcc::sys_clock_freq / bus_freq > 1 ? bus_freq * 2 : bus_freq;
+            }
+        }  // namespace detail
+
+        /// APB1总线定时器时钟频率
+        constexpr inline auto apb1_tim_freq{::SoC::rcc::detail::get_tim_freq<::SoC::rcc::apb1_freq>()};
+
+        /// APB2总线定时器时钟频率
+        constexpr inline auto apb2_tim_freq{::SoC::rcc::detail::get_tim_freq<::SoC::rcc::apb2_freq>()};
     }  // namespace rcc
 }  // namespace SoC
