@@ -33,10 +33,11 @@ int main()
                                  ::SoC::tim_channel::ch1,
                                  ::SoC::tim_oc_mode::pwm1,
                                  static_cast<::std::size_t>(arr * table[i++])};
+    tim14_ch1.enable_oc_preload();
     tim14.enable();
 
     ::SoC::text_ofile file{usart1, {}};
-    for(auto cnt{0.f};; cnt += 0.5f, i = ++i % size)
+    for(auto cnt{0zu};; ++cnt, i = ++i % size)
     {
         ::SoC::wait_for(0.5_s);
         gpio_f10.toggle();

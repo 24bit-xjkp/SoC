@@ -141,17 +141,17 @@ namespace SoC
          *
          * @param tim tim外设枚举
          * @param prescaler 预分频数-1
-         * @param auto_reload 自动重填值
+         * @param auto_reload 自动重装值
          * @param mode tim计数模式
          * @param clock_div 时钟分割，默认不分割
          * @param rep_cnt 重复次数-1，默认为重复1次就产生事件
          */
-        tim(tim_enum tim,
-            ::std::uint16_t prescaler,
-            ::std::size_t auto_reload,
-            ::SoC::tim_mode mode = ::SoC::tim_mode::up,
-            ::SoC::tim_clock_div clock_div = ::SoC::tim_clock_div::div1,
-            ::std::uint16_t rep_cnt = 0) noexcept;
+        explicit tim(tim_enum tim,
+                     ::std::uint16_t prescaler,
+                     ::std::size_t auto_reload,
+                     ::SoC::tim_mode mode = ::SoC::tim_mode::up,
+                     ::SoC::tim_clock_div clock_div = ::SoC::tim_clock_div::div1,
+                     ::std::uint16_t rep_cnt = 0) noexcept;
 
         tim(const tim&) noexcept = delete;
         tim& operator= (const tim&) noexcept = delete;
@@ -177,6 +177,26 @@ namespace SoC
          *
          */
         void disable() const noexcept;
+
+        /**
+         * @brief 使能arr预装载功能
+         *
+         */
+        void enable_preload() const noexcept;
+
+        /**
+         * @brief 失能arr预装载功能
+         *
+         */
+        void disable_preload() const noexcept;
+
+        /**
+         * @brief 设置自动重装值
+         *
+         * @param auto_reload 自动重装值
+         * @param force_update 是否强制立即更新，为true通过产生update事件实现立即更新
+         */
+        void set_auto_reload(::std::size_t auto_reload, bool force_update = false) const noexcept;
     };
 
     /**
@@ -186,10 +206,31 @@ namespace SoC
     struct tim_channel
     {
     private:
+        /**
+         * @brief tim外设通道工作模式
+         *
+         */
+        enum class tim_channel_mode : ::std::size_t
+        {
+            /// 输出比较模式
+            oc,
+            /// 输入捕获模式
+            ic,
+            /// 编码模式
+            encode
+        };
+
         using tim_channel_enum = ::SoC::detail::tim_channel;
         ::TIM_TypeDef* tim_ptr;
         tim_channel_enum channel;
         tim_channel_enum compl_channel{};
+        tim_channel_mode channel_mode;
+
+        /**
+         * @brief 检查当前通道的模式是否是输出比较模式
+         *
+         */
+        void check_mode_oc() const noexcept;
 
     public:
         using enum tim_channel_enum;
@@ -204,17 +245,17 @@ namespace SoC
          * @param init_state 初始状态，true表示使能，false表示失能
          * @param polarity 输出极性
          */
-        tim_channel(::SoC::tim::tim_view tim,
-                    tim_channel_enum channel,
-                    ::SoC::tim_oc_mode mode,
-                    ::std::uint32_t compare_value,
-                    bool init_state = true,
-                    ::SoC::tim_oc_polarity polarity = ::SoC::tim_oc_polarity::high) noexcept;
+        explicit tim_channel(::SoC::tim::tim_view tim,
+                             tim_channel_enum channel,
+                             ::SoC::tim_oc_mode mode,
+                             ::std::uint32_t compare_value,
+                             bool init_state = true,
+                             ::SoC::tim_oc_polarity polarity = ::SoC::tim_oc_polarity::high) noexcept;
 
         tim_channel(const tim_channel&) noexcept = delete;
         tim_channel& operator= (const tim_channel&) noexcept = delete;
         tim_channel(tim_channel&& other) noexcept;
-        tim_channel& operator= (tim_channel&& other) noexcept;
+        tim_channel& operator= (tim_channel&& other) noexcept = delete;
         ~tim_channel() noexcept;
 
         /**
@@ -237,10 +278,23 @@ namespace SoC
         void configure_comp_channel(::SoC::tim_oc_polarity polarity = ::SoC::tim_oc_polarity::low) noexcept;
 
         /**
+         * @brief 使能输出比较模式下ccr预装载
+         *
+         */
+        void enable_oc_preload() const noexcept;
+
+        /**
+         * @brief 失能输出比较模式下ccr预装载
+         *
+         */
+        void disable_oc_preload() const noexcept;
+
+        /**
          * @brief 设置比较值
          *
          * @param compare_value 比较值
+         * @param force_update 是否强制立即更新，为true通过产生update事件实现立即更新
          */
-        void set_compare_value(::std::uint32_t compare_value) const noexcept;
+        void set_compare_value(::std::uint32_t compare_value, bool force_update = false) const noexcept;
     };
 }  // namespace SoC
