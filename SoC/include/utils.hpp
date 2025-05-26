@@ -321,7 +321,9 @@ namespace SoC
                 return false;
             }
         }
-    } inline constinit log_device{};
+    }
+    /// 日志设备，用于输出断言信息等
+    inline constinit log_device{};
 }  // namespace SoC
 
 namespace SoC

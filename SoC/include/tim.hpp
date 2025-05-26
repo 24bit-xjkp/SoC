@@ -147,7 +147,7 @@ namespace SoC
         tim(const tim&) noexcept = delete;
         tim& operator= (const tim&) noexcept = delete;
         tim(tim&& other) noexcept;
-        tim& operator= (tim&& other) noexcept;
+        tim& operator= (tim&& other) noexcept = delete;
         ~tim() noexcept;
 
         /**

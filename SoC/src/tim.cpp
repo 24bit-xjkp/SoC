@@ -46,7 +46,7 @@ namespace SoC
         return ::std::to_underlying(lhs) <=> ::std::to_underlying(rhs);
     }
 
-    ::SoC::tim::tim(::SoC::tim::tim_enum tim,
+    ::SoC::tim::tim(tim_enum tim,
                     ::std::uint16_t prescaler,
                     ::std::size_t auto_reload,
                     ::SoC::tim_mode mode,
@@ -62,77 +62,77 @@ namespace SoC
 
         switch(tim)
         {
-            case ::SoC::tim::tim1:
+            case tim1:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM1);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM1};
                 break;
-            case ::SoC::tim::tim2:
+            case tim2:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM2};
                 check_rep_u8();
                 break;
-            case ::SoC::tim::tim3:
+            case tim3:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM3);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM3};
                 check_rep_u8();
                 break;
-            case ::SoC::tim::tim4:
+            case tim4:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM4};
                 check_rep_u8();
                 break;
-            case ::SoC::tim::tim5:
+            case tim5:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM5);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM5};
                 check_rep_u8();
                 break;
-            case ::SoC::tim::tim6:
+            case tim6:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM6};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim7:
+            case tim7:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM7);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM7};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim8:
+            case tim8:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM8);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM8};
                 break;
-            case ::SoC::tim::tim9:
+            case tim9:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM9);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM9};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim10:
+            case tim10:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM10);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM10};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim11:
+            case tim11:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM11);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM11};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim12:
+            case tim12:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM12);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM12};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim13:
+            case tim13:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM13);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM13};
                 check_rep_u8();
                 check_upcnt_only();
                 break;
-            case ::SoC::tim::tim14:
+            case tim14:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM14);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM14};
                 check_rep_u8();
@@ -150,18 +150,6 @@ namespace SoC
     {
         ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(*this));
         other.tim_ptr = nullptr;
-    }
-
-    ::SoC::tim& ::SoC::tim::operator= (::SoC::tim&& other) noexcept
-    {
-        if(tim_ptr != nullptr) [[likely]]
-        {
-            disable();
-            callback();
-        }
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(*this));
-        other.tim_ptr = nullptr;
-        return *this;
     }
 
     ::SoC::tim::~tim() noexcept
@@ -204,12 +192,12 @@ namespace SoC
 namespace SoC
 {
     ::SoC::tim_channel::tim_channel(::SoC::tim& tim,
-                                    ::SoC::tim_channel::tim_channel_enum channel,
+                                    tim_channel_enum channel,
                                     ::SoC::tim_oc_mode mode,
                                     ::std::uint32_t compare_value,
                                     bool init_state,
                                     ::SoC::tim_oc_polarity polarity) noexcept :
-        tim_ptr{tim.tim_ptr}, channel{channel}, channel_mode{::SoC::tim_channel::tim_channel_mode::oc}
+        tim_ptr{tim.tim_ptr}, channel{channel}, channel_mode{tim_channel_mode::oc}
     {
         ::SoC::assert(!is_enabled(), "初始化前此通道不应处于使能状态"sv);
         ::LL_TIM_OC_SetMode(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(mode));
@@ -295,10 +283,10 @@ namespace SoC
         check_tim_u16(tim_ptr, compare_value);
         switch(channel)
         {
-            case ::SoC::tim_channel::ch1: ::LL_TIM_OC_SetCompareCH1(tim_ptr, compare_value); break;
-            case ::SoC::tim_channel::ch2: ::LL_TIM_OC_SetCompareCH2(tim_ptr, compare_value); break;
-            case ::SoC::tim_channel::ch3: ::LL_TIM_OC_SetCompareCH3(tim_ptr, compare_value); break;
-            case ::SoC::tim_channel::ch4: ::LL_TIM_OC_SetCompareCH4(tim_ptr, compare_value); break;
+            case ch1: ::LL_TIM_OC_SetCompareCH1(tim_ptr, compare_value); break;
+            case ch2: ::LL_TIM_OC_SetCompareCH2(tim_ptr, compare_value); break;
+            case ch3: ::LL_TIM_OC_SetCompareCH3(tim_ptr, compare_value); break;
+            case ch4: ::LL_TIM_OC_SetCompareCH4(tim_ptr, compare_value); break;
         }
         if(force_update) { ::LL_TIM_GenerateEvent_UPDATE(tim_ptr); }
     }
