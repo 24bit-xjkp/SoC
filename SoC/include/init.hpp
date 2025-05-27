@@ -38,10 +38,10 @@ namespace SoC
         constexpr inline auto ahb_freq{::SoC::rcc::sys_clock_freq};
 
         /// APB1总线频率
-        constexpr inline auto apb1_freq{::SoC::rcc::sys_clock_freq / 4};
+        constexpr inline auto apb1_freq{::SoC::rcc::ahb_freq / 4};
 
         /// APB2总线频率
-        constexpr inline auto apb2_freq{::SoC::rcc::sys_clock_freq / 2};
+        constexpr inline auto apb2_freq{::SoC::rcc::ahb_freq / 2};
 
         namespace detail
         {
@@ -55,7 +55,7 @@ namespace SoC
             inline consteval auto get_tim_freq() noexcept
             {
                 // APB总线预分频系数>1则定时器时钟频率翻倍
-                return ::SoC::rcc::sys_clock_freq / bus_freq > 1 ? bus_freq * 2 : bus_freq;
+                return ::SoC::rcc::ahb_freq / bus_freq > 1 ? bus_freq * 2 : bus_freq;
             }
         }  // namespace detail
 
