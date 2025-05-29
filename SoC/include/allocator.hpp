@@ -125,7 +125,7 @@ namespace SoC
          * @return 分配内存区域首指针
          */
         template <typename type>
-        inline consteval auto allocate() const noexcept
+        consteval inline auto allocate() const noexcept
         {
             return ::SoC::detail::constexpr_allocator<type>.allocate(1);
         }
@@ -138,16 +138,13 @@ namespace SoC
          * @return 分配内存区域首指针
          */
         template <typename type>
-        inline consteval auto allocate(::std::size_t n) const noexcept
+        consteval inline auto allocate(::std::size_t n) const noexcept
         {
             if constexpr(::SoC::std_allocation_result_available)
             {
                 return ::SoC::detail::constexpr_allocator<type>.allocate_at_least(n);
             }
-            else
-            {
-                return ::SoC::allocation_result<type>{::SoC::detail::constexpr_allocator<type>.allocate(n), n};
-            }
+            else { return ::SoC::allocation_result<type>{::SoC::detail::constexpr_allocator<type>.allocate(n), n}; }
         }
 
         /**
@@ -158,7 +155,7 @@ namespace SoC
          * @param n 分配对象个数
          */
         template <typename type>
-        inline consteval void deallocate(type* ptr, ::std::size_t n = 1) const noexcept
+        consteval inline void deallocate(type* ptr, ::std::size_t n = 1) const noexcept
         {
             ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n);
         }

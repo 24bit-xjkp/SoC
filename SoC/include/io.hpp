@@ -30,10 +30,7 @@ namespace SoC
     constexpr inline void write_to_device(::SoC::is_output_device<type> auto& device, const type* begin, const type* end) noexcept
     {
         if constexpr(requires { device.write(begin, end); }) { device.write(begin, end); }
-        else
-        {
-            write(device, begin, end);
-        }
+        else { write(device, begin, end); }
     }
 
     /**
@@ -56,7 +53,7 @@ namespace SoC
          * @return 最大缓冲区大小
          */
         template <::SoC::detail::is_int_fp num_t>
-        inline consteval auto get_max_text_buffer_size() noexcept
+        consteval inline auto get_max_text_buffer_size() noexcept
         {
             using limit_t = ::std::numeric_limits<num_t>;
             constexpr auto digits{::std::floating_point<num_t> ? limit_t::max_digits10 : limit_t::digits10};
@@ -70,10 +67,7 @@ namespace SoC
                 // 符号和小数点占2字符
                 return digits + 2;
             }
-            else
-            {
-                return digits;
-            }
+            else { return digits; }
         }
     }  // namespace detail
 
@@ -472,10 +466,7 @@ namespace SoC
             auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
             buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
             if(output_size >= buffer_size_left) { file.flush(); }
-            else [[likely]]
-            {
-                return;
-            }
+            else [[likely]] { return; }
             auto output_size_left{output_size - buffer_size_left};
             buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
         }
@@ -512,10 +503,7 @@ namespace SoC
             {
                 do_print_arg(output, ::std::forward<arg_t>(arg));
             }
-            else
-            {
-                do_print_arg(output, ::std::forward<arg_t>(arg), buffer);
-            }
+            else { do_print_arg(output, ::std::forward<arg_t>(arg), buffer); }
         }
 
         /// io缓冲区的对齐值
@@ -550,10 +538,7 @@ namespace SoC
                 ::std::array<char, buffer_size> buffer;
                 (::SoC::detail::do_print_arg_wrapper(output, ::std::forward<args_t>(args), buffer), ...);
             }
-            else
-            {
-                (do_print_arg(output, ::std::forward<args_t>(args)), ...);
-            }
+            else { (do_print_arg(output, ::std::forward<args_t>(args)), ...); }
         }
     }  // namespace detail
 
@@ -610,7 +595,7 @@ namespace SoC
          * @return 字符串视图
          */
         template <::SoC::end_line_sequence endl>
-        consteval ::std::string_view get_endl() noexcept
+        consteval inline ::std::string_view get_endl() noexcept
         {
             using namespace ::std::string_view_literals;
             switch(endl)

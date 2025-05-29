@@ -52,7 +52,7 @@ namespace SoC
              * @return 总线上定时器的时钟频率
              */
             template <::std::size_t bus_freq>
-            inline consteval auto get_tim_freq() noexcept
+            consteval inline auto get_tim_freq() noexcept
             {
                 // APB总线预分频系数>1则定时器时钟频率翻倍
                 return ::SoC::rcc::ahb_freq / bus_freq > 1 ? bus_freq * 2 : bus_freq;
