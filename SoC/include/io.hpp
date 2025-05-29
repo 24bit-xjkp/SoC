@@ -45,6 +45,17 @@ namespace SoC
         ::SoC::write_to_device(device, string.begin(), string.end());
     }
 
+    /**
+     * @brief 将C风格字符串输出到device
+     *
+     * @param device 输出设备
+     * @param string 要输出的C风格字符串
+     */
+    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device, const char* string) noexcept
+    {
+        ::SoC::do_print_arg(device, ::std::string_view{string});
+    }
+
     namespace detail
     {
         /**
@@ -442,6 +453,17 @@ namespace SoC
             auto output_size_left{string.size() - buffer_size_left};
             buffer.write(string.data() + buffer_size_left, output_size_left);
         }
+    }
+
+    /**
+     * @brief 将C风格字符串输出到file
+     *
+     * @param file 输出文件
+     * @param string C风格字符串
+     */
+    constexpr inline void do_print_arg(::SoC::is_output_file auto& file, const char* string) noexcept
+    {
+        ::SoC::do_print_arg(file, ::std::string_view{string});
     }
 
     /**
