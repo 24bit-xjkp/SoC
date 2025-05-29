@@ -28,6 +28,8 @@
 #include <compare>
 #include <array>
 #include <functional>
+#include <vector>
+#include <optional>
 #include <stm32_assert.h>
 
 namespace SoC

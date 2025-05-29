@@ -1,5 +1,6 @@
 #pragma once
 #include "allocator.hpp"
+#include "fmt.hpp"
 
 namespace SoC
 {
@@ -641,5 +642,159 @@ namespace SoC
     constexpr inline void println(file_t& file, args_t&&... args) noexcept
     {
         ::SoC::print<flush>(file, ::std::forward<args_t>(args)..., ::SoC::detail::get_endl<endl>());
+    }
+}  // namespace SoC
+
+/**
+ * @brief 格式串支持
+ *
+ */
+namespace SoC
+{
+    namespace detail
+    {
+
+        template <typename... type>
+        struct get_fmt_arg_t
+        {
+            ::std::tuple<type...> tuple;
+
+            template <::std::size_t index, typename... args_t>
+                requires (index < sizeof...(type))
+            [[using gnu: always_inline, artificial]] constexpr inline ::std::string_view get_fmt_arg(args_t&&...) const noexcept
+            {
+                auto&& array{::std::get<index>(tuple)};
+                return {array.begin(), array.end()};
+            }
+
+            template <::std::size_t index, typename... args_t>
+                requires (index >= sizeof...(type))
+            [[using gnu: always_inline, artificial]] constexpr inline auto&& get_fmt_arg(args_t&&... args) const noexcept
+            {
+                constexpr auto actual_index{index - sizeof...(type)};
+                return ::std::forward<args_t...[actual_index]>(args...[actual_index]);
+            }
+        };
+
+        /**
+         * @brief 打印函数包装体，将参数列表打印
+         *
+         * @tparam output_t 可进行输出操作的类型
+         * @tparam args_t 参数类型列表
+         * @param output 可进行输出操作的对象
+         * @param args 参数列表
+         */
+        template <::SoC::fmt_string fmt, typename output_t, ::std::size_t... indexes, typename... args_t>
+        constexpr inline void print_wrapper(output_t& output, ::std::index_sequence<indexes...>, args_t&&... args) noexcept
+        {
+            using parser = ::SoC::fmt_parser<fmt>;
+            constexpr auto placehold_num{parser::get_placehold_num()};
+            static_assert(placehold_num == sizeof...(args), "占位符个数和参数个数不同");
+            constexpr auto no_placehold_num{parser::get_no_placehold_num()};
+            if constexpr(no_placehold_num == 0)
+            {
+                // 不含需要交错输出的字符串
+                ::SoC::detail::print_wrapper(output, ::std::forward<args_t>(args)...);
+            }
+            else
+            {
+                constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser::get_split_string_tuple()};
+                constexpr auto tuple_index_array{parser::get_tuple_index_array()};
+                ::SoC::detail::print_wrapper(
+                    output,
+                    split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(::std::forward<args_t>(args)...)...);
+            }
+        }
+
+        template <::SoC::fmt_string fmt, ::SoC::end_line_sequence endl>
+        constexpr inline auto get_fmt_string_with_endl() noexcept
+        {
+            constexpr auto endl_string{::SoC::detail::get_endl<endl>()};
+            // fmt_string要求输入是空结尾的字符串，因此填充1位
+            char buffer[fmt.size() + endl_string.size() + 1]{};
+            ::std::ranges::copy(fmt, buffer);
+            ::std::ranges::copy(endl_string, buffer + fmt.size());
+            return ::SoC::fmt_string{buffer};
+        }
+    }  // namespace detail
+
+    /**
+     * @brief 将参数列表输出到设备
+     *
+     * @tparam fmt 格式串
+     * @tparam device_t 输出设备类型
+     * @tparam args_t 参数类型列表
+     * @param device 输出设备
+     * @param args 参数列表
+     */
+    template <::SoC::fmt_string fmt, ::SoC::is_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void print(device_t& device, args_t&&... args) noexcept
+    {
+        using parser = ::SoC::fmt_parser<fmt>;
+        ::SoC::detail::print_wrapper<fmt>(device,
+                                          ::std::make_index_sequence<parser::get_total_num()>{},
+                                          ::std::forward<args_t>(args)...);
+    }
+
+    /**
+     * @brief 将参数列表输出到文件
+     *
+     * @tparam fmt 格式串
+     * @tparam flush 输出结束后是否刷新缓冲区
+     * @tparam file_t 输出文件类型
+     * @tparam args_t 参数类型列表
+     * @param file 输出文件
+     * @param args 参数列表
+     */
+    template <::SoC::fmt_string fmt,
+              bool flush = false,
+              ::SoC::is_output_file file_t,
+              ::SoC::is_printable_to_file<file_t>... args_t>
+    constexpr inline void print(file_t& file, args_t&&... args) noexcept
+    {
+        using parser = ::SoC::fmt_parser<fmt>;
+        ::SoC::detail::print_wrapper<fmt>(file,
+                                          ::std::make_index_sequence<parser::get_total_num()>{},
+                                          ::std::forward<args_t>(args)...);
+        if constexpr(flush) { file.flush(); }
+    }
+
+    /**
+     * @brief 将参数列表输出到设备，输出完成后换行
+     *
+     * @tparam fmt 格式串
+     * @tparam endl 行尾序列
+     * @tparam device_t 输出设备类型
+     * @tparam args_t 参数类型列表
+     * @param device 输出设备
+     * @param args 参数列表
+     */
+    template <::SoC::fmt_string fmt,
+              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::is_output_device<char> device_t,
+              ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void println(device_t& device, args_t&&... args) noexcept
+    {
+        ::SoC::print<::SoC::detail::get_fmt_string_with_endl<fmt, endl>()>(device, ::std::forward<args_t>(args)...);
+    }
+
+    /**
+     * @brief 将参数列表输出到文件，输出完成后换行
+     *
+     * @tparam flush 输出结束后是否刷新缓冲区
+     * @tparam endl 行尾序列
+     * @tparam file_t 输出文件类型
+     * @tparam args_t 参数类型列表
+     * @param file 输出文件
+     * @param args 参数列表
+     */
+    template <::SoC::fmt_string fmt,
+              bool flush = false,
+              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::is_output_file file_t,
+              ::SoC::is_printable_to_file<file_t>... args_t>
+    constexpr inline void println(file_t& file, args_t&&... args) noexcept
+    {
+        ::SoC::print<::SoC::detail::get_fmt_string_with_endl<fmt, endl>(), flush>(file, ::std::forward<args_t>(args)...);
     }
 }  // namespace SoC
