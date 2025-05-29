@@ -96,10 +96,7 @@ namespace SoC
     void ::SoC::usart::write(::std::uint8_t byte) const noexcept
     {
         if(data_width == ::SoC::usart_data_width::bit8) [[likely]] { ::LL_USART_TransmitData8(usart_ptr, byte); }
-        else
-        {
-            ::LL_USART_TransmitData9(usart_ptr, byte);
-        }
+        else { ::LL_USART_TransmitData9(usart_ptr, byte); }
         wait_until_write_complete();
     }
 
@@ -163,19 +160,24 @@ namespace SoC
         return ptr;
     }
 
-    void ::SoC::usart::enable_irq(::std::size_t priority) const noexcept
+    void ::SoC::usart::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept
     {
-        ::NVIC_EnableIRQ(irqn);
-        ::NVIC_SetPriority(irqn, priority);
+        ::SoC::set_priority(irqn, preempt_priority, sub_priority);
+        ::SoC::enable_irqn(irqn);
     }
+
+    void ::SoC::usart::enable_irq(::std::size_t encoded_priority) const noexcept
+    {
+        ::SoC::set_priority(irqn, encoded_priority);
+        ::SoC::enable_irqn(irqn);
+    }
+
+    void ::SoC::usart::disable_irq() const noexcept { ::SoC::disable_irqn(irqn); }
 
     void ::SoC::usart::set_it_txe(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_TXE(usart_ptr); }
-        else
-        {
-            ::LL_USART_DisableIT_TXE(usart_ptr);
-        }
+        else { ::LL_USART_DisableIT_TXE(usart_ptr); }
     }
 
     bool ::SoC::usart::get_it_txe() const noexcept { return ::LL_USART_IsEnabledIT_TXE(usart_ptr); }
@@ -185,10 +187,7 @@ namespace SoC
     void ::SoC::usart::set_it_rxne(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_RXNE(usart_ptr); }
-        else
-        {
-            ::LL_USART_DisableIT_RXNE(usart_ptr);
-        }
+        else { ::LL_USART_DisableIT_RXNE(usart_ptr); }
     }
 
     bool ::SoC::usart::get_it_rxne() const noexcept { return ::LL_USART_IsEnabledIT_RXNE(usart_ptr); }
@@ -198,10 +197,7 @@ namespace SoC
     void ::SoC::usart::set_it_idle(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_IDLE(usart_ptr); }
-        else
-        {
-            ::LL_USART_DisableIT_IDLE(usart_ptr);
-        }
+        else { ::LL_USART_DisableIT_IDLE(usart_ptr); }
     }
 
     bool ::SoC::usart::get_it_idle() const noexcept { return ::LL_USART_IsEnabledIT_IDLE(usart_ptr); }

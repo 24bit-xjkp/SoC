@@ -3,6 +3,8 @@
 #include "../include/usart.hpp"
 #include "../include/tim.hpp"
 #include "../include/io.hpp"
+#include "../include/fmt.hpp"
+#include "../include/nvic.hpp"
 
 int main()
 {
@@ -10,6 +12,7 @@ int main()
     using namespace ::std::string_view_literals;
 
     ::SoC::system_clock_init();
+    ::SoC::set_priority_group();
     ::SoC::gpio_port gpio_a{::SoC::gpio_port::pa};
     ::SoC::gpio_pin _{gpio_a, ::SoC::gpio_pin::p9 | ::SoC::gpio_pin::p10, ::SoC::gpio_mode::alternate, ::SoC::gpio_af::af7};
     ::SoC::usart usart1{::SoC::usart::usart1, 115.2_K};
@@ -29,9 +32,11 @@ int main()
     ::SoC::tim_channel tim1_ch1{tim1, ::SoC::tim_channel::ch1, ::SoC::tim_oc_mode::pwm1, static_cast<::std::uint32_t>(arr * 0.8)};
     tim1.enable();
 
+    auto cnt{0zu};
     while(true)
     {
         ::SoC::wait_for(1_s);
         green_led.toggle();
+        ::SoC::println<"{{当前计数器: {}}}">(usart1, cnt++);
     }
 }

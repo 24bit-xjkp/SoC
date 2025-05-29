@@ -1,4 +1,5 @@
 #pragma once
+#include "nvic.hpp"
 #include "utils.hpp"
 
 namespace SoC
@@ -172,6 +173,13 @@ namespace SoC
         inline ::SoC::usart_mode get_mode() const noexcept { return mode; }
 
         /**
+         * @brief 获取中断枚举
+         *
+         * @return 中断枚举
+         */
+        inline ::IRQn_Type get_irqn() const noexcept { return irqn; }
+
+        /**
          * @brief 向usart外设写入数据
          *
          * @param byte 要写入的1字节数据
@@ -244,9 +252,24 @@ namespace SoC
         /**
          * @brief 开启串口中断源
          *
+         * @param preempt_priority 抢占优先级
+         * @param sub_priority 响应优先级
+         */
+        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept;
+
+        /**
+         * @brief 开启串口中断源
+         *
+         * @param encoded_priority 编码后的中断优先级
+         */
+        void enable_irq(::std::size_t encoded_priority) const noexcept;
+
+        /**
+         * @brief 关闭串口中断源
+         *
          * @param priority
          */
-        void enable_irq(::std::size_t priority) const noexcept;
+        void disable_irq() const noexcept;
 
         /**
          * @brief 设置TXE中断状态
