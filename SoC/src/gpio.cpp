@@ -19,13 +19,13 @@ namespace SoC
     {
     }
 
-    ::std::size_t(::SoC::gpio_port::get_periphs)() const noexcept { return 1 << ::std::to_underlying(port); }
+    ::std::size_t(::SoC::gpio_port::get_periph)() const noexcept { return 1 << ::std::to_underlying(port); }
 
-    void ::SoC::gpio_port::enable() const noexcept { ::LL_AHB1_GRP1_EnableClock(get_periphs()); }
+    void ::SoC::gpio_port::enable() const noexcept { ::LL_AHB1_GRP1_EnableClock(get_periph()); }
 
-    void ::SoC::gpio_port::disable() const noexcept { ::LL_AHB1_GRP1_DisableClock(get_periphs()); }
+    void ::SoC::gpio_port::disable() const noexcept { ::LL_AHB1_GRP1_DisableClock(get_periph()); }
 
-    bool ::SoC::gpio_port::is_enabled() const noexcept { return ::LL_AHB1_GRP1_IsEnabledClock(get_periphs()); }
+    bool ::SoC::gpio_port::is_enabled() const noexcept { return ::LL_AHB1_GRP1_IsEnabledClock(get_periph()); }
 }  // namespace SoC
 
 namespace SoC
@@ -74,10 +74,7 @@ namespace SoC
             if(mode == ::SoC::gpio_mode::alternate)
             {
                 if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::std::to_underlying(af)); }
-                else
-                {
-                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(af));
-                }
+                else { ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(af)); }
             }
 
             ::LL_GPIO_SetPinMode(gpio, current_pin, ::std::to_underlying(mode));
@@ -135,9 +132,6 @@ namespace SoC
         ::SoC::assert(mode != ::SoC::gpio_mode::analog, "模拟模式下不支持读取数据寄存器"sv);
         pin_in = check_pin(pin_in);
         if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin_in)); }
-        else
-        {
-            return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in));
-        }
+        else { return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in)); }
     }
 }  // namespace SoC

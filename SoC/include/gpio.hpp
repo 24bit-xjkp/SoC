@@ -79,7 +79,7 @@ namespace SoC
          *
          * @return gpio外设号
          */
-        ::std::size_t get_periphs() const noexcept;
+        ::std::size_t get_periph() const noexcept;
 
     public:
         using enum port_enum;
