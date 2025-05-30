@@ -680,21 +680,21 @@ namespace SoC
         struct get_fmt_arg_t
         {
             ::std::tuple<type...> tuple;
+            constexpr inline static auto no_placehold_num{sizeof...(type)};
 
-            template <::std::size_t index, typename... args_t>
-                requires (index < sizeof...(type))
-            [[using gnu: always_inline, artificial]] constexpr inline ::std::string_view get_fmt_arg(args_t&&...) const noexcept
+            template <::std::size_t index, typename arg_t>
+                requires (index < no_placehold_num)
+            [[using gnu: always_inline, artificial]] constexpr inline ::std::string_view get_fmt_arg(arg_t&&) const noexcept
             {
                 auto&& array{::std::get<index>(tuple)};
                 return {array.begin(), array.end()};
             }
 
-            template <::std::size_t index, typename... args_t>
-                requires (index >= sizeof...(type))
-            [[using gnu: always_inline, artificial]] constexpr inline auto&& get_fmt_arg(args_t&&... args) const noexcept
+            template <::std::size_t index, typename arg_t>
+                requires (index >= no_placehold_num)
+            [[using gnu: always_inline, artificial]] constexpr inline auto&& get_fmt_arg(arg_t&& arg) const noexcept
             {
-                constexpr auto actual_index{index - sizeof...(type)};
-                return ::std::forward<args_t...[actual_index]>(args...[actual_index]);
+                return ::std::forward<arg_t>(arg);
             }
         };
 
@@ -724,7 +724,9 @@ namespace SoC
                 constexpr auto tuple_index_array{parser::get_tuple_index_array()};
                 ::SoC::detail::print_wrapper(
                     output,
-                    split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(::std::forward<args_t>(args)...)...);
+                    split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(
+                        ::std::forward<args_t...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]>(
+                            args...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]))...);
             }
         }
 
