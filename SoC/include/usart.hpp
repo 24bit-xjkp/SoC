@@ -192,7 +192,7 @@ namespace SoC
          * @param buffer 数据缓冲区首指针
          * @param end 数据缓冲区尾哨位
          */
-        void write(const void* buffer, const void* end) const noexcept;
+        [[gnu::noinline]] void write(const void* buffer, const void* end) const noexcept;
 
         /**
          * @brief 向usart外设写入数据
@@ -201,7 +201,7 @@ namespace SoC
          * @param buffer 数据缓冲区首指针
          * @param end 数据缓冲区尾哨位
          */
-        void write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept;
+        [[gnu::noinline]] void write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept;
 
         /**
          * @brief 通过usart写入数据
@@ -238,7 +238,7 @@ namespace SoC
          * @param end 缓冲区尾哨位
          * @return 缓冲区当前游标
          */
-        void* read(void* begin, void* end) const noexcept;
+        [[gnu::noinline]] void* read(void* begin, void* end) const noexcept;
 
         /**
          * @brief 从串口中读取数据并填充[begin, end)范围内的缓冲区
@@ -247,7 +247,7 @@ namespace SoC
          * @param end 缓冲区尾哨位
          * @return 缓冲区当前游标
          */
-        ::std::uint16_t* read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept;
+        [[gnu::noinline]] ::std::uint16_t* read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept;
 
         /**
          * @brief 开启串口中断源

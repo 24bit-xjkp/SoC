@@ -100,10 +100,11 @@ namespace SoC
         wait_until_write_complete();
     }
 
-    void ::SoC::usart::write(const void* buffer, const void* end) const noexcept
+    [[gnu::noinline]] void ::SoC::usart::write(const void* buffer, const void* end) const noexcept
     {
         if(data_width == ::SoC::usart_data_width::bit8) [[likely]]
         {
+#pragma GCC unroll 2
             for(auto data: ::std::ranges::subrange{reinterpret_cast<const ::std::byte*>(buffer), end})
             {
                 wait_until_write_complete();
@@ -112,6 +113,7 @@ namespace SoC
         }
         else
         {
+#pragma GCC unroll 2
             for(auto data: ::std::ranges::subrange{reinterpret_cast<const ::std::byte*>(buffer), end})
             {
                 wait_until_write_complete();
@@ -120,10 +122,11 @@ namespace SoC
         }
     }
 
-    void ::SoC::usart::write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept
+    [[gnu::noinline]] void ::SoC::usart::write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept
     {
         ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && parity == ::SoC::usart_parity::none,
                       "只有数据宽度为8位且未启用校验时支持9位输出"sv);
+#pragma GCC unroll 2
         for(auto data: ::std::ranges::subrange{buffer, end})
         {
             wait_until_write_complete();
@@ -144,17 +147,19 @@ namespace SoC
         return ::LL_USART_ReceiveData9(usart_ptr);
     }
 
-    void* ::SoC::usart::read(void* begin, void* end) const noexcept
+    [[gnu::noinline]] void* ::SoC::usart::read(void* begin, void* end) const noexcept
     {
         auto ptr{reinterpret_cast<::std::uint8_t*>(begin)};
+#pragma GCC unroll 2
         while(ptr != end && !get_flag_idle()) { *ptr++ = read(); }
         clear_flag_idle();
         return ptr;
     }
 
-    ::std::uint16_t* ::SoC::usart::read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept
+    [[gnu::noinline]] ::std::uint16_t* ::SoC::usart::read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept
     {
         auto ptr{reinterpret_cast<::std::uint16_t*>(begin)};
+#pragma GCC unroll 2
         while(ptr != end && !get_flag_idle()) { *ptr++ = read9(); }
         clear_flag_idle();
         return ptr;
