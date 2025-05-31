@@ -174,6 +174,19 @@ namespace SoC
 
     namespace detail
     {
+        /**
+         * @brief 获取缓冲区对齐
+         *
+         * @param buffer_size 缓冲区大小4
+         * @return 缓冲区对齐
+         */
+        inline consteval ::std::size_t get_buffer_align(::std::size_t buffer_size) noexcept
+        {
+            if(buffer_size % 16 == 0) { return 16; }
+            else if(buffer_size % 8 == 0) { return 8; }
+            else { return 4; }
+        }
+
         template <::SoC::detail::is_io_target_type type,
                   ::std::size_t buffer_size,
                   ::SoC::detail::is_buffer_allocator allocator_type>
@@ -204,7 +217,7 @@ namespace SoC
             using allocator_t = void;
 
             /// 缓冲区数组，可退化为首指针
-            value_type begin[buffer_size];
+            alignas(::SoC::detail::get_buffer_align(buffer_size)) value_type begin[buffer_size];
 
             constexpr inline buffer_impl() noexcept {}
         };
@@ -214,11 +227,11 @@ namespace SoC
      * @brief 缓冲区类型
      *
      * @tparam type io目标类型
-     * @tparam buffer_size 缓冲区大小
+     * @tparam buffer_size 缓冲区大小，要求为4字节的整数倍
      * @tparam allocator_t 分配器类型，void为静态缓冲区，满足SoC::is_allocator概念的分配器类型为动态缓冲区
      */
     template <::SoC::detail::is_io_target_type type, ::std::size_t buffer_size, ::SoC::detail::is_buffer_allocator allocator_type>
-        requires (buffer_size != 0)
+        requires (buffer_size != 0 && buffer_size % 4 == 0)
     struct buffer : ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>
     {
         using ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>::begin;
