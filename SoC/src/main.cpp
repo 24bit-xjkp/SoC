@@ -33,6 +33,8 @@ int main()
     tim1.enable();
 
     auto cnt{0zu};
+
+#pragma GCC unroll 0
     while(true)
     {
         ::SoC::wait_for(1_s);

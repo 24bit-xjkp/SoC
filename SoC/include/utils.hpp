@@ -261,6 +261,7 @@ namespace SoC
     /**
      * @brief 基于C++的断言函数
      *
+     * @note 在未定义USE_FULL_ASSERT宏时为空
      * @param expression 断言表达式
      * @param message 要输出的消息
      * @param location 源代码位置
@@ -268,6 +269,17 @@ namespace SoC
     void assert(bool expression,
                 ::std::string_view message = ::SoC::detail::default_assert_message,
                 ::std::source_location location = ::std::source_location::current()) noexcept;
+
+    /**
+     * @brief 基于C++的断言函数，不受宏的影响
+     *
+     * @param expression 断言表达式
+     * @param message 要输出的消息
+     * @param location 源代码位置
+     */
+    void always_assert(bool expression,
+                       ::std::string_view message = ::SoC::detail::default_assert_message,
+                       ::std::source_location location = ::std::source_location::current()) noexcept;
 
     /**
      * @brief 日志设备类
@@ -316,10 +328,7 @@ namespace SoC
                 write_callback(device, buffer, end);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            else { return false; }
         }
     }
     /// 日志设备，用于输出断言信息等
