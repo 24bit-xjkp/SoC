@@ -1,0 +1,5 @@
+option("assert")
+    set_default(true)
+    set_description("Use assert in stm32 hal/ll and SoC.")
+    add_defines("USE_FULL_ASSERT")
+option_end()
