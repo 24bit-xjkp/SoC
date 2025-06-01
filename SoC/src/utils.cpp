@@ -2,7 +2,19 @@
 
 namespace SoC
 {
-    extern "C" void SysTick_Handler() noexcept { ::SoC::systick++; }
+    ::std::uint64_t(::SoC::systick_t::load)() const noexcept { return systick[index.load(::std::memory_order_acquire) & 1]; }
+
+    ::SoC::systick_t::operator ::std::uint64_t () const noexcept { return load(); }
+
+    ::std::uint64_t(::SoC::systick_t::operator++)() noexcept
+    {
+        auto new_index{(index.load(::std::memory_order_relaxed) + 1) & 1};
+        auto result{systick[new_index] += 2};
+        index.store(new_index, ::std::memory_order_release);
+        return result;
+    }
+
+    extern "C" void SysTick_Handler() noexcept { ++::SoC::systick; }
 }  // namespace SoC
 
 namespace SoC::detail
@@ -29,8 +41,6 @@ namespace SoC::detail
         if(tick == 0) [[unlikely]] { return; }
         auto start_value{SysTick->VAL};
         auto end_tick{::SoC::systick + tick};
-        // 清除溢出标记
-        volatile auto _{SysTick->CTRL};
 
 #pragma GCC unroll 0
         // 等待直到系统时刻到达预定值

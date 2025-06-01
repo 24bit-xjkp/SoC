@@ -206,8 +206,41 @@ namespace SoC
         ::SoC::detail::wait_for(cycles);
     }
 
-    // 系统时刻数
-    inline constinit ::std::uint64_t systick{};
+    /**
+     * @brief 系统时刻中断处理函数
+     *
+     */
+    extern "C" void SysTick_Handler() noexcept;
+
+    /// 系统时刻数
+    struct systick_t
+    {
+    private:
+        ::std::atomic_uint32_t index{};
+        ::std::uint64_t systick[2]{0, 1};
+        friend void SysTick_Handler() noexcept;
+
+        /**
+         * @brief 递增系统时刻
+         *
+         * @return 递增后的系统时刻
+         */
+        ::std::uint64_t operator++ () noexcept;
+
+    public:
+        /**
+         * @brief 读取系统时刻
+         *
+         * @return ::std::uint64_t 系统时刻
+         */
+        ::std::uint64_t load() const noexcept;
+
+        /**
+         * @brief 读取系统时刻
+         *
+         */
+        operator ::std::uint64_t () const noexcept;
+    } inline constinit systick{};
 }  // namespace SoC
 
 namespace SoC
@@ -328,7 +361,10 @@ namespace SoC
                 write_callback(device, buffer, end);
                 return true;
             }
-            else { return false; }
+            else
+            {
+                return false;
+            }
         }
     }
     /// 日志设备，用于输出断言信息等
