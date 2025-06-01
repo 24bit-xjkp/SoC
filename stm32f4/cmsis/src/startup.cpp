@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "../include/startup.hpp"
 
 int main();
 
@@ -7,7 +7,6 @@ namespace SoC
     extern "C"
     {
         using cursor = ::SoC::cursor_t<::std::size_t>;
-
         extern ::SoC::cursor _sdata;
         extern ::SoC::cursor _edata;
         extern ::SoC::cursor _sidata;
@@ -146,7 +145,6 @@ namespace SoC
     }
 
     using isr_t = void (*const)();
-
     [[using gnu: section(".isr_vector"), used]] isr_t isr_table[]{
         reinterpret_cast<isr_t>(_estack),
         Reset_Handler,

@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "../include/startup.hpp"
 
 namespace SoC
 {

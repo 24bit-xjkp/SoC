@@ -11,6 +11,7 @@
 #include <stm32f4xx_ll_adc.h>
 #include <stm32f4xx_ll_dma.h>
 #include <stm32_assert.h>
+#include "startup.hpp"
 
 #include <atomic>
 #include <version>

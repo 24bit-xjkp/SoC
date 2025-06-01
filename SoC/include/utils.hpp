@@ -211,12 +211,6 @@ namespace SoC
         ::SoC::detail::wait_for(cycles);
     }
 
-    /**
-     * @brief 系统时刻中断处理函数
-     *
-     */
-    extern "C" void SysTick_Handler() noexcept;
-
     /// 系统时刻数
     struct systick_t
     {
