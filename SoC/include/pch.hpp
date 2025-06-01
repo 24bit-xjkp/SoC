@@ -10,6 +10,9 @@
 #include <stm32f4xx_ll_rcc.h>
 #include <stm32f4xx_ll_adc.h>
 #include <stm32f4xx_ll_dma.h>
+#include <stm32_assert.h>
+
+#include <atomic>
 #include <version>
 #include <cstdint>
 #include <cstddef>
@@ -31,7 +34,6 @@
 #include <functional>
 #include <vector>
 #include <optional>
-#include <stm32_assert.h>
 
 namespace SoC
 {

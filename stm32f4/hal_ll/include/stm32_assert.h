@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef __cplusplus
+#include <cstdint>
 namespace SoC
 {
     /**
