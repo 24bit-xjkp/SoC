@@ -3,7 +3,7 @@
 namespace SoC
 {
     /**
-     * @brief 初始化系统时钟为168MHz
+     * @brief 初始化系统时钟为144MHz
      *
      */
     void system_clock_init() noexcept
@@ -20,14 +20,66 @@ namespace SoC
         // 以PLL为系统时钟
         ::LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL);
         ::SoC::wait_until([]() static noexcept { return ::LL_RCC_GetSysClkSource() == LL_RCC_SYS_CLKSOURCE_STATUS_PLL; });
-        // AHB时钟=168MHz
-        ::LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-        // APB1时钟=42MHz
-        ::LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_4);
-        // APB2时钟=84MHz
-        ::LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_2);
-        // ADC时钟=21MHz
-        ::LL_ADC_SetCommonClock(ADC, LL_ADC_CLOCK_SYNC_PCLK_DIV4);
+
+        ::LL_RCC_SetAHBPrescaler(
+            [] static consteval noexcept
+            {
+                switch(::SoC::rcc::sys_clock_freq / ::SoC::rcc::ahb_freq)
+                {
+                    case 1: return LL_RCC_SYSCLK_DIV_1;
+                    case 2: return LL_RCC_SYSCLK_DIV_2;
+                    case 4: return LL_RCC_SYSCLK_DIV_4;
+                    case 8: return LL_RCC_SYSCLK_DIV_8;
+                    case 16: return LL_RCC_SYSCLK_DIV_16;
+                    case 64: return LL_RCC_SYSCLK_DIV_64;
+                    case 128: return LL_RCC_SYSCLK_DIV_128;
+                    case 256: return LL_RCC_SYSCLK_DIV_256;
+                    case 512: return LL_RCC_SYSCLK_DIV_512;
+                    default: ::std::unreachable();
+                }
+            }());
+
+        ::LL_RCC_SetAPB1Prescaler(
+            [] static consteval noexcept
+            {
+                switch(::SoC::rcc::ahb_freq / ::SoC::rcc::apb1_freq)
+                {
+                    case 1: return LL_RCC_APB1_DIV_1;
+                    case 2: return LL_RCC_APB1_DIV_2;
+                    case 4: return LL_RCC_APB1_DIV_4;
+                    case 8: return LL_RCC_APB1_DIV_8;
+                    case 16: return LL_RCC_APB1_DIV_16;
+                    default: ::std::unreachable();
+                }
+            }());
+
+        ::LL_RCC_SetAPB2Prescaler(
+            [] static consteval noexcept
+            {
+                switch(::SoC::rcc::ahb_freq / ::SoC::rcc::apb2_freq)
+                {
+                    case 1: return LL_RCC_APB2_DIV_1;
+                    case 2: return LL_RCC_APB2_DIV_2;
+                    case 4: return LL_RCC_APB2_DIV_4;
+                    case 8: return LL_RCC_APB2_DIV_8;
+                    case 16: return LL_RCC_APB2_DIV_16;
+                    default: ::std::unreachable();
+                }
+            }());
+
+        ::LL_ADC_SetCommonClock(ADC,
+                                [] static consteval noexcept
+                                {
+                                    switch(::SoC::rcc::apb2_freq / ::SoC::rcc::adc_freq)
+                                    {
+                                        case 2: return LL_ADC_CLOCK_SYNC_PCLK_DIV2;
+                                        case 4: return LL_ADC_CLOCK_SYNC_PCLK_DIV4;
+                                        case 6: return LL_ADC_CLOCK_SYNC_PCLK_DIV6;
+                                        case 8: return LL_ADC_CLOCK_SYNC_PCLK_DIV8;
+                                        default: ::std::unreachable();
+                                    }
+                                }());
+
         constexpr auto systick_cnt{::SoC::rcc::sys_clock_freq / ::SoC::rcc::sys_tick_freq};
         // 设置SysTick
         ::SysTick_Config(systick_cnt);

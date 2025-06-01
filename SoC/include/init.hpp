@@ -64,5 +64,8 @@ namespace SoC
 
         /// APB2总线定时器时钟频率
         constexpr inline auto apb2_tim_freq{::SoC::rcc::detail::get_tim_freq<::SoC::rcc::apb2_freq>()};
+
+        /// ADC时钟频率
+        constexpr inline auto adc_freq{::SoC::rcc::apb2_freq / 2};
     }  // namespace rcc
 }  // namespace SoC

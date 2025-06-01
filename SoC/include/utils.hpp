@@ -81,10 +81,15 @@ namespace SoC
         }
     };
 
-    using cycles = ::SoC::duration<::std::ratio<1, 168>>;
+    /// 系统时钟周期，在此处修改时钟频率
+    using cycles = ::SoC::duration<::std::ratio<1, 144>>;
+    /// 微秒
     using milliseconds = ::SoC::duration<::std::ratio<1>>;
+    /// 毫秒
     using microseconds = ::SoC::duration<::std::kilo>;
+    /// 系统时刻周期，在此处修改系统时刻
     using systicks = ::SoC::duration<::std::hecto>;
+    /// 秒
     using seconds = ::SoC::duration<::std::mega>;
 }  // namespace SoC
 
