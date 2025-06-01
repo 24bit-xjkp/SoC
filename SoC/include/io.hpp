@@ -112,7 +112,10 @@ namespace SoC
     constexpr inline void write_to_device(::SoC::is_output_device<type> auto& device, const type* begin, const type* end) noexcept
     {
         if constexpr(requires { device.write(begin, end); }) { device.write(begin, end); }
-        else { write(device, begin, end); }
+        else
+        {
+            write(device, begin, end);
+        }
     }
 
 }  // namespace SoC
@@ -144,7 +147,10 @@ namespace SoC
         {
             if(buffer_size % 16 == 0) { return 16; }
             else if(buffer_size % 8 == 0) { return 8; }
-            else { return 4; }
+            else
+            {
+                return 4;
+            }
         }
 
         template <::SoC::detail::is_io_target_type type,
@@ -384,7 +390,10 @@ namespace SoC
                 // 符号和小数点占2字符
                 return digits + 2;
             }
-            else { return digits; }
+            else
+            {
+                return digits;
+            }
         }
     }  // namespace detail
 
@@ -486,10 +495,13 @@ namespace SoC
         /**
          * @brief 刷新缓冲区，将缓冲区内数据写入设备后清空缓冲区
          *
+         * @tparam block 是否阻塞直到刷新完成
          */
+        template <bool block = false>
         constexpr inline void flush() noexcept
         {
             ::SoC::write_to_device(device, obuffer.begin, obuffer.current);
+            if constexpr(block) { ::SoC::wait_until_device_ready(device); }
             obuffer.clear();
         }
     };
@@ -573,6 +585,18 @@ namespace SoC
     }
 
     /**
+     * @brief 轮询等待直到绑定到文件的设备就绪
+     *
+     * @tparam file_t 文件类型
+     * @param file 文件对象
+     */
+    template <::SoC::is_general_file file_t>
+    constexpr inline void wait_until_device_ready(file_t& file) noexcept
+    {
+        ::SoC::wait_until_device_ready(file.device);
+    }
+
+    /**
      * @brief 将字符串视图输出到file
      *
      * @param file 输出文件
@@ -588,7 +612,7 @@ namespace SoC
         else
         {
             buffer.write(string.data(), buffer_size_left);
-            file.flush();
+            file.template flush<true>();
             auto output_size_left{string.size() - buffer_size_left};
             buffer.write(string.data() + buffer_size_left, output_size_left);
         }
@@ -627,8 +651,11 @@ namespace SoC
             auto ptr{::std::to_chars(tmp_buffer.begin(), tmp_buffer.end(), num).ptr};
             auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
             buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
-            if(output_size >= buffer_size_left) { file.flush(); }
-            else [[likely]] { return; }
+            if(output_size >= buffer_size_left) { file.template flush<true>(); }
+            else [[likely]]
+            {
+                return;
+            }
             auto output_size_left{output_size - buffer_size_left};
             buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
         }
@@ -645,18 +672,6 @@ namespace SoC
     template <typename arg_t, typename file_t>
     concept is_printable_to_file = ::SoC::is_output_file<file_t> && (::SoC::is_no_max_text_buffer_size_printable<arg_t, file_t> ||
                                                                      ::SoC::is_has_max_text_buffer_size_printable<arg_t, file_t>);
-
-    /**
-     * @brief 轮询等待直到绑定到文件的设备就绪
-     *
-     * @tparam file_t 文件类型
-     * @param file 文件对象
-     */
-    template <::SoC::is_general_file file_t>
-    constexpr inline void wait_until_device_ready(file_t& file) noexcept
-    {
-        ::SoC::wait_until_device_ready(file.device);
-    }
 
     namespace detail
     {
@@ -677,7 +692,10 @@ namespace SoC
             {
                 do_print_arg(output, ::std::forward<arg_t>(arg));
             }
-            else { do_print_arg(output, ::std::forward<arg_t>(arg), buffer); }
+            else
+            {
+                do_print_arg(output, ::std::forward<arg_t>(arg), buffer);
+            }
         }
 
         /// io缓冲区的对齐值
@@ -713,7 +731,10 @@ namespace SoC
                 ::std::array<char, buffer_size> buffer;
                 (::SoC::detail::do_print_arg_wrapper(output, ::std::forward<args_t>(args), buffer), ...);
             }
-            else { (do_print_arg(output, ::std::forward<args_t>(args)), ...); }
+            else
+            {
+                (do_print_arg(output, ::std::forward<args_t>(args)), ...);
+            }
         }
     }  // namespace detail
 
