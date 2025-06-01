@@ -54,12 +54,12 @@ namespace SoC
         up = LL_TIM_COUNTERMODE_UP,
         /// 向下计数
         down = LL_TIM_COUNTERMODE_DOWN,
-        /// 中间对齐计数，仅向下计数时触发输出比较
+        /// 中间对齐计数，仅向下计数时触发输出比较中断
         center_down = LL_TIM_COUNTERMODE_CENTER_DOWN,
-        /// 中间对齐计数，仅向上计数时触发输出比较
+        /// 中间对齐计数，仅向上计数时触发输出比较中断
         center_up = LL_TIM_COUNTERMODE_CENTER_UP,
-        /// 中间对齐计数，上下计数均触发输出比较
-        center_up_down = LL_TIM_COUNTERMODE_CENTER_UP
+        /// 中间对齐计数，上下计数均触发输出比较中断
+        center_up_down = LL_TIM_COUNTERMODE_CENTER_UP_DOWN
     };
 
     /**
@@ -113,6 +113,30 @@ namespace SoC
     };
 
     /**
+     * @brief 定时器触发输出
+     *
+     */
+    enum class tim_trigger_output : ::std::size_t
+    {
+        /// 强制触发更新事件
+        reset = LL_TIM_TRGO_RESET,
+        /// 定时器使能事件
+        enable = LL_TIM_TRGO_ENABLE,
+        /// 定时器更新事件
+        update = LL_TIM_TRGO_UPDATE,
+        /// 通道1捕获/比较
+        cc1 = LL_TIM_TRGO_CC1IF,
+        /// 通道1输出比较事件，不受输出配置影响
+        oc1ref = LL_TIM_TRGO_OC1REF,
+        /// 通道2输出比较事件，不受输出配置影响
+        oc2ref = LL_TIM_TRGO_OC2REF,
+        /// 通道3输出比较事件，不受输出配置影响
+        oc3ref = LL_TIM_TRGO_OC3REF,
+        /// 通道4输出比较事件，不受输出配置影响
+        oc4ref = LL_TIM_TRGO_OC4REF
+    };
+
+    /**
      * @brief tim外设
      *
      */
@@ -156,6 +180,13 @@ namespace SoC
          * @return tim外设指针
          */
         constexpr inline ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
+
+        /**
+         * @brief 获取tim外设枚举
+         *
+         * @return tim外设枚举
+         */
+        constexpr inline tim_enum get_tim_enum() const noexcept { return ::std::bit_cast<tim_enum>(tim_ptr); }
 
         /**
          * @brief 使能tim外设，包括计数和高级定时器的输出
@@ -203,6 +234,13 @@ namespace SoC
          * @param force_update 是否强制立即更新，为true通过产生update事件实现立即更新
          */
         void set_auto_reload(::std::size_t auto_reload, bool force_update = false) const noexcept;
+
+        /**
+         * @brief 设置定时器触发输出
+         *
+         * @param trigger 定时器触发输出
+         */
+        void set_trigger_output(::SoC::tim_trigger_output trigger) const noexcept;
     };
 
     /**

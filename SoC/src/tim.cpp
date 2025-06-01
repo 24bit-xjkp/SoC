@@ -29,13 +29,13 @@ namespace SoC
     {
         switch(::std::bit_cast<::SoC::detail::tim>(tim_ptr))
         {
-            case ::SoC::tim::tim1: [[fallthrough]];
-            case ::SoC::tim::tim2: [[fallthrough]];
-            case ::SoC::tim::tim3: [[fallthrough]];
-            case ::SoC::tim::tim4: [[fallthrough]];
-            case ::SoC::tim::tim5: [[fallthrough]];
+            case ::SoC::tim::tim1:
+            case ::SoC::tim::tim2:
+            case ::SoC::tim::tim3:
+            case ::SoC::tim::tim4:
+            case ::SoC::tim::tim5:
             case ::SoC::tim::tim8: return ::SoC::tim_channel::ch4;
-            case ::SoC::tim::tim9: [[fallthrough]];
+            case ::SoC::tim::tim9:
             case ::SoC::tim::tim12: return ::SoC::tim_channel::ch2;
             default: return ::SoC::tim_channel::ch1;
         }
@@ -186,6 +186,30 @@ namespace SoC
         check_tim_u16(tim_ptr, auto_reload);
         ::LL_TIM_SetAutoReload(tim_ptr, auto_reload);
         if(force_update) { ::LL_TIM_GenerateEvent_UPDATE(tim_ptr); }
+    }
+
+    void ::SoC::tim::set_trigger_output(::SoC::tim_trigger_output trigger) const noexcept
+    {
+        auto check{[trigger](::SoC::tim_trigger_output threshold)
+                   { ::SoC::assert(trigger <= threshold, "此定时器不支持此触发输出"sv); }};
+        switch(get_tim_enum())
+        {
+            case tim1: break;
+            case tim8: break;
+            case tim2:
+            case tim3:
+            case tim4:
+            case tim5:
+            case tim9:
+            case tim12: check(::SoC::tim_trigger_output::oc2ref); break;
+            case tim10:
+            case tim11:
+            case tim13:
+            case tim14: check(::SoC::tim_trigger_output::oc1ref); break;
+            case tim6:
+            case tim7: check(::SoC::tim_trigger_output::update); break;
+        }
+        ::LL_TIM_SetTriggerOutput(tim_ptr, ::std::to_underlying(trigger));
     }
 }  // namespace SoC
 
