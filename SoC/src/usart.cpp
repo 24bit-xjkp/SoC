@@ -14,7 +14,7 @@ namespace SoC
                         ::SoC::usart_direction direction,
                         ::SoC::usart_hardware_flow_control control,
                         ::SoC::usart_oversampling oversampling) noexcept :
-        usart_ptr{reinterpret_cast<::USART_TypeDef*>(usart)}, mode{mode}, data_width{data_width}, parity{parity}
+        usart_ptr{::std::bit_cast<::USART_TypeDef*>(usart)}, mode{mode}, data_width{data_width}, parity{parity}
     {
         ::SoC::assert(!is_enabled(), "初始化前此串口不应处于使能状态"sv);
         ::std::uint32_t clk{};
@@ -216,4 +216,89 @@ namespace SoC
     void ::SoC::usart::disable() const noexcept { ::LL_USART_Disable(usart_ptr); }
 
     bool ::SoC::usart::is_enabled() const noexcept { return ::LL_USART_IsEnabled(usart_ptr); }
+
+    void ::SoC::usart::assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) const noexcept
+    {
+        ::SoC::assert(dma.get_dma_enum() == dma_enum, "该dma外设不能操作该串口"sv);
+    }
+
+    /// 选择的dma数据流无效时报错信息
+    constexpr auto selected_stream_error_msg{"该串口不能使用指定的dma数据流"sv};
+    /// 配置前dma已经处于使能状态时报错信息
+    constexpr auto dma_enabled_error_msg{"在配置前该串口的dma不应处于使能状态"sv};
+
+    ::SoC::dma_stream(::SoC::usart::enable_dma_write)(::SoC::dma& dma,
+                                                      ::SoC::dma_fifo_threshold fifo_threshold,
+                                                      ::SoC::dma_memory_burst default_bust,
+                                                      ::SoC::dma_memory_data_size default_data_size,
+                                                      ::SoC::dma_priority priority,
+                                                      ::SoC::dma_mode mode,
+                                                      ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
+    {
+        ::SoC::assert(!is_dma_write_enabled(), ::SoC::dma_enabled_error_msg);
+        using enum ::SoC::dma::dma_enum;
+        using enum ::SoC::dma_stream::dma_stream_enum;
+        using enum ::SoC::dma_channel;
+        ::SoC::dma::dma_enum dma_enum;
+        ::SoC::dma_stream::dma_stream_enum stream;
+        ::SoC::dma_channel channel;
+        switch(get_usart_enum())
+        {
+            case usart1:
+                dma_enum = dma2;
+                stream = st7;
+                channel = ch4;
+                break;
+            case usart2:
+                dma_enum = dma1;
+                stream = st6;
+                channel = ch4;
+                break;
+            case usart3:
+                dma_enum = dma1;
+                stream = st3;
+                channel = ch4;
+                break;
+            case uart4:
+                dma_enum = dma1;
+                stream = st4;
+                channel = ch4;
+                break;
+            case uart5:
+                dma_enum = dma1;
+                stream = st7;
+                channel = ch4;
+                break;
+            case usart6:
+                dma_enum = dma2;
+                if(selected_stream == no_selected_stream) [[likely]] { stream = st6; }
+                else
+                {
+                    ::SoC::assert(selected_stream == st6 || selected_stream == st7, ::SoC::selected_stream_error_msg);
+                    stream = selected_stream;
+                }
+                channel = ch5;
+                break;
+        }
+        assert_dma(dma, dma_enum);
+        ::LL_USART_EnableDMAReq_TX(usart_ptr);
+        return ::SoC::dma_stream{dma,
+                                 stream,
+                                 channel,
+                                 ::LL_USART_DMA_GetRegAddr(usart_ptr),
+                                 ::SoC::dma_direction::m2p,
+                                 mode,
+                                 false,
+                                 true,
+                                 ::SoC::dma_periph_data_size::byte,
+                                 default_data_size,
+                                 priority,
+                                 fifo_threshold,
+                                 default_bust,
+                                 ::SoC::dma_periph_burst::single};
+    }
+
+    void ::SoC::usart::disable_dma_write() const noexcept { ::LL_USART_DisableDMAReq_TX(usart_ptr); }
+
+    bool ::SoC::usart::is_dma_write_enabled() const noexcept { return ::LL_USART_IsEnabledDMAReq_TX(usart_ptr); }
 }  // namespace SoC

@@ -1,6 +1,6 @@
 #pragma once
 #include "nvic.hpp"
-#include "utils.hpp"
+#include "dma.hpp"
 
 namespace SoC
 {
@@ -111,9 +111,10 @@ namespace SoC
      */
     struct usart
     {
-    private:
         using usart_enum = ::SoC::detail::usart;
+        using enum usart_enum;
 
+    private:
         ::USART_TypeDef* usart_ptr{};
         ::SoC::usart_mode mode{};
         ::SoC::usart_data_width data_width{};
@@ -123,9 +124,18 @@ namespace SoC
 
         void wait_until_write_complete() const noexcept;
 
-    public:
-        using enum usart_enum;
+        /**
+         * @brief 断言dma外设为指定外设
+         *
+         * @param dma dma外设
+         * @param dma_enum 指定dma外设对应的枚举
+         */
+        void assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) const noexcept;
 
+        /// 没有选定的dma数据流，即使用模式配置
+        constexpr inline static auto no_selected_stream{static_cast<::SoC::dma_stream::dma_stream_enum>(-1zu)};
+
+    public:
         /**
          * @brief 初始化usart外设
          *
@@ -140,7 +150,7 @@ namespace SoC
          * @param control usart硬件流量控制
          * @param oversampling usart过采样
          */
-        explicit usart(::SoC::detail::usart usart,
+        explicit usart(usart_enum usart,
                        ::std::uint32_t baud_rate,
                        ::SoC::usart_mode mode = ::SoC::usart_mode::async,
                        ::SoC::usart_data_width data_width = ::SoC::usart_data_width::bit8,
@@ -161,14 +171,21 @@ namespace SoC
         /**
          * @brief 获取usart外设指针
          *
-         * @return ::USART_TypeDef* usart外设指针
+         * @return usart外设指针
          */
         inline ::USART_TypeDef* get_usart() const noexcept { return usart_ptr; }
 
         /**
+         * @brief 获取usart外设枚举
+         *
+         * @return usart外设枚举
+         */
+        inline usart_enum get_usart_enum() const noexcept { return ::std::bit_cast<usart_enum>(usart_ptr); }
+
+        /**
          * @brief 获取usart外设工作状态
          *
-         * @return ::SoC::usart_mode usart外设工作状态
+         * @return usart外设工作状态
          */
         inline ::SoC::usart_mode get_mode() const noexcept { return mode; }
 
@@ -358,5 +375,39 @@ namespace SoC
          * @return usart外设是否使能
          */
         bool is_enabled() const noexcept;
+
+        /**
+         * @brief 使能串口dma写入
+         *
+         * @param dma dma外设
+         * @param fifo_threshold fifo队列阈值
+         * @param default_bust 默认内存侧突发
+         * @param default_data_size 默认内存侧数据宽度
+         * @param priority dma传输优先级
+         * @param mode dma模式
+         * @param selected_stream 要使用的dma数据流，默认使用序号最小的数据流
+         * @return dma数据流对象
+         */
+        [[nodiscard("该函数返回具有raii的dma数据流对象，不应该弃用返回值")]] ::SoC::dma_stream
+            enable_dma_write(::SoC::dma& dma,
+                             ::SoC::dma_fifo_threshold fifo_threshold = ::SoC::dma_fifo_threshold::disable,
+                             ::SoC::dma_memory_burst default_bust = ::SoC::dma_memory_burst::single,
+                             ::SoC::dma_memory_data_size default_data_size = ::SoC::dma_memory_data_size::byte,
+                             ::SoC::dma_priority priority = ::SoC::dma_priority::low,
+                             ::SoC::dma_mode mode = ::SoC::dma_mode::normal,
+                             ::SoC::dma_stream::dma_stream_enum selected_stream = no_selected_stream) const noexcept;
+
+        /**
+         * @brief 失能串口dma写入
+         *
+         */
+        void disable_dma_write() const noexcept;
+
+        /**
+         * @brief 判断串口dma写入是否使能
+         *
+         * @return 串口dma写入是否使能
+         */
+        bool is_dma_write_enabled() const noexcept;
     };
 }  // namespace SoC

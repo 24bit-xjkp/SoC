@@ -32,13 +32,18 @@ int main()
     ::SoC::tim_channel tim1_ch1{tim1, ::SoC::tim_channel::ch1, ::SoC::tim_oc_mode::pwm1, static_cast<::std::uint32_t>(arr * 0.8)};
     tim1.enable();
 
-    auto cnt{0zu};
+    ::SoC::dma dma2{::SoC::dma::dma2};
+    auto usart1_dma_write{usart1.enable_dma_write(dma2, ::SoC::dma_fifo_threshold::full, ::SoC::dma_memory_burst::inc16)};
+    ::SoC::text_ofile file{usart1_dma_write, {}};
+    auto cnt{::std::bit_cast<::std::uint32_t>(::std::numbers::sqrt2_v<float>)};
 
 #pragma GCC unroll 0
     while(true)
     {
-        ::SoC::wait_for(1_s);
+        ::SoC::wait_for(0.5_s);
         green_led.toggle();
-        ::SoC::println<"{{当前计数器: {}}}">(usart1, cnt++);
+        auto temp{static_cast<::std::uint64_t>(cnt) * cnt};
+        cnt = (temp << 16) >> 32;
+        ::SoC::println<"{{当前计数器: {}}}", true>(file, cnt);
     }
 }
