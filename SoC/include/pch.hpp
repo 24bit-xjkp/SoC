@@ -9,6 +9,7 @@
 #include <stm32f4xx_ll_utils.h>
 #include <stm32f4xx_ll_rcc.h>
 #include <stm32f4xx_ll_adc.h>
+#include <stm32f4xx_ll_dma.h>
 #include <version>
 #include <cstdint>
 #include <cstddef>
