@@ -2,11 +2,15 @@
 #include "allocator.hpp"
 #include "fmt.hpp"
 
+/**
+ * @brief 基本概念和函数定义
+ *
+ */
 namespace SoC
 {
     /**
-     * @brief 判断device_t是否是type类型的输出设备,要求满足：
-     * - auto device::write(const type*, const type*) noexcept，或
+     * @brief 判断device_t是否是type类型的输出设备，要求满足：
+     * - auto device_t::write(const type*, const type*) noexcept，或
      * - auto write(device_t&, const type*, const type*) noexcept，考虑adl
      * @tparam device_t 设备类型
      * @tparam type 输出类型
@@ -18,6 +22,83 @@ namespace SoC
         } || requires(device_t& dev, const type* begin, const type* end) {
             { write(dev, begin, end) } noexcept;
         });
+
+    /**
+     * @brief 判断device_t是否是一种输出设备，要求满足：
+     * - SoC::is_output_device<device_t, char>，或
+     * - SoC::is_output_device<device_t, std::byte>
+     * @tparam device_t 设备类型
+     */
+    template <typename device_t>
+    concept is_general_output_device = ::SoC::is_output_device<device_t, char> || ::SoC::is_output_device<device_t, ::std::byte>;
+
+    /**
+     * @brief 判断device_t是否是type类型的输入设备，要求满足：
+     * - type* device_t::read(type*, type*) noexcept，或
+     * - type* read(device_t&, type*, type*) noexcept，考虑adl
+     * @tparam device_t 设备类型
+     * @tparam type 输入类型
+     */
+    template <typename device_t, typename type>
+    concept is_input_device =
+        ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, type* begin, type* end) {
+            { dev.read(begin, end) } noexcept -> ::std::same_as<type*>;
+        } || requires(device_t& dev, type* begin, type* end) {
+            { read(dev, begin, end) } noexcept -> ::std::same_as<type*>;
+        });
+
+    /**
+     * @brief 判断device_t是否是一种输入设备，要求满足：
+     * - SoC::is_input_device<device_t, char>，或
+     * - SoC::is_input_device<device_t, std::byte>
+     * @tparam device_t 设备类型
+     */
+    template <typename device_t>
+    concept is_general_input_device = ::SoC::is_input_device<device_t, char> || ::SoC::is_input_device<device_t, ::std::byte>;
+
+    /**
+     * @brief 判断device_t是否是一种设备
+     * - SoC::is_general_output_device<device_t>，或
+     * - SoC::is_general_input_device<device_t>
+     * @tparam device_t 设备类型
+     */
+    template <typename device_t>
+    concept is_general_device = ::SoC::is_general_output_device<device_t> || ::SoC::is_general_input_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否具有就绪标记，要求满足：
+     * - bool device_t.is_ready() noexcept，或
+     * - bool is_ready(device_t&) noexcept，考虑adl
+     * @tparam device_t 设备类型
+     */
+    template <typename device_t>
+    concept has_ready_flag_device = ::SoC::is_general_device<device_t> && (requires(device_t& dev) {
+        { dev.is_ready() } noexcept -> ::std::same_as<bool>;
+    } || requires(device_t& dev) {
+        { is_ready(dev) } noexcept -> ::std::same_as<bool>;
+    });
+
+    /**
+     * @brief 轮询等待直到设备就绪
+     *
+     * @tparam device_t 设备类型
+     * @param device 设备对象
+     */
+    template <::SoC::is_general_device device_t>
+    constexpr inline void wait_until_device_ready(device_t& device) noexcept
+    {
+        if constexpr(::SoC::has_ready_flag_device<device_t>)
+        {
+            if constexpr(requires() { device.is_ready(); })
+            {
+                ::SoC::wait_until([&device] noexcept { return device.is_ready(); });
+            }
+            else
+            {
+                ::SoC::wait_until([&device] noexcept { is_ready(device); });
+            }
+        }
+    }
 
     /**
      * @brief 将[begin, end)内的数据写入到device
@@ -34,132 +115,14 @@ namespace SoC
         else { write(device, begin, end); }
     }
 
-    /**
-     * @brief 将字符串视图输出到device
-     *
-     * @param device 输出设备
-     * @param string 要输出的字符串视图
-     */
-    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device, ::std::string_view string) noexcept
-    {
-        ::SoC::write_to_device(device, string.begin(), string.end());
-    }
+}  // namespace SoC
 
-    /**
-     * @brief 将C风格字符串输出到device
-     *
-     * @param device 输出设备
-     * @param string 要输出的C风格字符串
-     */
-    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device, const char* string) noexcept
-    {
-        ::SoC::do_print_arg(device, ::std::string_view{string});
-    }
-
-    namespace detail
-    {
-        /**
-         * @brief 获取输出num_t所需的最大缓冲区大小
-         *
-         * @tparam num_t 整数或浮点类型
-         * @return 最大缓冲区大小
-         */
-        template <::SoC::detail::is_int_fp num_t>
-        consteval inline auto get_max_text_buffer_size() noexcept
-        {
-            using limit_t = ::std::numeric_limits<num_t>;
-            constexpr auto digits{::std::floating_point<num_t> ? limit_t::max_digits10 : limit_t::digits10};
-            if constexpr(::std::signed_integral<num_t>)
-            {
-                // 符号占1字符
-                return digits + 1;
-            }
-            else if(::std::floating_point<num_t>)
-            {
-                // 符号和小数点占2字符
-                return digits + 2;
-            }
-            else { return digits; }
-        }
-    }  // namespace detail
-
-    /**
-     * @brief 将类型type表示为文本需要的最大io缓冲区大小
-     *
-     * @tparam type 要处理的类型
-     */
-    template <typename type>
-    constexpr inline ::std::size_t max_text_buffer_size{0zu};
-
-    template <::SoC::detail::is_int_fp type>
-    constexpr inline ::std::size_t max_text_buffer_size<type>{::SoC::detail::get_max_text_buffer_size<type>()};
-
-    /**
-     * @brief 判断类型type是否具有最大io缓冲区大小
-     *
-     * @tparam type 要判断的类型
-     */
-    template <typename type>
-    concept has_max_text_buffer_size = ::SoC::max_text_buffer_size<::std::remove_cvref_t<type>> != 0;
-
-    // 统一预分配的文本缓冲区类型
-    using unified_text_buffer = ::std::ranges::subrange<char*>;
-
-    // 统一预分配的二进制缓冲区类型
-    using unified_bin_buffer = ::std::ranges::subrange<::std::byte*>;
-
-    /**
-     * @brief 判断arg_t类型的对象能否输出到output_t类型的对象中，要求满足：
-     * - arg_t不满足概念has_max_text_buffer_size，且
-     * - void do_print_arg(output_t& output, arg_t arg), 考虑adl
-     * @tparam arg_t 要判断的类型
-     * @tparam output_t 可进行输出操作的类型
-     */
-    template <typename arg_t, typename output_t>
-    concept is_no_max_text_buffer_size_printable =
-        !::SoC::has_max_text_buffer_size<arg_t> && requires(output_t& output, arg_t arg) {
-            { do_print_arg(output, arg) } noexcept -> ::std::same_as<void>;
-        };
-
-    /**
-     * @brief 判断arg_t类型的对象能否在使用预分配缓冲区的情况下输出到output_t类型的对象中
-     * - arg_t满足概念has_max_text_buffer_size，且
-     * - void do_print_arg(output_t& output, arg_t arg), 考虑adl
-     * @tparam arg_t 要判断的类型
-     * @tparam output_t 可进行输出操作的类型
-     */
-    template <typename arg_t, typename output_t>
-    concept is_has_max_text_buffer_size_printable =
-        ::SoC::has_max_text_buffer_size<arg_t> && requires(output_t& output, arg_t arg, ::SoC::unified_text_buffer buffer) {
-            { do_print_arg(output, arg, buffer) } noexcept -> ::std::same_as<void>;
-        };
-
-    /**
-     * @brief 将num输出到设备
-     *
-     * @param device 输出设备
-     * @param num 要输出的整数或浮点数
-     */
-    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device,
-                                       ::SoC::detail::is_int_fp auto num,
-                                       ::SoC::unified_text_buffer buffer) noexcept
-    {
-        ::SoC::write_to_device(device, buffer.begin(), ::std::to_chars(buffer.begin(), buffer.end(), num).ptr);
-    }
-
-    /**
-     * @brief 判断类型arg_t能否输出到device_t类型的设备，要求满足：
-     * - device_t是文本类输出设备，且
-     * - arg_t和device_t满足is_no_max_text_buffer_size_printable，或
-     * - arg_t和device_t满足is_has_max_text_buffer_size_printable，或
-     * @tparam arg_t 要判断的类型
-     * @tparam device_t 输出设备类型
-     */
-    template <typename arg_t, typename device_t>
-    concept is_printable_to_device =
-        ::SoC::is_output_device<device_t, char> && (::SoC::is_no_max_text_buffer_size_printable<arg_t, device_t> ||
-                                                    ::SoC::is_has_max_text_buffer_size_printable<arg_t, device_t>);
-
+/**
+ * @brief 缓冲区定义
+ *
+ */
+namespace SoC
+{
     namespace detail
     {
         /**
@@ -170,10 +133,7 @@ namespace SoC
          */
         template <typename type>
         concept is_buffer_allocator = ::SoC::is_allocator<type> || ::std::same_as<type, void>;
-    }  // namespace detail
 
-    namespace detail
-    {
         /**
          * @brief 获取缓冲区对齐
          *
@@ -341,8 +301,7 @@ namespace SoC
      * - 类型别名value_type，且
      * - 类型别名pointer，且
      * - 类型别名const_pointer，且
-     * - 类型别名allocator_t，且
-     * - std::decay_t<decltype(type::begin)>为pointer，且
+     * - 类型别名allocator_t，
      * - pointer type::current，且
      * - pointer type::end，且
      * - pointer type::get_buffer_end() noexcept，且
@@ -361,7 +320,6 @@ namespace SoC
         typename type::const_pointer;
         typename type::allocator_t;
 
-        requires ::std::same_as<::std::decay_t<decltype(buffer.begin)>, typename type::pointer>;
         requires ::std::same_as<decltype(buffer.current), typename type::pointer>;
         requires ::std::same_as<decltype(buffer.end), typename type::pointer>;
 
@@ -373,6 +331,139 @@ namespace SoC
         { buffer.read(typename type::pointer{}, 1zu) } noexcept -> ::std::same_as<void>;
         { buffer.clear() } noexcept -> ::std::same_as<void>;
     };
+}  // namespace SoC
+
+/**
+ * @brief 打印支持
+ *
+ */
+namespace SoC
+{
+    /**
+     * @brief 将字符串视图输出到device
+     *
+     * @param device 输出设备
+     * @param string 要输出的字符串视图
+     */
+    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device, ::std::string_view string) noexcept
+    {
+        ::SoC::write_to_device(device, string.begin(), string.end());
+    }
+
+    /**
+     * @brief 将C风格字符串输出到device
+     *
+     * @param device 输出设备
+     * @param string 要输出的C风格字符串
+     */
+    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device, const char* string) noexcept
+    {
+        ::SoC::do_print_arg(device, ::std::string_view{string});
+    }
+
+    namespace detail
+    {
+        /**
+         * @brief 获取输出num_t所需的最大缓冲区大小
+         *
+         * @tparam num_t 整数或浮点类型
+         * @return 最大缓冲区大小
+         */
+        template <::SoC::detail::is_int_fp num_t>
+        consteval inline auto get_max_text_buffer_size() noexcept
+        {
+            using limit_t = ::std::numeric_limits<num_t>;
+            constexpr auto digits{::std::floating_point<num_t> ? limit_t::max_digits10 : limit_t::digits10};
+            if constexpr(::std::signed_integral<num_t>)
+            {
+                // 符号占1字符
+                return digits + 1;
+            }
+            else if(::std::floating_point<num_t>)
+            {
+                // 符号和小数点占2字符
+                return digits + 2;
+            }
+            else { return digits; }
+        }
+    }  // namespace detail
+
+    /**
+     * @brief 将类型type表示为文本需要的最大io缓冲区大小
+     *
+     * @tparam type 要处理的类型
+     */
+    template <typename type>
+    constexpr inline ::std::size_t max_text_buffer_size{0zu};
+
+    template <::SoC::detail::is_int_fp type>
+    constexpr inline ::std::size_t max_text_buffer_size<type>{::SoC::detail::get_max_text_buffer_size<type>()};
+
+    /**
+     * @brief 判断类型type是否具有最大io缓冲区大小
+     *
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept has_max_text_buffer_size = ::SoC::max_text_buffer_size<::std::remove_cvref_t<type>> != 0;
+
+    // 统一预分配的文本缓冲区类型
+    using unified_text_buffer = ::std::ranges::subrange<char*>;
+
+    // 统一预分配的二进制缓冲区类型
+    using unified_bin_buffer = ::std::ranges::subrange<::std::byte*>;
+
+    /**
+     * @brief 判断arg_t类型的对象能否输出到output_t类型的对象中，要求满足：
+     * - arg_t不满足概念has_max_text_buffer_size，且
+     * - void do_print_arg(output_t& output, arg_t arg), 考虑adl
+     * @tparam arg_t 要判断的类型
+     * @tparam output_t 可进行输出操作的类型
+     */
+    template <typename arg_t, typename output_t>
+    concept is_no_max_text_buffer_size_printable =
+        !::SoC::has_max_text_buffer_size<arg_t> && requires(output_t& output, arg_t arg) {
+            { do_print_arg(output, arg) } noexcept -> ::std::same_as<void>;
+        };
+
+    /**
+     * @brief 判断arg_t类型的对象能否在使用预分配缓冲区的情况下输出到output_t类型的对象中
+     * - arg_t满足概念has_max_text_buffer_size，且
+     * - void do_print_arg(output_t& output, arg_t arg), 考虑adl
+     * @tparam arg_t 要判断的类型
+     * @tparam output_t 可进行输出操作的类型
+     */
+    template <typename arg_t, typename output_t>
+    concept is_has_max_text_buffer_size_printable =
+        ::SoC::has_max_text_buffer_size<arg_t> && requires(output_t& output, arg_t arg, ::SoC::unified_text_buffer buffer) {
+            { do_print_arg(output, arg, buffer) } noexcept -> ::std::same_as<void>;
+        };
+
+    /**
+     * @brief 将num输出到设备
+     *
+     * @param device 输出设备
+     * @param num 要输出的整数或浮点数
+     */
+    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device,
+                                       ::SoC::detail::is_int_fp auto num,
+                                       ::SoC::unified_text_buffer buffer) noexcept
+    {
+        ::SoC::write_to_device(device, buffer.begin(), ::std::to_chars(buffer.begin(), buffer.end(), num).ptr);
+    }
+
+    /**
+     * @brief 判断类型arg_t能否输出到device_t类型的设备，要求满足：
+     * - device_t是文本类输出设备，且
+     * - arg_t和device_t满足is_no_max_text_buffer_size_printable，或
+     * - arg_t和device_t满足is_has_max_text_buffer_size_printable，或
+     * @tparam arg_t 要判断的类型
+     * @tparam device_t 输出设备类型
+     */
+    template <typename arg_t, typename device_t>
+    concept is_printable_to_device =
+        ::SoC::is_output_device<device_t, char> && (::SoC::is_no_max_text_buffer_size_printable<arg_t, device_t> ||
+                                                    ::SoC::is_has_max_text_buffer_size_printable<arg_t, device_t>);
 
     /**
      * @brief 输出文件类型
@@ -422,8 +513,8 @@ namespace SoC
 
     /**
      * @brief 判断type是否是输出文件，要求满足：
-     * - type::device是输出设备的左值引用
-     * - type::obuffer是输出缓冲区对象
+     * - type::device是输出设备的左值引用，且
+     * - type::obuffer是输出缓冲区对象，且
      * - void type::flush() noexcept
      * @tparam type 要判断的类型
      */
@@ -436,6 +527,30 @@ namespace SoC
         };
 
     /**
+     * @brief 判断type是否是输入文件，要求满足：
+     * - type::device是输入设备的左值引用，且
+     * - type::ibuffer是输入缓冲区对象，且
+     * - void type::flush() noexcept
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_input_file =
+        ::std::is_lvalue_reference_v<decltype(type::device)> &&
+        ::SoC::is_input_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
+        ::SoC::is_buffer<decltype(type::ibuffer)> && requires(type& file) {
+            { file.clear() } noexcept -> ::std::same_as<void>;
+        };
+
+    /**
+     * @brief 判断type是否是文件，要求满足：
+     * - SoC::is_output_file<type>，或
+     * - SoC::is_input_file<type>
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_general_file = ::SoC::is_output_file<type> || ::SoC::is_input_file<type>;
+
+    /**
      * @brief 从输出文件中萃取设备和缓冲区
      *
      * @param file 要萃取的文件
@@ -444,6 +559,17 @@ namespace SoC
     constexpr inline auto ofile_trait(::SoC::is_output_file auto& file) noexcept
     {
         return ::std::pair<decltype((file.device)), decltype((file.obuffer))>{file.device, file.obuffer};
+    }
+
+    /**
+     * @brief 从输入文件中萃取设备和缓冲区
+     *
+     * @param file 要萃取的文件
+     * @return std::pair{设备引用, 缓冲区引用}
+     */
+    constexpr inline auto ifile_trait(::SoC::is_input_file auto& file) noexcept
+    {
+        return ::std::pair<decltype((file.device)), decltype((file.ibuffer))>{file.device, file.ibuffer};
     }
 
     /**
@@ -520,6 +646,18 @@ namespace SoC
     concept is_printable_to_file = ::SoC::is_output_file<file_t> && (::SoC::is_no_max_text_buffer_size_printable<arg_t, file_t> ||
                                                                      ::SoC::is_has_max_text_buffer_size_printable<arg_t, file_t>);
 
+    /**
+     * @brief 轮询等待直到绑定到文件的设备就绪
+     *
+     * @tparam file_t 文件类型
+     * @param file 文件对象
+     */
+    template <::SoC::is_general_file file_t>
+    constexpr inline void wait_until_device_ready(file_t& file) noexcept
+    {
+        ::SoC::wait_until_device_ready(file.device);
+    }
+
     namespace detail
     {
         /**
@@ -569,6 +707,7 @@ namespace SoC
         template <typename output_t, typename... args_t>
         constexpr inline void print_wrapper(output_t& output, args_t&&... args) noexcept
         {
+            ::SoC::wait_until_device_ready(output);
             if constexpr(constexpr auto buffer_size{::SoC::detail::get_unified_text_buffer_size<args_t...>()}; buffer_size != 0)
             {
                 ::std::array<char, buffer_size> buffer;
@@ -688,7 +827,11 @@ namespace SoC
 {
     namespace detail
     {
-
+        /**
+         * @brief 获取格式串打印所需参数
+         *
+         * @tparam type 不含占位符的字符数组类型列表
+         */
         template <typename... type>
         struct get_fmt_arg_t
         {

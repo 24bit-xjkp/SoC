@@ -27,11 +27,6 @@ namespace SoC
         consteval inline operator ::std::string_view() const noexcept { return {begin(), end()}; }
     };
 
-    struct placehold_t
-    {
-        ::std::size_t index{};
-    };
-
     /**
      * @brief 编译时格式串解析器
      *
