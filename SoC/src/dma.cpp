@@ -47,15 +47,6 @@ namespace SoC
         return fifo_size == 0 || fifo_size >= get_periph_data_size_num() * get_periph_burst_num();
     }
 
-    /**
-     * @brief 断言dma数据流已经失能
-     *
-     */
-    void ::SoC::dma_stream::assert_disabled() const noexcept
-    {
-        ::SoC::assert(!is_enabled(), "dma数据流使能期间不能进行配置"sv);
-    }
-
     ::SoC::dma_stream::dma_stream(::SoC::dma& dma,
                                   dma_stream_enum stream,
                                   ::SoC::dma_channel channel,
@@ -117,7 +108,6 @@ namespace SoC
 
     void ::SoC::dma_stream::set_memory_data_size(::SoC::dma_memory_data_size mem_data_size) noexcept
     {
-        assert_disabled();
         this->mem_data_size = mem_data_size;
         ::SoC::assert(check_memory_access(), ::SoC::memory_access_error_msg);
         ::LL_DMA_SetMemorySize(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(mem_data_size));
@@ -125,7 +115,6 @@ namespace SoC
 
     void ::SoC::dma_stream::set_memory_burst(::SoC::dma_memory_burst mem_burst) noexcept
     {
-        assert_disabled();
         this->mem_burst = mem_burst;
         ::SoC::assert(check_memory_access(), ::SoC::memory_access_error_msg);
         ::LL_DMA_SetMemoryBurstxfer(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(mem_burst));
@@ -133,7 +122,6 @@ namespace SoC
 
     void ::SoC::dma_stream::set_periph_data_size(::SoC::dma_periph_data_size pf_data_size) noexcept
     {
-        assert_disabled();
         this->pf_data_size = pf_data_size;
         ::SoC::assert(check_periph_access(), ::SoC::periph_access_error_msg);
         ::LL_DMA_SetPeriphSize(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(pf_data_size));
@@ -141,7 +129,6 @@ namespace SoC
 
     void ::SoC::dma_stream::set_periph_burst(::SoC::dma_periph_burst pf_burst) noexcept
     {
-        assert_disabled();
         this->pf_burst = pf_burst;
         ::SoC::assert(check_periph_access(), ::SoC::periph_access_error_msg);
         ::LL_DMA_SetPeriphBurstxfer(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(pf_burst));
@@ -149,7 +136,6 @@ namespace SoC
 
     void ::SoC::dma_stream::set_fifo(::SoC::dma_fifo_threshold fifo_threshold) noexcept
     {
-        assert_disabled();
         this->fifo_threshold = fifo_threshold;
         if(fifo_threshold == ::SoC::dma_fifo_threshold::disable)
         {
@@ -168,13 +154,11 @@ namespace SoC
 
     void ::SoC::dma_stream::set_priority(::SoC::dma_priority priority) const noexcept
     {
-        assert_disabled();
         ::LL_DMA_SetStreamPriorityLevel(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(priority));
     }
 
     void ::SoC::dma_stream::set_mode(::SoC::dma_mode mode) const noexcept
     {
-        assert_disabled();
         ::LL_DMA_SetMode(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(mode));
     }
 

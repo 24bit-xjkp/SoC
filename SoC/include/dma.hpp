@@ -268,12 +268,6 @@ namespace SoC
         bool check_periph_access() const noexcept;
 
         /**
-         * @brief 断言dma数据流已经失能
-         *
-         */
-        void assert_disabled() const noexcept;
-
-        /**
          * @brief 检查输入是否满足对齐要求
          *
          * @param num 缓冲区首指针或缓冲区大小
