@@ -229,7 +229,7 @@ namespace SoC
 
     ::SoC::dma_stream(::SoC::usart::enable_dma_write)(::SoC::dma& dma,
                                                       ::SoC::dma_fifo_threshold fifo_threshold,
-                                                      ::SoC::dma_memory_burst default_bust,
+                                                      ::SoC::dma_memory_burst default_burst,
                                                       ::SoC::dma_memory_data_size default_data_size,
                                                       ::SoC::dma_priority priority,
                                                       ::SoC::dma_mode mode,
@@ -294,7 +294,7 @@ namespace SoC
                                  default_data_size,
                                  priority,
                                  fifo_threshold,
-                                 default_bust,
+                                 default_burst,
                                  ::SoC::dma_periph_burst::single};
     }
 

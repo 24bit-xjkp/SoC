@@ -381,7 +381,7 @@ namespace SoC
          *
          * @param dma dma外设
          * @param fifo_threshold fifo队列阈值
-         * @param default_bust 默认内存侧突发
+         * @param default_burst 默认内存侧突发
          * @param default_data_size 默认内存侧数据宽度
          * @param priority dma传输优先级
          * @param mode dma模式
@@ -391,7 +391,7 @@ namespace SoC
         [[nodiscard("该函数返回具有raii的dma数据流对象，不应该弃用返回值")]] ::SoC::dma_stream
             enable_dma_write(::SoC::dma& dma,
                              ::SoC::dma_fifo_threshold fifo_threshold = ::SoC::dma_fifo_threshold::disable,
-                             ::SoC::dma_memory_burst default_bust = ::SoC::dma_memory_burst::single,
+                             ::SoC::dma_memory_burst default_burst = ::SoC::dma_memory_burst::single,
                              ::SoC::dma_memory_data_size default_data_size = ::SoC::dma_memory_data_size::byte,
                              ::SoC::dma_priority priority = ::SoC::dma_priority::low,
                              ::SoC::dma_mode mode = ::SoC::dma_mode::normal,
