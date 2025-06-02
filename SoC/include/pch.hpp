@@ -35,6 +35,7 @@
 #include <functional>
 #include <vector>
 #include <optional>
+#include <initializer_list>
 
 namespace SoC
 {
@@ -47,16 +48,26 @@ namespace SoC
         debug,
         release,
         releasedbg,
-        minsizerel
-    };
+        minsizerel,
 
 #ifdef SOC_BUILD_MODE_DEBUG
-    inline constexpr auto current_build_mode{::SoC::build_mode::debug};
+        current = debug
 #elifdef SOC_BUILD_MODE_RELEASE
-    inline constexpr auto current_build_mode{::SoC::build_mode::release};
+        current = release
 #elifdef SOC_BUILD_MODE_RELEASEDBG
-    inline constexpr auto current_build_mode{::SoC::build_mode::releasedbg};
+        current = releasedbg,
+#elifdef SOC_BUILD_MODE_MINSIZEREL
+        current = minsizerel
 #else
-    inline constexpr auto current_build_mode{::SoC::build_mode::minsizerel};
+#error Unknown build mode
+#endif
+    };
+
+#ifdef USE_FULL_ASSERT
+    /// 是否启用全部的断言
+    constexpr inline auto use_full_assert{true};
+#else
+    /// 是否启用全部的断言
+    constexpr inline auto use_full_assert{false};
 #endif
 }  // namespace SoC

@@ -31,18 +31,15 @@ namespace SoC
 #undef MSG_START
 #undef MSG_END
 
-    void assert([[maybe_unused]] bool expression,
-                [[maybe_unused]] ::std::string_view message,
-                [[maybe_unused]] ::std::source_location location) noexcept
+    void assert(bool expression, ::std::string_view message, ::std::source_location location) noexcept
     {
-#ifdef USE_FULL_ASSERT
-        if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
-#endif
+        if constexpr(::SoC::use_full_assert)
+        {
+            if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
+        }
     }
 
-    void always_assert([[maybe_unused]] bool expression,
-                       [[maybe_unused]] ::std::string_view message,
-                       [[maybe_unused]] ::std::source_location location) noexcept
+    void always_assert(bool expression, ::std::string_view message, ::std::source_location location) noexcept
     {
         if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
     }
