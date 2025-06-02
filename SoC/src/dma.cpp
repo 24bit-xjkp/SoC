@@ -51,7 +51,10 @@ namespace SoC
      * @brief 断言dma数据流已经失能
      *
      */
-    void ::SoC::dma_stream::assert_disabled() const noexcept { ::SoC::assert(!is_enabled(), "dma数据流使能期间不能进行配置"sv); }
+    void ::SoC::dma_stream::assert_disabled() const noexcept
+    {
+        ::SoC::assert(!is_enabled(), "dma数据流使能期间不能进行配置"sv);
+    }
 
     ::SoC::dma_stream::dma_stream(::SoC::dma& dma,
                                   dma_stream_enum stream,
@@ -71,9 +74,7 @@ namespace SoC
         mem_data_size{mem_data_size}, mem_burst{mem_burst}, pf_data_size{pf_data_size}, pf_burst{pf_burst}
     {
         ::SoC::assert(direction != ::SoC::dma_direction::m2m, "此构造函数不支持内存到内存模式的dma配置"sv);
-        auto disabled{!is_enabled()};
-        ::SoC::assert(disabled, "初始化前此dma数据流不应处于使能状态"sv);
-        [[assume(disabled)]];
+        ::SoC::assert(is_enabled(), "初始化前此dma数据流不应处于使能状态"sv);
 
         auto stream_v{::std::to_underlying(stream)};
         ::LL_DMA_ConfigTransfer(dma_ptr,
@@ -237,39 +238,32 @@ namespace SoC
         enable();
     }
 
+    auto ::SoC::dma_stream::get_tc_mask() const noexcept
+    {
+        constexpr ::std::size_t dma_tc_mask_table[]{DMA_LISR_TCIF0, DMA_LISR_TCIF1, DMA_LISR_TCIF2, DMA_LISR_TCIF3};
+        auto mask{dma_tc_mask_table[::std::to_underlying(stream) & ::SoC::mask_all_one<2>]};
+        return mask;
+    }
+
     bool ::SoC::dma_stream::get_tc_flag() const noexcept
     {
-        switch(get_stream())
-        {
-            case st0: return ::LL_DMA_IsActiveFlag_TC0(dma_ptr);
-            case st1: return ::LL_DMA_IsActiveFlag_TC1(dma_ptr);
-            case st2: return ::LL_DMA_IsActiveFlag_TC2(dma_ptr);
-            case st3: return ::LL_DMA_IsActiveFlag_TC3(dma_ptr);
-            case st4: return ::LL_DMA_IsActiveFlag_TC4(dma_ptr);
-            case st5: return ::LL_DMA_IsActiveFlag_TC5(dma_ptr);
-            case st6: return ::LL_DMA_IsActiveFlag_TC6(dma_ptr);
-            case st7: return ::LL_DMA_IsActiveFlag_TC7(dma_ptr);
-        }
+        auto&& ref{get_stream() > st3 ? dma_ptr->HISR : dma_ptr->LISR};
+        auto mask{get_tc_mask()};
+        return (ref & mask) == mask;
     }
 
     void ::SoC::dma_stream::clear_tc_flag() const noexcept
     {
-        switch(get_stream())
-        {
-            case st0: ::LL_DMA_ClearFlag_TC0(dma_ptr); break;
-            case st1: ::LL_DMA_ClearFlag_TC1(dma_ptr); break;
-            case st2: ::LL_DMA_ClearFlag_TC2(dma_ptr); break;
-            case st3: ::LL_DMA_ClearFlag_TC3(dma_ptr); break;
-            case st4: ::LL_DMA_ClearFlag_TC4(dma_ptr); break;
-            case st5: ::LL_DMA_ClearFlag_TC5(dma_ptr); break;
-            case st6: ::LL_DMA_ClearFlag_TC6(dma_ptr); break;
-            case st7: ::LL_DMA_ClearFlag_TC7(dma_ptr); break;
-        }
+        auto&& ref{get_stream() > st3 ? dma_ptr->HIFCR : dma_ptr->LIFCR};
+        ref = get_tc_mask();
     }
 
     bool ::SoC::dma_stream::is_ready() const noexcept
     {
         if(mode == ::SoC::dma_mode::circle) { return get_tc_flag(); }
-        else { return !is_enabled(); }
+        else
+        {
+            return !is_enabled();
+        }
     }
 }  // namespace SoC

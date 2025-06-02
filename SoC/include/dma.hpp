@@ -308,6 +308,13 @@ namespace SoC
          */
         void wait_until_disabled() const noexcept;
 
+        /**
+         * @brief 获取传输完成标志位掩码
+         *
+         * @return std::pair{传输完成标志位引用, 传输完成标志位掩码}
+         */
+        auto get_tc_mask() const noexcept;
+
     public:
         /**
          * @brief 获取dma外设指针
