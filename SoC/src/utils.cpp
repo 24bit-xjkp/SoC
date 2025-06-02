@@ -1,16 +1,22 @@
-#include "../include/utils.hpp"
+#include "../include/init.hpp"
 
 namespace SoC
 {
-    ::std::uint64_t(::SoC::systick_t::load)() const noexcept { return systick[index.load(::std::memory_order_acquire) & 1]; }
+    ::std::uint64_t(::SoC::systick_t::load)() const noexcept
+    {
+        // 非标准行为，通过数据依赖建立同步关系
+        // 在有针对内存的数据缓存的平台上依然需要acquire语义
+        return systick[index.load(::std::memory_order_relaxed)];
+    }
 
     ::SoC::systick_t::operator ::std::uint64_t () const noexcept { return load(); }
 
     ::std::uint64_t(::SoC::systick_t::operator++)() noexcept
     {
-        auto new_index{(index.load(::std::memory_order_relaxed) + 1) & 1};
+        auto new_index{index.load(::std::memory_order_relaxed) ^ 1};
         auto result{systick[new_index] += 2};
-        index.store(new_index, ::std::memory_order_release);
+        ::std::atomic_signal_fence(::std::memory_order_release);
+        index.store(new_index, ::std::memory_order_relaxed);
         return result;
     }
 

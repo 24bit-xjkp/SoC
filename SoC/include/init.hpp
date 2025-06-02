@@ -9,6 +9,21 @@ namespace SoC
      */
     void system_clock_init() noexcept;
 
+    /// 是否使能flash数据缓存
+    constexpr bool enable_dcache{true};
+
+    /// 是否使能flash指令缓存
+    constexpr bool enable_icache{true};
+
+    /// 是否使能flash指令预取
+    constexpr bool enable_prefetch{true};
+
+    /**
+     * @brief 使能缓存和预取
+     *
+     */
+    void enable_prefetch_cache() noexcept;
+
     namespace rcc
     {
         using namespace ::SoC::literal;

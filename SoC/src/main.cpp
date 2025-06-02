@@ -12,7 +12,9 @@ int main()
     using namespace ::std::string_view_literals;
 
     ::SoC::system_clock_init();
+    ::SoC::enable_prefetch_cache();
     ::SoC::set_priority_group();
+
     ::SoC::gpio_port gpio_a{::SoC::gpio_port::pa};
     ::SoC::gpio_pin _{gpio_a, ::SoC::gpio_pin::p9 | ::SoC::gpio_pin::p10, ::SoC::gpio_mode::alternate, ::SoC::gpio_af::af7};
     ::SoC::usart usart1{::SoC::usart::usart1, 115.2_K};

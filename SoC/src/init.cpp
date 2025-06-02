@@ -85,4 +85,11 @@ namespace SoC
         ::SysTick_Config(systick_cnt);
         ::SystemCoreClock = ::SoC::rcc::sys_clock_freq;
     }
+
+    void enable_prefetch_cache() noexcept
+    {
+        if constexpr(::SoC::enable_icache) { ::LL_FLASH_EnableInstCache(); }
+        if constexpr(::SoC::enable_dcache) { ::LL_FLASH_EnableDataCache(); }
+        if constexpr(::SoC::enable_prefetch) { ::LL_FLASH_EnablePrefetch(); }
+    }
 }  // namespace SoC
