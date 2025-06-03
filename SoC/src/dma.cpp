@@ -15,7 +15,7 @@ namespace SoC
 
     ::SoC::dma::dma(dma_enum dma) noexcept : dma_ptr{::std::bit_cast<::DMA_TypeDef*>(dma)}
     {
-        ::SoC::assert(!is_enabled(), "初始化前此dma不应处于使能状态"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此dma不应处于使能状态"sv); }
         enable();
     }
 
@@ -64,8 +64,11 @@ namespace SoC
         dma_ptr{dma.get_dma()}, stream{stream}, direction{direction}, mode{mode}, fifo_threshold{fifo_threshold},
         mem_data_size{mem_data_size}, mem_burst{mem_burst}, pf_data_size{pf_data_size}, pf_burst{pf_burst}
     {
-        ::SoC::assert(direction != ::SoC::dma_direction::m2m, "此构造函数不支持内存到内存模式的dma配置"sv);
-        ::SoC::assert(is_enabled(), "初始化前此dma数据流不应处于使能状态"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(direction != ::SoC::dma_direction::m2m, "此构造函数不支持内存到内存模式的dma配置"sv);
+            ::SoC::assert(!is_enabled(), "初始化前此dma数据流不应处于使能状态"sv);
+        }
 
         auto stream_v{::std::to_underlying(stream)};
         ::LL_DMA_ConfigTransfer(dma_ptr,
@@ -109,28 +112,28 @@ namespace SoC
     void ::SoC::dma_stream::set_memory_data_size(::SoC::dma_memory_data_size mem_data_size) noexcept
     {
         this->mem_data_size = mem_data_size;
-        ::SoC::assert(check_memory_access(), ::SoC::memory_access_error_msg);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_memory_access(), ::SoC::memory_access_error_msg); }
         ::LL_DMA_SetMemorySize(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(mem_data_size));
     }
 
     void ::SoC::dma_stream::set_memory_burst(::SoC::dma_memory_burst mem_burst) noexcept
     {
         this->mem_burst = mem_burst;
-        ::SoC::assert(check_memory_access(), ::SoC::memory_access_error_msg);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_memory_access(), ::SoC::memory_access_error_msg); }
         ::LL_DMA_SetMemoryBurstxfer(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(mem_burst));
     }
 
     void ::SoC::dma_stream::set_periph_data_size(::SoC::dma_periph_data_size pf_data_size) noexcept
     {
         this->pf_data_size = pf_data_size;
-        ::SoC::assert(check_periph_access(), ::SoC::periph_access_error_msg);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_periph_access(), ::SoC::periph_access_error_msg); }
         ::LL_DMA_SetPeriphSize(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(pf_data_size));
     }
 
     void ::SoC::dma_stream::set_periph_burst(::SoC::dma_periph_burst pf_burst) noexcept
     {
         this->pf_burst = pf_burst;
-        ::SoC::assert(check_periph_access(), ::SoC::periph_access_error_msg);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_periph_access(), ::SoC::periph_access_error_msg); }
         ::LL_DMA_SetPeriphBurstxfer(dma_ptr, ::std::to_underlying(stream), ::std::to_underlying(pf_burst));
     }
 
@@ -139,8 +142,11 @@ namespace SoC
         this->fifo_threshold = fifo_threshold;
         if(fifo_threshold == ::SoC::dma_fifo_threshold::disable)
         {
-            ::SoC::assert(mem_burst == ::SoC::dma_memory_burst::single && pf_burst == ::SoC::dma_periph_burst::single,
-                          "禁用fifo队列时不能使用突发"sv);
+            if constexpr(::SoC::use_full_assert)
+            {
+                ::SoC::assert(mem_burst == ::SoC::dma_memory_burst::single && pf_burst == ::SoC::dma_periph_burst::single,
+                              "禁用fifo队列时不能使用突发"sv);
+            }
             ::LL_DMA_DisableFifoMode(dma_ptr, ::std::to_underlying(stream));
         }
         else
@@ -175,7 +181,11 @@ namespace SoC
     {
         if(is_enabled()) [[unlikely]]
         {
-            ::SoC::assert(mode != ::SoC::dma_mode::circle, "循环模式下dma数据流不会自动失能, 在开启新的传输前请先失能dma数据流");
+            if constexpr(::SoC::use_full_assert)
+            {
+                ::SoC::assert(mode != ::SoC::dma_mode::circle,
+                              "循环模式下dma数据流不会自动失能, 在开启新的传输前请先失能dma数据流"sv);
+            }
             ::SoC::wait_until([this] { return !is_enabled(); });
         }
     }
@@ -190,13 +200,13 @@ namespace SoC
     void ::SoC::dma_stream::set_memory_address(const void* begin) const noexcept
     {
         auto num{::std::bit_cast<::std::uintptr_t>(begin)};
-        ::SoC::assert(check_aligned(num), "缓冲区首地址不满足对齐要求"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_aligned(num), "缓冲区首地址不满足对齐要求"sv); }
         ::LL_DMA_SetMemoryAddress(dma_ptr, ::std::to_underlying(stream), num);
     }
 
     void ::SoC::dma_stream::set_data_item(::std::size_t size, ::std::size_t item_size) const noexcept
     {
-        ::SoC::assert(check_aligned(size), "缓冲区大小不满足对齐要求"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_aligned(size), "缓冲区大小不满足对齐要求"sv); }
         ::LL_DMA_SetDataLength(dma_ptr, ::std::to_underlying(stream), size >> ::std::countr_zero(item_size));
     }
 
@@ -204,7 +214,10 @@ namespace SoC
     {
         wait_until_disabled();
         clear_tc_flag();
-        ::SoC::assert(direction == ::SoC::dma_direction::m2p, "仅内存到外设模式支持写入操作"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(direction == ::SoC::dma_direction::m2p, "仅内存到外设模式支持写入操作"sv);
+        }
         set_memory_address(begin);
         auto size{static_cast<::std::size_t>(reinterpret_cast<const char*>(end) - reinterpret_cast<const char*>(begin))};
         set_data_item(size, get_periph_data_size_num());
@@ -215,7 +228,10 @@ namespace SoC
     {
         wait_until_disabled();
         clear_tc_flag();
-        ::SoC::assert(direction == ::SoC::dma_direction::p2m, "仅外设到内存模式支持读取操作"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(direction == ::SoC::dma_direction::p2m, "仅外设到内存模式支持读取操作"sv);
+        }
         set_memory_address(begin);
         auto size{static_cast<::std::size_t>(reinterpret_cast<char*>(end) - reinterpret_cast<char*>(begin))};
         set_data_item(size, get_memory_data_size_num());
