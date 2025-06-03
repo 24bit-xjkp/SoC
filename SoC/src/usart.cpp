@@ -16,7 +16,7 @@ namespace SoC
                         ::SoC::usart_oversampling oversampling) noexcept :
         usart_ptr{::std::bit_cast<::USART_TypeDef*>(usart)}, mode{mode}, data_width{data_width}, parity{parity}
     {
-        ::SoC::assert(!is_enabled(), "初始化前此串口不应处于使能状态"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此串口不应处于使能状态"sv); }
         ::std::uint32_t clk{};
         switch(usart)
         {
@@ -96,7 +96,10 @@ namespace SoC
     void ::SoC::usart::write(::std::uint8_t byte) const noexcept
     {
         if(data_width == ::SoC::usart_data_width::bit8) [[likely]] { ::LL_USART_TransmitData8(usart_ptr, byte); }
-        else { ::LL_USART_TransmitData9(usart_ptr, byte); }
+        else
+        {
+            ::LL_USART_TransmitData9(usart_ptr, byte);
+        }
         wait_until_write_complete();
     }
 
@@ -124,8 +127,11 @@ namespace SoC
 
     [[gnu::noinline]] void ::SoC::usart::write(const ::std::uint16_t* buffer, const ::std::uint16_t* end) const noexcept
     {
-        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && parity == ::SoC::usart_parity::none,
-                      "只有数据宽度为8位且未启用校验时支持9位输出"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && parity == ::SoC::usart_parity::none,
+                          "只有数据宽度为8位且未启用校验时支持9位输出"sv);
+        }
 #pragma GCC unroll 0
         for(auto data: ::std::ranges::subrange{buffer, end})
         {
@@ -142,7 +148,10 @@ namespace SoC
 
     ::std::uint16_t(::SoC::usart::read9)() const noexcept
     {
-        ::SoC::assert(data_width == ::SoC::usart_data_width::bit9, "此函数仅限数据宽度为9位时使用"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(data_width == ::SoC::usart_data_width::bit9, "此函数仅限数据宽度为9位时使用"sv);
+        }
         ::SoC::wait_until(::LL_USART_IsActiveFlag_RXNE, usart_ptr);
         return ::LL_USART_ReceiveData9(usart_ptr);
     }
@@ -182,7 +191,10 @@ namespace SoC
     void ::SoC::usart::set_it_txe(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_TXE(usart_ptr); }
-        else { ::LL_USART_DisableIT_TXE(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_TXE(usart_ptr);
+        }
     }
 
     bool ::SoC::usart::get_it_txe() const noexcept { return ::LL_USART_IsEnabledIT_TXE(usart_ptr); }
@@ -192,7 +204,10 @@ namespace SoC
     void ::SoC::usart::set_it_rxne(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_RXNE(usart_ptr); }
-        else { ::LL_USART_DisableIT_RXNE(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_RXNE(usart_ptr);
+        }
     }
 
     bool ::SoC::usart::get_it_rxne() const noexcept { return ::LL_USART_IsEnabledIT_RXNE(usart_ptr); }
@@ -202,7 +217,10 @@ namespace SoC
     void ::SoC::usart::set_it_idle(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_IDLE(usart_ptr); }
-        else { ::LL_USART_DisableIT_IDLE(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_IDLE(usart_ptr);
+        }
     }
 
     bool ::SoC::usart::get_it_idle() const noexcept { return ::LL_USART_IsEnabledIT_IDLE(usart_ptr); }
@@ -219,7 +237,7 @@ namespace SoC
 
     void ::SoC::usart::assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) const noexcept
     {
-        ::SoC::assert(dma.get_dma_enum() == dma_enum, "该dma外设不能操作该串口"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(dma.get_dma_enum() == dma_enum, "该dma外设不能操作该串口"sv); }
     }
 
     /// 选择的dma数据流无效时报错信息
@@ -235,7 +253,7 @@ namespace SoC
                                                       ::SoC::dma_mode mode,
                                                       ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
     {
-        ::SoC::assert(!is_dma_write_enabled(), ::SoC::dma_enabled_error_msg);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_dma_write_enabled(), ::SoC::dma_enabled_error_msg); }
         using enum ::SoC::dma::dma_enum;
         using enum ::SoC::dma_stream::dma_stream_enum;
         using enum ::SoC::dma_channel;
@@ -274,13 +292,16 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st6; }
                 else
                 {
-                    ::SoC::assert(selected_stream == st6 || selected_stream == st7, ::SoC::selected_stream_error_msg);
+                    if constexpr(::SoC::use_full_assert)
+                    {
+                        ::SoC::assert(selected_stream == st6 || selected_stream == st7, ::SoC::selected_stream_error_msg);
+                    }
                     stream = selected_stream;
                 }
                 channel = ch5;
                 break;
         }
-        assert_dma(dma, dma_enum);
+        if constexpr(::SoC::use_full_assert) { assert_dma(dma, dma_enum); }
         ::LL_USART_EnableDMAReq_TX(usart_ptr);
         return ::SoC::dma_stream{dma,
                                  stream,

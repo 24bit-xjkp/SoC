@@ -12,10 +12,13 @@ namespace SoC
      */
     inline void check_tim_u16(::TIM_TypeDef* tim_ptr, ::std::uint32_t val) noexcept
     {
-        if(auto tim_enum{::std::bit_cast<::SoC::detail::tim>(tim_ptr)};
-           tim_enum != ::SoC::tim::tim2 && tim_enum != ::SoC::tim::tim5)
+        if constexpr(::SoC::use_full_assert)
         {
-            ::SoC::assert(val <= ::std::numeric_limits<::std::uint16_t>::max(), "此计数器为16位计数器."sv);
+            if(auto tim_enum{::std::bit_cast<::SoC::detail::tim>(tim_ptr)};
+               tim_enum != ::SoC::tim::tim2 && tim_enum != ::SoC::tim::tim5)
+            {
+                ::SoC::assert(val <= ::std::numeric_limits<::std::uint16_t>::max(), "此计数器为16位计数器."sv);
+            }
         }
     }
 
@@ -53,12 +56,32 @@ namespace SoC
                     ::SoC::tim_clock_div clock_div,
                     ::std::uint16_t rep_cnt) noexcept : tim_ptr{::std::bit_cast<::TIM_TypeDef*>(tim)}
     {
-        const auto check_rep_u8{
-            [rep_cnt] noexcept -> void
-            { ::SoC::assert(rep_cnt <= ::std::numeric_limits<::std::uint8_t>::max(), "此计数器重复次数上限为255."sv); }};
+        const auto check_rep_u8{[rep_cnt] noexcept -> void
+                                {
+                                    if constexpr(::SoC::use_full_assert)
+                                    {
+                                        ::SoC::assert(rep_cnt <= ::std::numeric_limits<::std::uint8_t>::max(),
+                                                      "此计数器重复次数上限为255."sv);
+                                    }
+                                    else
+                                    {
+                                        // 消除未使用捕获的警告
+                                        auto _{rep_cnt};
+                                    }
+                                }};
         const auto check_upcnt_only{[mode] noexcept -> void
-                                    { ::SoC::assert(mode == ::SoC::tim_mode::up, "此计数器仅支持向上计数"sv); }};
-        ::SoC::assert(!is_enabled(), "初始化前此定时器不应处于使能状态"sv);
+                                    {
+                                        if(::SoC::use_full_assert)
+                                        {
+                                            ::SoC::assert(mode == ::SoC::tim_mode::up, "此计数器仅支持向上计数"sv);
+                                        }
+                                        else
+                                        {
+                                            // 消除未使用捕获的警告
+                                            auto _{mode};
+                                        }
+                                    }};
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此定时器不应处于使能状态"sv); }
 
         switch(tim)
         {
@@ -69,34 +92,40 @@ namespace SoC
             case tim2:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM2};
-                check_rep_u8();
+                if constexpr(::SoC::use_full_assert) { check_rep_u8(); }
                 break;
             case tim3:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM3);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM3};
-                check_rep_u8();
+                if constexpr(::SoC::use_full_assert) { check_rep_u8(); }
                 break;
             case tim4:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM4};
-                check_rep_u8();
+                if constexpr(::SoC::use_full_assert) { check_rep_u8(); }
                 break;
             case tim5:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM5);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM5};
-                check_rep_u8();
+                if constexpr(::SoC::use_full_assert) { check_rep_u8(); }
                 break;
             case tim6:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM6};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim7:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM7);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM7};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim8:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM8);
@@ -105,38 +134,56 @@ namespace SoC
             case tim9:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM9);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM9};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim10:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM10);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM10};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim11:
                 ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM11);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB2_GRP1_DisableClock, LL_APB2_GRP1_PERIPH_TIM11};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim12:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM12);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM12};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim13:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM13);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM13};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
             case tim14:
                 ::LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM14);
                 callback = ::SoC::detail::dtor_close_clock_callback_t{::LL_APB1_GRP1_DisableClock, LL_APB1_GRP1_PERIPH_TIM14};
-                check_rep_u8();
-                check_upcnt_only();
+                if constexpr(::SoC::use_full_assert)
+                {
+                    check_rep_u8();
+                    check_upcnt_only();
+                }
                 break;
         }
         ::LL_TIM_SetCounterMode(tim_ptr, ::std::to_underlying(mode));
@@ -190,8 +237,18 @@ namespace SoC
 
     void ::SoC::tim::set_trigger_output(::SoC::tim_trigger_output trigger) const noexcept
     {
-        auto check{[trigger](::SoC::tim_trigger_output threshold)
-                   { ::SoC::assert(trigger <= threshold, "此定时器不支持此触发输出"sv); }};
+        const auto check{[trigger](::SoC::tim_trigger_output threshold)
+                         {
+                             if constexpr(::SoC::use_full_assert)
+                             {
+                                 ::SoC::assert(trigger <= threshold, "此定时器不支持此触发输出"sv);
+                             }
+                             else
+                             {
+                                 // 消除未使用捕获的警告
+                                 auto _{trigger};
+                             }
+                         }};
         switch(get_tim_enum())
         {
             case tim1: break;
@@ -201,13 +258,19 @@ namespace SoC
             case tim4:
             case tim5:
             case tim9:
-            case tim12: check(::SoC::tim_trigger_output::oc2ref); break;
+            case tim12:
+                if constexpr(::SoC::use_full_assert) { check(::SoC::tim_trigger_output::oc2ref); }
+                break;
             case tim10:
             case tim11:
             case tim13:
-            case tim14: check(::SoC::tim_trigger_output::oc1ref); break;
+            case tim14:
+                if constexpr(::SoC::use_full_assert) { check(::SoC::tim_trigger_output::oc1ref); }
+                break;
             case tim6:
-            case tim7: check(::SoC::tim_trigger_output::update); break;
+            case tim7:
+                if constexpr(::SoC::use_full_assert) { check(::SoC::tim_trigger_output::update); }
+                break;
         }
         ::LL_TIM_SetTriggerOutput(tim_ptr, ::std::to_underlying(trigger));
     }
@@ -223,10 +286,13 @@ namespace SoC
                                     ::SoC::tim_oc_polarity polarity) noexcept :
         tim_ptr{tim.tim_ptr}, channel{channel}, channel_mode{tim_channel_mode::oc}
     {
-        ::SoC::assert(!is_enabled(), "初始化前此通道不应处于使能状态"sv);
-        ::LL_TIM_OC_SetMode(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(mode));
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(!is_enabled(), "初始化前此通道不应处于使能状态"sv);
+            ::SoC::assert(channel <= ::SoC::get_max_channel(tim_ptr), "此定时器不具有指定的通道"sv);
+        }
 
-        ::SoC::assert(channel <= ::SoC::get_max_channel(tim_ptr), "此定时器不具有指定的通道"sv);
+        ::LL_TIM_OC_SetMode(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(mode));
         set_compare_value(compare_value);
 
         ::LL_TIM_OC_SetPolarity(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(polarity));
@@ -268,14 +334,20 @@ namespace SoC
 
     void ::SoC::tim_channel::check_mode_oc() const noexcept
     {
-        ::SoC::assert(channel_mode == ::SoC::tim_channel::tim_channel_mode::oc, "此通道应处于输出比较模式"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(channel_mode == ::SoC::tim_channel::tim_channel_mode::oc, "此通道应处于输出比较模式"sv);
+        }
     }
 
     void ::SoC::tim_channel::configure_compl_channel(::SoC::tim_oc_polarity polarity) noexcept
     {
-        ::SoC::assert(!has_compl_channel(), "初始化互补通道前此对象不应该有关联的互补通道"sv);
-        check_mode_oc();
-        ::SoC::assert(channel != ::SoC::tim_channel::ch4, "定时器的通道4不具有互补通道"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(!has_compl_channel(), "初始化互补通道前此对象不应该有关联的互补通道"sv);
+            check_mode_oc();
+            ::SoC::assert(channel != ::SoC::tim_channel::ch4, "定时器的通道4不具有互补通道"sv);
+        }
         compl_channel = static_cast<::SoC::detail::tim_channel>(::std::to_underlying(channel) << 2);
         ::LL_TIM_OC_SetPolarity(tim_ptr, ::std::to_underlying(compl_channel), ::std::to_underlying(polarity));
     }
@@ -291,20 +363,23 @@ namespace SoC
 
     void ::SoC::tim_channel::enable_oc_preload() const noexcept
     {
-        check_mode_oc();
+        if constexpr(::SoC::use_full_assert) { check_mode_oc(); }
         ::LL_TIM_OC_EnablePreload(tim_ptr, ::std::to_underlying(channel));
     }
 
     void ::SoC::tim_channel::disable_oc_preload() const noexcept
     {
-        check_mode_oc();
+        if constexpr(::SoC::use_full_assert) { check_mode_oc(); }
         ::LL_TIM_OC_DisablePreload(tim_ptr, ::std::to_underlying(channel));
     }
 
     void ::SoC::tim_channel::set_compare_value(::std::uint32_t compare_value, bool force_update) const noexcept
     {
-        check_mode_oc();
-        check_tim_u16(tim_ptr, compare_value);
+        if constexpr(::SoC::use_full_assert)
+        {
+            check_mode_oc();
+            check_tim_u16(tim_ptr, compare_value);
+        }
         switch(channel)
         {
             case ch1: ::LL_TIM_OC_SetCompareCH1(tim_ptr, compare_value); break;

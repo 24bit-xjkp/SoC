@@ -3,6 +3,8 @@
 
 namespace SoC
 {
+    using namespace ::std::string_view_literals;
+
     void set_priority_group(::SoC::nvic_priority_group group) noexcept
     {
         ::NVIC_SetPriorityGrouping(::std::to_underlying(group));
@@ -33,8 +35,11 @@ namespace SoC
                                  auto mask{(1zu << bit) - 1};
                                  return (priority & mask) == priority;
                              }};
-        ::SoC::assert(check(preempt_bit, preempt_priority), "抢占优先级超出范围");
-        ::SoC::assert(check(sub_bit, sub_priority), "抢占优先级超出范围");
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(check(preempt_bit, preempt_priority), "抢占优先级超出范围"sv);
+            ::SoC::assert(check(sub_bit, sub_priority), "抢占优先级超出范围"sv);
+        }
         return preempt_priority << sub_bit | sub_priority;
     }
 

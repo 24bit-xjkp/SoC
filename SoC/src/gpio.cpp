@@ -6,7 +6,7 @@ namespace SoC
 
     ::SoC::gpio_port::gpio_port(port_enum port) noexcept : port{port}
     {
-        ::SoC::assert(!is_enabled(), "初始化前此gpio端口不应处于使能状态"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此gpio端口不应处于使能状态"sv); }
         enable();
     }
 
@@ -39,22 +39,31 @@ namespace SoC
                               ::SoC::gpio_output_type output_type) noexcept : gpio{gpio_port.get_port()}, pin{pin}, mode{mode}
     {
         // 非复用模式下，复用号为非法值；复用模式下，复用号不能为非法值
-        ::SoC::assert((mode == ::SoC::gpio_mode::alternate && af != ::SoC::gpio_af::default_af) ||
-                          af == ::SoC::gpio_af::default_af,
-                      "当且仅当引脚为复用模式时需要设置功能复用"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert((mode == ::SoC::gpio_mode::alternate && af != ::SoC::gpio_af::default_af) ||
+                              af == ::SoC::gpio_af::default_af,
+                          "当且仅当引脚为复用模式时需要设置功能复用"sv);
+        }
         switch(mode)
         {
             case ::SoC::gpio_mode::alternate: break;
             case ::SoC::gpio_mode::output:
                 // 推挽不应该设置上下拉电阻，pull保持默认值
-                ::SoC::assert(output_type == ::SoC::gpio_output_type::open_drain || pull == ::SoC::gpio_pull::default_pull,
-                              "推挽输出不应设置上下拉电阻"sv);
+                if constexpr(::SoC::use_full_assert)
+                {
+                    ::SoC::assert(output_type == ::SoC::gpio_output_type::open_drain || pull == ::SoC::gpio_pull::default_pull,
+                                  "推挽输出不应设置上下拉电阻"sv);
+                }
                 break;
             default:
-                // 非输出模式下，output_type保持默认值
-                ::SoC::assert(output_type == ::SoC::gpio_output_type::default_type, "非输出模式不应设置输出类型"sv);
-                // 非输出模式下，speed保持默认值
-                ::SoC::assert(speed == ::SoC::gpio_speed::default_speed, "非输出模式不应设置输出速度"sv);
+                if constexpr(::SoC::use_full_assert)
+                {
+                    // 非输出模式下，output_type保持默认值
+                    ::SoC::assert(output_type == ::SoC::gpio_output_type::default_type, "非输出模式不应设置输出类型"sv);
+                    // 非输出模式下，speed保持默认值
+                    ::SoC::assert(speed == ::SoC::gpio_speed::default_speed, "非输出模式不应设置输出速度"sv);
+                }
                 break;
         }
 
@@ -74,7 +83,10 @@ namespace SoC
             if(mode == ::SoC::gpio_mode::alternate)
             {
                 if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::std::to_underlying(af)); }
-                else { ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(af)); }
+                else
+                {
+                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(af));
+                }
             }
 
             ::LL_GPIO_SetPinMode(gpio, current_pin, ::std::to_underlying(mode));
@@ -88,40 +100,43 @@ namespace SoC
         if(pin_in == default_pins) { return pin; }
         else
         {
-            ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv);
+            if constexpr(::SoC::use_full_assert)
+            {
+                ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv);
+            }
             return pin_in;
         }
     }
 
     void ::SoC::gpio_pin::check_output_mode() const noexcept
     {
-        ::SoC::assert(mode == ::SoC::gpio_mode::output, "当前引脚模式不支持此操作"sv);
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(mode == ::SoC::gpio_mode::output, "当前引脚模式不支持此操作"sv); }
     }
 
     void ::SoC::gpio_pin::toggle(pin_enum pin_in) const noexcept
     {
-        check_output_mode();
+        if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
         ::LL_GPIO_TogglePin(gpio, ::std::to_underlying(pin_in));
     }
 
     void ::SoC::gpio_pin::set(pin_enum pin_in) const noexcept
     {
-        check_output_mode();
+        if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
         ::LL_GPIO_SetOutputPin(gpio, ::std::to_underlying(pin_in));
     }
 
     void ::SoC::gpio_pin::reset(pin_enum pin_in) const noexcept
     {
-        check_output_mode();
+        if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
         ::LL_GPIO_ResetOutputPin(gpio, ::std::to_underlying(pin_in));
     }
 
     void ::SoC::gpio_pin::write(bool level, pin_enum pin_in) const noexcept
     {
-        check_output_mode();
+        if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
         // 低16位置1，高16位清零
         gpio->BSRR = ::std::to_underlying(pin) << !level * 16;
@@ -129,9 +144,15 @@ namespace SoC
 
     bool ::SoC::gpio_pin::read(pin_enum pin_in) const noexcept
     {
-        ::SoC::assert(mode != ::SoC::gpio_mode::analog, "模拟模式下不支持读取数据寄存器"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(mode != ::SoC::gpio_mode::analog, "模拟模式下不支持读取数据寄存器"sv);
+        }
         pin_in = check_pin(pin_in);
         if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin_in)); }
-        else { return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in)); }
+        else
+        {
+            return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in));
+        }
     }
 }  // namespace SoC

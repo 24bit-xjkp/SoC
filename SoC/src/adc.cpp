@@ -155,15 +155,21 @@ namespace SoC
         using enum ::SoC::adc::adc_enum;
         ::SoC::dma_channel channel;
         ::SoC::dma_stream::dma_stream_enum stream;
-        auto check_select_stream{[selected_stream](::SoC::dma_stream::dma_stream_enum allowed_stream1,
-                                                   ::SoC::dma_stream::dma_stream_enum allowed_stream2) noexcept
-                                 {
-                                     if constexpr(::SoC::use_full_assert)
-                                     {
-                                         ::SoC::assert(selected_stream == allowed_stream1 || selected_stream == allowed_stream2,
-                                                       "该dma不能使用指定的dma数据流"sv);
-                                     }
-                                 }};
+        const auto check_select_stream{[selected_stream](::SoC::dma_stream::dma_stream_enum allowed_stream1,
+                                                         ::SoC::dma_stream::dma_stream_enum allowed_stream2) noexcept
+                                       {
+                                           if constexpr(::SoC::use_full_assert)
+                                           {
+                                               ::SoC::assert(selected_stream == allowed_stream1 ||
+                                                                 selected_stream == allowed_stream2,
+                                                             "该dma不能使用指定的dma数据流"sv);
+                                           }
+                                           else
+                                           {
+                                               // 消除未使用捕获的警告
+                                               auto _{selected_stream};
+                                           }
+                                       }};
         switch(get_adc_enum())
         {
             case adc1:
@@ -171,7 +177,7 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st0; }
                 else
                 {
-                    check_select_stream(st0, st4);
+                    if constexpr(::SoC::use_full_assert) { check_select_stream(st0, st4); }
                     stream = selected_stream;
                 }
                 break;
@@ -180,7 +186,7 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st2; }
                 else
                 {
-                    check_select_stream(st2, st3);
+                    if constexpr(::SoC::use_full_assert) { check_select_stream(st2, st3); }
                     stream = selected_stream;
                 }
                 break;
@@ -189,7 +195,7 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st0; }
                 else
                 {
-                    check_select_stream(st0, st1);
+                    if constexpr(::SoC::use_full_assert) { check_select_stream(st0, st1); }
                     stream = selected_stream;
                 }
                 break;
