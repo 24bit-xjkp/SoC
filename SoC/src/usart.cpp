@@ -201,6 +201,8 @@ namespace SoC
 
     bool ::SoC::usart::get_flag_txe() const noexcept { return ::LL_USART_IsActiveFlag_TXE(usart_ptr); }
 
+    bool ::SoC::usart::is_it_txe() const noexcept { return get_flag_txe() && get_it_txe(); }
+
     void ::SoC::usart::set_it_rxne(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_RXNE(usart_ptr); }
@@ -214,6 +216,8 @@ namespace SoC
 
     bool ::SoC::usart::get_flag_rxne() const noexcept { return ::LL_USART_IsActiveFlag_RXNE(usart_ptr); }
 
+    bool ::SoC::usart::is_it_rxne() const noexcept { return get_flag_rxne() && get_it_rxne(); }
+
     void ::SoC::usart::set_it_idle(bool enable) const noexcept
     {
         if(enable) { ::LL_USART_EnableIT_IDLE(usart_ptr); }
@@ -226,6 +230,8 @@ namespace SoC
     bool ::SoC::usart::get_it_idle() const noexcept { return ::LL_USART_IsEnabledIT_IDLE(usart_ptr); }
 
     bool ::SoC::usart::get_flag_idle() const noexcept { return ::LL_USART_IsActiveFlag_IDLE(usart_ptr); }
+
+    bool ::SoC::usart::is_it_idle() const noexcept { return get_flag_idle() && get_it_idle(); }
 
     void ::SoC::usart::clear_flag_idle() const noexcept { ::LL_USART_ClearFlag_IDLE(usart_ptr); }
 

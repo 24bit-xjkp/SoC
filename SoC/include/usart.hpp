@@ -289,70 +289,91 @@ namespace SoC
         void disable_irq() const noexcept;
 
         /**
-         * @brief 设置TXE中断状态
+         * @brief 设置发送寄存器空中断状态
          *
          * @param enable 是否使能中断
          */
         void set_it_txe(bool enable) const noexcept;
 
         /**
-         * @brief 获取TXE中断状态
+         * @brief 获取发送寄存器空中断状态
          *
          * @return 中断是否使能
          */
         bool get_it_txe() const noexcept;
 
         /**
-         * @brief 获取TXE标记
+         * @brief 获取发送寄存器空标记
          *
-         * @return TXE标记状态
+         * @return 发送寄存器空标记状态
          */
         bool get_flag_txe() const noexcept;
 
         /**
-         * @brief 设置RXNE中断状态
+         * @brief 判断发生的串口中断是否为发送寄存器空中断
+         *
+         * @return 发生的串口中断是否为发送寄存器空中断
+         */
+        bool is_it_txe() const noexcept;
+
+        /**
+         * @brief 设置接收寄存器非空中断状态
          *
          * @param enable 是否使能中断
          */
         void set_it_rxne(bool enable) const noexcept;
 
         /**
-         * @brief 获取RXNE中断状态
+         * @brief 获取接收寄存器非空中断状态
          *
          * @return 中断是否使能
          */
         bool get_it_rxne() const noexcept;
 
         /**
-         * @brief 获取RXNE标记
+         * @brief 获取接收寄存器非空标记
          *
-         * @return RXNE标记状态
+         * @return 接收寄存器非空标记状态
          */
         bool get_flag_rxne() const noexcept;
 
         /**
-         * @brief 设置IDLE中断状态
+         * @brief 判断发生的串口中断是否为接收寄存器非空中断
+         *
+         * @return 发生的串口中断是否为接收寄存器非空中断
+         */
+        bool is_it_rxne() const noexcept;
+
+        /**
+         * @brief 设置空闲中断状态
          *
          * @param enable 中断是否使能
          */
         void set_it_idle(bool enable) const noexcept;
 
         /**
-         * @brief 获取IDLE中断状态
+         * @brief 获取空闲中断状态
          *
          * @return 中断是否使能
          */
         bool get_it_idle() const noexcept;
 
         /**
-         * @brief 获取IDLE标记
+         * @brief 获取空闲标记
          *
-         * @return IDLE标记状态
+         * @return 空闲标记状态
          */
         bool get_flag_idle() const noexcept;
 
         /**
-         * @brief 清除IDLE标记
+         * @brief 判断发生的串口中断是否为空闲中断
+         *
+         * @return 发生的串口中断是否为空闲中断
+         */
+        bool is_it_idle() const noexcept;
+
+        /**
+         * @brief 清除空闲标记
          *
          */
         void clear_flag_idle() const noexcept;
