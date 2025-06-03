@@ -177,16 +177,16 @@ namespace SoC
     void ::SoC::usart::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept
     {
         ::SoC::set_priority(irqn, preempt_priority, sub_priority);
-        ::SoC::enable_irqn(irqn);
+        ::SoC::enable_irq(irqn);
     }
 
     void ::SoC::usart::enable_irq(::std::size_t encoded_priority) const noexcept
     {
         ::SoC::set_priority(irqn, encoded_priority);
-        ::SoC::enable_irqn(irqn);
+        ::SoC::enable_irq(irqn);
     }
 
-    void ::SoC::usart::disable_irq() const noexcept { ::SoC::disable_irqn(irqn); }
+    void ::SoC::usart::disable_irq() const noexcept { ::SoC::disable_irq(irqn); }
 
     void ::SoC::usart::set_it_txe(bool enable) const noexcept
     {

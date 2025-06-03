@@ -61,7 +61,7 @@ namespace SoC
         return ::SoC::decode_priority(::SoC::get_priority(irqn));
     }
 
-    void enable_irqn(::IRQn_Type irqn) noexcept { ::NVIC_EnableIRQ(irqn); }
+    void enable_irq(::IRQn_Type irqn) noexcept { ::NVIC_EnableIRQ(irqn); }
 
-    void disable_irqn(::IRQn_Type irqn) noexcept { ::NVIC_DisableIRQ(irqn); }
+    void disable_irq(::IRQn_Type irqn) noexcept { ::NVIC_DisableIRQ(irqn); }
 }  // namespace SoC

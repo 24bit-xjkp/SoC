@@ -90,14 +90,14 @@ namespace SoC
      *
      * @param irqn 中断枚举
      */
-    void enable_irqn(::IRQn_Type irqn) noexcept;
+    void enable_irq(::IRQn_Type irqn) noexcept;
 
     /**
      * @brief 失能中断
      *
      * @param irqn 中断枚举
      */
-    void disable_irqn(::IRQn_Type irqn) noexcept;
+    void disable_irq(::IRQn_Type irqn) noexcept;
 
     /**
      * @brief 使能全局中断
@@ -119,6 +119,9 @@ namespace SoC
     inline void set_irq(bool enable) noexcept
     {
         if(enable) { ::SoC::enable_irq(); }
-        else { ::SoC::disable_irq(); }
+        else
+        {
+            ::SoC::disable_irq();
+        }
     }
 }  // namespace SoC
