@@ -37,7 +37,7 @@
 ENTRY(Reset_Handler)
 
 
-_Min_Heap_Size = 0x200; /* required amount of heap */
+_Min_Heap_Size = 0x800; /* required amount of heap */
 _Min_Stack_Size = 0x400; /* required amount of stack */
 
 /* Memories definition */
@@ -47,9 +47,6 @@ MEMORY
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
   ROM    (rx)    : ORIGIN = 0x08000000,   LENGTH = 1024K
 }
-
-/* Highest address of the user mode stack */
-_estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
 
 /* Sections */
 SECTIONS
@@ -168,7 +165,10 @@ SECTIONS
 
     . = ALIGN(4);
     _eccmram = .;       /* create a global symbol at ccmram end */
+    . = ALIGN(8);
+    _ccmram_heap_start =.;
   } >CCMRAM AT> ROM
+  _ccmram_heap_end = ORIGIN(CCMRAM) + LENGTH(CCMRAM);
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
@@ -186,17 +186,24 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM
 
-  /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
-  ._user_heap_stack :
+  ._user_stack :
   {
     . = ALIGN(8);
     PROVIDE ( end = . );
     PROVIDE ( _end = . );
     PROVIDE ( __end__ = . );
-    . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
+    _estack = .;
   } >RAM
+
+  .user_heap :
+  {
+   . = ALIGN(8);
+    _user_heap_start =.;
+    . = . + _Min_Heap_Size;
+  } >RAM
+  _user_heap_end = ORIGIN(RAM) + LENGTH(RAM);
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :
