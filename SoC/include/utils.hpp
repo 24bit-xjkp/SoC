@@ -381,6 +381,32 @@ namespace SoC
     {
         return ::std::bit_cast<::std::array<target_type, bytes / sizeof(target_type)>>(array);
     }
+
+    /**
+     * @brief 将浮点数四舍五入，使用数值算法
+     *
+     * @tparam n 保留的小数位数
+     * @param value 浮点数
+     * @return 四舍五入结果
+     */
+    template <::std::size_t n>
+    constexpr inline auto round(float value) noexcept
+    {
+        constexpr float scaler{[] consteval noexcept
+                               {
+                                   float result{1.f};
+                                   float temp{10.f};
+                                   auto i{n};
+                                   while(i != 0)
+                                   {
+                                       result *= (i & 1) == 1 ? temp : 1.f;
+                                       temp *= temp;
+                                       i >>= 1;
+                                   }
+                                   return result;
+                               }()};
+        return ::std::round(value * scaler) / scaler;
+    }
 }  // namespace SoC
 
 namespace SoC
