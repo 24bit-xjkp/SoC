@@ -1,4 +1,5 @@
 #include "../include/adc.hpp"
+#include "../include/io.hpp"
 
 namespace SoC
 {
@@ -93,7 +94,13 @@ namespace SoC
 
     ::SoC::adc_regular_group::~adc_regular_group() noexcept
     {
-        if(adc_ptr) [[likely]] { disable(); }
+        if(adc_ptr) [[likely]]
+        {
+            clear_flag_eocs();
+            clear_flag_ovr();
+            stop_dma();
+            disable();
+        }
     }
 
     ::SoC::adc_regular_group::adc_regular_group(adc_regular_group&& other) noexcept
@@ -113,7 +120,11 @@ namespace SoC
         ::LL_ADC_REG_SetContinuousMode(adc_ptr, continuous_mode ? LL_ADC_REG_CONV_CONTINUOUS : LL_ADC_REG_CONV_SINGLE);
     }
 
-    void ::SoC::adc_regular_group::set_dma_mode(::SoC::adc_regular_dma_mode dma_mode) noexcept { this->dma_mode = dma_mode; }
+    void ::SoC::adc_regular_group::set_dma_mode(::SoC::adc_regular_dma_mode dma_mode) noexcept
+    {
+        this->dma_mode = dma_mode;
+        reset_dma();
+    }
 
     void ::SoC::adc_regular_group::set_seq_discont(::SoC::adc_regular_seq_discont seq_discont) const noexcept
     {
@@ -139,6 +150,7 @@ namespace SoC
     }
 
     ::SoC::dma_stream(::SoC::adc_regular_group::enable_dma)(::SoC::dma& dma,
+                                                            ::SoC::dma_mode mode,
                                                             ::SoC::dma_fifo_threshold fifo_threshold,
                                                             ::SoC::dma_memory_burst burst,
                                                             ::SoC::dma_priority priority,
@@ -149,12 +161,6 @@ namespace SoC
             ::SoC::assert(dma_mode != ::SoC::adc_regular_dma_mode::none, "该adc规则组已配置为不使用dma"sv);
             ::SoC::assert(dma.get_dma_enum() == ::SoC::dma::dma2, "该dma外设不能操作该adc"sv);
         }
-        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::std::to_underlying(dma_mode));
-        using enum ::SoC::dma_stream::dma_stream_enum;
-        using enum ::SoC::dma_channel;
-        using enum ::SoC::adc::adc_enum;
-        ::SoC::dma_channel channel;
-        ::SoC::dma_stream::dma_stream_enum stream;
         const auto check_select_stream{[selected_stream](::SoC::dma_stream::dma_stream_enum allowed_stream1,
                                                          ::SoC::dma_stream::dma_stream_enum allowed_stream2) noexcept
                                        {
@@ -170,6 +176,12 @@ namespace SoC
                                                auto _{selected_stream};
                                            }
                                        }};
+
+        using enum ::SoC::dma_stream::dma_stream_enum;
+        using enum ::SoC::dma_channel;
+        using enum ::SoC::adc::adc_enum;
+        ::SoC::dma_channel channel;
+        ::SoC::dma_stream::dma_stream_enum stream;
         switch(get_adc_enum())
         {
             case adc1:
@@ -206,8 +218,7 @@ namespace SoC
                                  channel,
                                  ::LL_ADC_DMA_GetRegAddr(adc_ptr, LL_ADC_DMA_REG_REGULAR_DATA),
                                  ::SoC::dma_direction::p2m,
-                                 dma_mode == ::SoC::adc_regular_dma_mode::limited ? ::SoC::dma_mode::normal
-                                                                                  : ::SoC::dma_mode::circle,
+                                 mode,
                                  false,
                                  true,
                                  ::SoC::dma_periph_data_size::half_word,
@@ -242,16 +253,33 @@ namespace SoC
         }
     }
 
-    void ::SoC::adc_regular_group::disable() const noexcept
-    {
-        if(trigger_source != ::SoC::adc_regular_trigger_source::software) { ::LL_ADC_REG_StopConversionExtTrig(adc_ptr); }
-    }
+    void ::SoC::adc_regular_group::disable() const noexcept { ::LL_ADC_REG_StopConversionExtTrig(adc_ptr); }
 
-    bool ::SoC::adc_regular_group::get_eocs_flag() const noexcept { return ::LL_ADC_IsActiveFlag_EOCS(adc_ptr); }
+    bool ::SoC::adc_regular_group::get_flag_eocs() const noexcept { return ::LL_ADC_IsActiveFlag_EOCS(adc_ptr); }
 
-    void ::SoC::adc_regular_group::clear_eocs_flag() const noexcept { ::LL_ADC_ClearFlag_EOCS(adc_ptr); }
+    void ::SoC::adc_regular_group::clear_flag_eocs() const noexcept { ::LL_ADC_ClearFlag_EOCS(adc_ptr); }
+
+    bool ::SoC::adc_regular_group::get_flag_ovr() const noexcept { return ::LL_ADC_IsActiveFlag_OVR(adc_ptr); }
+
+    void ::SoC::adc_regular_group::clear_flag_ovr() const noexcept { ::LL_ADC_ClearFlag_OVR(adc_ptr); }
 
     ::std::size_t(::SoC::adc_regular_group::get_result)() const noexcept { return ::LL_ADC_REG_ReadConversionData12(adc_ptr); }
+
+    void ::SoC::adc_regular_group::stop_dma() const noexcept
+    {
+        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::std::to_underlying(::SoC::adc_regular_dma_mode::none));
+    }
+
+    void ::SoC::adc_regular_group::set_dma() const noexcept
+    {
+        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::std::to_underlying(dma_mode));
+    }
+
+    void ::SoC::adc_regular_group::reset_dma() const noexcept
+    {
+        stop_dma();
+        set_dma();
+    }
 }  // namespace SoC
 
 namespace SoC
@@ -280,8 +308,10 @@ namespace SoC
                                                                  {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
                                                                  }
         };
-        auto& adc_dma_stream{*new(&dma_stream.obj)::SoC::dma_stream{
-            regular_group.enable_dma(dma, ::SoC::dma_fifo_threshold::full, ::SoC::dma_memory_burst::inc8)}};
+        auto& adc_dma_stream{*new(&dma_stream.obj)::SoC::dma_stream{regular_group.enable_dma(dma,
+                                                                                             ::SoC::dma_mode::normal,
+                                                                                             ::SoC::dma_fifo_threshold::full,
+                                                                                             ::SoC::dma_memory_burst::inc8)}};
         adc.enable();
         adc_dma_stream.read(buffer.begin(), buffer.end());
         regular_group.enable(::SoC::adc_trig_edge::software);
@@ -289,13 +319,13 @@ namespace SoC
 
     ::SoC::adc_calibrator::~adc_calibrator() noexcept
     {
+        adc.disable();
         if(old_resolution != resolution) { adc.set_resolution(old_resolution); }
         if(old_scan_mode != scan_mode) { adc.set_scan_mode(old_scan_mode); }
         if(old_alignment != alignment) { adc.set_alignment(old_alignment); }
-        adc.disable();
     }
 
-    bool ::SoC::adc_calibrator::is_sample_ready() const noexcept { return dma_stream.obj.get_tc_flag(); }
+    bool ::SoC::adc_calibrator::is_sample_ready() const noexcept { return dma_stream.obj.get_flag_tc(); }
 
     ::std::pair<float, float>(::SoC::adc_calibrator::get_result)() const noexcept
     {

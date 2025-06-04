@@ -92,10 +92,10 @@ namespace SoC
          * @param resolution adc分辨率
          * @param alignment adc数据对齐方式
          */
-        adc(adc_enum adc,
-            bool scan_mode,
-            ::SoC::adc_resolution resolution = ::SoC::adc_resolution::bit12,
-            ::SoC::adc_data_alignment alignment = ::SoC::adc_data_alignment::right) noexcept;
+        explicit adc(adc_enum adc,
+                     bool scan_mode,
+                     ::SoC::adc_resolution resolution = ::SoC::adc_resolution::bit12,
+                     ::SoC::adc_data_alignment alignment = ::SoC::adc_data_alignment::right) noexcept;
 
         /**
          * @brief 失能adc外设，然后关闭时钟
@@ -379,7 +379,7 @@ namespace SoC
         };
 
         /// 没有选定的dma数据流，即使用模式配置
-        constexpr inline static auto no_selected_stream{static_cast<::SoC::dma_stream::dma_stream_enum>(-1zu)};
+        constexpr inline static ::SoC::dma_stream::dma_stream_enum no_selected_stream{-1zu};
 
     public:
         /**
@@ -427,12 +427,12 @@ namespace SoC
          * @param channel_list adc规则组使用的通道列表
          * @param seq_discont adc规则组不连续扫描
          */
-        adc_regular_group(::SoC::adc& adc,
-                          ::SoC::adc_regular_trigger_source trigger_source,
-                          bool continuous_mode,
-                          ::SoC::adc_regular_dma_mode dma_mode,
-                          ::std::initializer_list<::SoC::adc_channel_initializer> channel_list,
-                          ::SoC::adc_regular_seq_discont seq_discont = ::SoC::adc_regular_seq_discont::disable) noexcept;
+        explicit adc_regular_group(::SoC::adc& adc,
+                                   ::SoC::adc_regular_trigger_source trigger_source,
+                                   bool continuous_mode,
+                                   ::SoC::adc_regular_dma_mode dma_mode,
+                                   ::std::initializer_list<::SoC::adc_channel_initializer> channel_list,
+                                   ::SoC::adc_regular_seq_discont seq_discont = ::SoC::adc_regular_seq_discont::disable) noexcept;
 
         /**
          * @brief 失能adc规则组，但不会停止已经开始的转换
@@ -477,6 +477,7 @@ namespace SoC
          * @brief 使能adc规则组dma写入
          *
          * @param dma dma外设
+         * @param mode dma传输模式
          * @param fifo_threshold fifo队列阈值
          * @param burst 默认内存侧突发
          * @param priority dma传输优先级
@@ -485,6 +486,7 @@ namespace SoC
          */
         [[nodiscard("该函数返回具有raii的dma数据流对象，不应该弃用返回值")]] ::SoC::dma_stream
             enable_dma(::SoC::dma& dma,
+                       ::SoC::dma_mode mode,
                        ::SoC::dma_fifo_threshold fifo_threshold = ::SoC::dma_fifo_threshold::disable,
                        ::SoC::dma_memory_burst burst = ::SoC::dma_memory_burst::single,
                        ::SoC::dma_priority priority = ::SoC::dma_priority::low,
@@ -501,7 +503,6 @@ namespace SoC
         /**
          * @brief 失能adc规则组触发
          *
-         * @note 对于软件触发，不会进行操作；对于外部触发，会失能触发源，但不会停止已经开始的转化
          */
         void disable() const noexcept;
 
@@ -510,13 +511,26 @@ namespace SoC
          *
          * @return 转换完成标志
          */
-        bool get_eocs_flag() const noexcept;
+        bool get_flag_eocs() const noexcept;
 
         /**
-         * @brief 设置转换完成标志
+         * @brief 清除转换完成标志
          *
          */
-        void clear_eocs_flag() const noexcept;
+        void clear_flag_eocs() const noexcept;
+
+        /**
+         * @brief 获取溢出标志
+         *
+         * @return 溢出标志
+         */
+        bool get_flag_ovr() const noexcept;
+
+        /**
+         * @brief 清除溢出标志
+         *
+         */
+        void clear_flag_ovr() const noexcept;
 
         /**
          * @brief 获取adc结果
@@ -524,6 +538,24 @@ namespace SoC
          * @return adc结果
          */
         ::std::size_t get_result() const noexcept;
+
+        /**
+         * @brief 停止dma，将adc的dma标志清除
+         *
+         */
+        void stop_dma() const noexcept;
+
+        /**
+         * @brief 根据dma配置，设置adc的dma标志
+         *
+         */
+        void set_dma() const noexcept;
+
+        /**
+         * @brief 首先清除dma标志，然后根据dma配置重设adc的dma标志
+         *
+         */
+        void reset_dma() const noexcept;
     };
 
     /**
@@ -575,31 +607,23 @@ namespace SoC
         constexpr inline static auto scan_mode{true};
         constexpr inline static auto alignment{::SoC::adc_data_alignment::right};
 
-        union dma_stream_union
-        {
-            ::SoC::dma_stream obj;
-
-            inline dma_stream_union() {}
-
-            inline ~dma_stream_union()
-            {
-                obj.clear_tc_flag();
-                ::std::destroy_at(&obj);
-            }
-        } dma_stream;
-
         union adc_regular_group_union
         {
             ::SoC::adc_regular_group obj;
 
             inline adc_regular_group_union() {}
 
-            inline ~adc_regular_group_union()
-            {
-                obj.clear_eocs_flag();
-                ::std::destroy_at(&obj);
-            }
+            inline ~adc_regular_group_union() { ::std::destroy_at(&obj); }
         } adc_regular_group;
+
+        union dma_stream_union
+        {
+            ::SoC::dma_stream obj;
+
+            inline dma_stream_union() {}
+
+            inline ~dma_stream_union() { ::std::destroy_at(&obj); }
+        } dma_stream;
 
     public:
         /**
@@ -609,7 +633,7 @@ namespace SoC
          * @param adc adc外设对象
          * @param dma dma外设对象
          */
-        adc_calibrator(::SoC::adc& adc, ::SoC::dma& dma) noexcept;
+        explicit adc_calibrator(::SoC::adc& adc, ::SoC::dma& dma) noexcept;
 
         /**
          * @brief 关闭adc校准器
