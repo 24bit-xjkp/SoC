@@ -24,7 +24,7 @@ namespace SoC
 
         consteval inline char operator[] (::std::size_t i) const noexcept { return buffer[i]; }
 
-        consteval inline operator ::std::string_view() const noexcept { return {begin(), end()}; }
+        consteval inline operator ::std::string_view () const noexcept { return {begin(), end()}; }
     };
 
     /**
@@ -196,7 +196,10 @@ namespace SoC
                             array[i++] = false;
                             array[i++] = true;
                         }
-                        else { array[i++] = true; }
+                        else
+                        {
+                            array[i++] = true;
+                        }
                         ptr = placehold;
                     }
                     array.back() = placehold_list.back() + 2 >= fmt.end();
@@ -213,18 +216,17 @@ namespace SoC
         {
             ::std::array<string_and_size_t, *get_split_string_and_size_array_size()> buffer{};
             auto placehold_list{*get_placehold_list()};
+            ::std::span placehold_view{placehold_list};
             auto ptr{fmt.begin()};
+            if(ptr == placehold_view.front()) { placehold_view = placehold_view.subspan(1); }
             auto i{0zu};
-            for(auto placehold: placehold_list)
+            for(auto placehold: placehold_view)
             {
                 if(ptr == fmt.begin())
                 {
-                    if(ptr != placehold) { buffer[i++] = get_string_and_size({ptr, placehold}); }
+                    buffer[i++] = get_string_and_size({ptr == placehold_list.front() ? ptr + 2 : ptr, placehold});
                 }
-                else
-                {
-                    if(ptr + 2 != placehold) { buffer[i++] = get_string_and_size({ptr + 2, placehold}); }
-                }
+                else if(ptr + 2 != placehold) { buffer[i++] = get_string_and_size({ptr + 2, placehold}); }
                 ptr = placehold;
             }
             if(i != buffer.size()) { buffer[i] = get_string_and_size({ptr + 2, fmt.end()}); }
@@ -310,7 +312,10 @@ namespace SoC
             {
                 return get_split_string_tuple_impl(::std::make_index_sequence<size>{});
             }
-            else { return; }
+            else
+            {
+                return;
+            }
         }
 
         /**
