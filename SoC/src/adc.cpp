@@ -1,5 +1,5 @@
 #include "../include/adc.hpp"
-#include "../include/io.hpp"
+#include "../include/nvic.hpp"
 
 namespace SoC
 {
@@ -382,4 +382,73 @@ namespace SoC
         constexpr float lsb{1.f / max_adc_value};
         return ::std::pair{actual_vref * lsb, temp};
     }
+}  // namespace SoC
+
+namespace SoC
+{
+    ::SoC::analog_watchdog::analog_watchdog(::SoC::adc& adc,
+                                            awd_enum channel,
+                                            ::std::size_t low_threshold,
+                                            ::std::size_t high_threshold) noexcept : adc_ptr{adc.get_adc()}, awd_channel{channel}
+    {
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此模拟看门狗不应处于使能状态"sv); }
+        set_low_threshold(low_threshold);
+        set_high_threshold(high_threshold);
+        enable();
+    }
+
+    bool ::SoC::analog_watchdog::is_enabled() const noexcept
+    {
+        return ::LL_ADC_GetAnalogWDMonitChannels(adc_ptr) != LL_ADC_AWD_DISABLE;
+    }
+
+    void ::SoC::analog_watchdog::enable() const noexcept
+    {
+        ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::std::to_underlying(awd_channel));
+    }
+
+    void ::SoC::analog_watchdog::disable() const noexcept { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, LL_ADC_AWD_DISABLE); }
+
+    void ::SoC::analog_watchdog::set_low_threshold(::std::size_t threshold) noexcept
+    {
+        low_threshold = threshold;
+        ::LL_ADC_SetAnalogWDThresholds(adc_ptr, LL_ADC_AWD_THRESHOLD_LOW, low_threshold);
+    }
+
+    void ::SoC::analog_watchdog::set_high_threshold(::std::size_t threshold) noexcept
+    {
+        high_threshold = threshold;
+        ::LL_ADC_SetAnalogWDThresholds(adc_ptr, LL_ADC_AWD_THRESHOLD_HIGH, high_threshold);
+    }
+
+    void ::SoC::analog_watchdog::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept
+    {
+        ::SoC::enable_irq(irqn);
+        ::SoC::set_priority(irqn, preempt_priority, sub_priority);
+    }
+
+    void ::SoC::analog_watchdog::enable_irq(::std::size_t encoded_priority) const noexcept
+    {
+        ::SoC::enable_irq(irqn);
+        ::SoC::set_priority(irqn, encoded_priority);
+    }
+
+    void ::SoC::analog_watchdog::disable_irq() const noexcept { ::SoC::disable_irq(irqn); }
+
+    void ::SoC::analog_watchdog::set_it_awd(bool enable) const noexcept
+    {
+        if(enable) { ::LL_ADC_EnableIT_AWD1(adc_ptr); }
+        else
+        {
+            ::LL_ADC_DisableIT_AWD1(adc_ptr);
+        }
+    }
+
+    bool ::SoC::analog_watchdog::get_it_awd() const noexcept { return ::LL_ADC_IsEnabledIT_AWD1(adc_ptr); }
+
+    bool ::SoC::analog_watchdog::is_it_awd() const noexcept { return get_flag_awd() && get_it_awd(); }
+
+    bool ::SoC::analog_watchdog::get_flag_awd() const noexcept { return ::LL_ADC_IsActiveFlag_AWD1(adc_ptr); }
+
+    void ::SoC::analog_watchdog::clear_flag_awd() const noexcept { ::LL_ADC_ClearFlag_AWD1(adc_ptr); }
 }  // namespace SoC

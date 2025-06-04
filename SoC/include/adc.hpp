@@ -43,6 +43,96 @@ namespace SoC
         {
             return static_cast<adc_internal_channel>(::std::to_underlying(lhs) | ::std::to_underlying(rhs));
         }
+
+        /**
+         * @brief 模拟看门狗通道
+         *
+         */
+        enum class analog_watchdog : ::std::size_t
+        {
+            all_reg = LL_ADC_AWD_ALL_CHANNELS_REG,
+            all_inj = LL_ADC_AWD_ALL_CHANNELS_INJ,
+            all_reg_inj = LL_ADC_AWD_ALL_CHANNELS_REG_INJ,
+            ch0_reg = LL_ADC_AWD_CHANNEL_0_REG,
+            ch0_inj = LL_ADC_AWD_CHANNEL_0_INJ,
+            ch0_reg_inj = LL_ADC_AWD_CHANNEL_0_REG_INJ,
+            ch1_reg = LL_ADC_AWD_CHANNEL_1_REG,
+            ch1_inj = LL_ADC_AWD_CHANNEL_1_INJ,
+            ch1_reg_inj = LL_ADC_AWD_CHANNEL_1_REG_INJ,
+            ch2_reg = LL_ADC_AWD_CHANNEL_2_REG,
+            ch2_inj = LL_ADC_AWD_CHANNEL_2_INJ,
+            ch2_reg_inj = LL_ADC_AWD_CHANNEL_2_REG_INJ,
+            ch3_reg = LL_ADC_AWD_CHANNEL_3_REG,
+            ch3_inj = LL_ADC_AWD_CHANNEL_3_INJ,
+            ch3_reg_inj = LL_ADC_AWD_CHANNEL_3_REG_INJ,
+            ch4_reg = LL_ADC_AWD_CHANNEL_4_REG,
+            ch4_inj = LL_ADC_AWD_CHANNEL_4_INJ,
+            ch4_reg_inj = LL_ADC_AWD_CHANNEL_4_REG_INJ,
+            ch5_reg = LL_ADC_AWD_CHANNEL_5_REG,
+            ch5_inj = LL_ADC_AWD_CHANNEL_5_INJ,
+            ch5_reg_inj = LL_ADC_AWD_CHANNEL_5_REG_INJ,
+            ch6_reg = LL_ADC_AWD_CHANNEL_6_REG,
+            ch6_inj = LL_ADC_AWD_CHANNEL_6_INJ,
+            ch6_reg_inj = LL_ADC_AWD_CHANNEL_6_REG_INJ,
+            ch7_reg = LL_ADC_AWD_CHANNEL_7_REG,
+            ch7_inj = LL_ADC_AWD_CHANNEL_7_INJ,
+            ch7_reg_inj = LL_ADC_AWD_CHANNEL_7_REG_INJ,
+            ch8_reg = LL_ADC_AWD_CHANNEL_8_REG,
+            ch8_inj = LL_ADC_AWD_CHANNEL_8_INJ,
+            ch8_reg_inj = LL_ADC_AWD_CHANNEL_8_REG_INJ,
+            ch9_reg = LL_ADC_AWD_CHANNEL_9_REG,
+            ch9_inj = LL_ADC_AWD_CHANNEL_9_INJ,
+            ch9_reg_inj = LL_ADC_AWD_CHANNEL_9_REG_INJ,
+            ch10_reg = LL_ADC_AWD_CHANNEL_10_REG,
+            ch10_inj = LL_ADC_AWD_CHANNEL_10_INJ,
+            ch10_reg_inj = LL_ADC_AWD_CHANNEL_10_REG_INJ,
+            ch11_reg = LL_ADC_AWD_CHANNEL_11_REG,
+            ch11_inj = LL_ADC_AWD_CHANNEL_11_INJ,
+            ch11_reg_inj = LL_ADC_AWD_CHANNEL_11_REG_INJ,
+            ch12_reg = LL_ADC_AWD_CHANNEL_12_REG,
+            ch12_inj = LL_ADC_AWD_CHANNEL_12_INJ,
+            ch12_reg_inj = LL_ADC_AWD_CHANNEL_12_REG_INJ,
+            ch13_reg = LL_ADC_AWD_CHANNEL_13_REG,
+            ch13_inj = LL_ADC_AWD_CHANNEL_13_INJ,
+            ch13_reg_inj = LL_ADC_AWD_CHANNEL_13_REG_INJ,
+            ch14_reg = LL_ADC_AWD_CHANNEL_14_REG,
+            ch14_inj = LL_ADC_AWD_CHANNEL_14_INJ,
+            ch14_reg_inj = LL_ADC_AWD_CHANNEL_14_REG_INJ,
+            ch15_reg = LL_ADC_AWD_CHANNEL_15_REG,
+            ch15_inj = LL_ADC_AWD_CHANNEL_15_INJ,
+            ch15_reg_inj = LL_ADC_AWD_CHANNEL_15_REG_INJ,
+            ch16_reg = LL_ADC_AWD_CHANNEL_16_REG,
+            ch16_inj = LL_ADC_AWD_CHANNEL_16_INJ,
+            ch16_reg_inj = LL_ADC_AWD_CHANNEL_16_REG_INJ,
+            ch17_reg = LL_ADC_AWD_CHANNEL_17_REG,
+            ch17_inj = LL_ADC_AWD_CHANNEL_17_INJ,
+            ch17_reg_inj = LL_ADC_AWD_CHANNEL_17_REG_INJ,
+            ch18_reg = LL_ADC_AWD_CHANNEL_18_REG,
+            ch18_inj = LL_ADC_AWD_CHANNEL_18_INJ,
+            ch18_reg_inj = LL_ADC_AWD_CHANNEL_18_REG_INJ,
+            vrefint_reg = LL_ADC_AWD_CH_VREFINT_REG,
+            vrefint_inj = LL_ADC_AWD_CH_VREFINT_INJ,
+            vrefint_reg_inj = LL_ADC_AWD_CH_VREFINT_REG_INJ,
+            temp_sensor_reg = LL_ADC_AWD_CH_TEMPSENSOR_REG,
+            temp_sensor_inj = LL_ADC_AWD_CH_TEMPSENSOR_INJ,
+            temp_sensor_reg_inj = LL_ADC_AWD_CH_TEMPSENSOR_REG_INJ,
+            vbat_reg = LL_ADC_AWD_CH_VBAT_REG,
+            vbat_inj = LL_ADC_AWD_CH_VBAT_INJ,
+            vbat_reg_inj = LL_ADC_AWD_CH_VBAT_REG_INJ,
+        };
+
+        /**
+         * @brief 拼接模拟看门狗通道
+         *
+         * @param lhs 模拟看门狗通道
+         * @param rhs 模拟看门狗通道
+         * @return 拼接后的模拟看门狗通道
+         */
+        constexpr inline ::SoC::detail::analog_watchdog operator| (::SoC::detail::analog_watchdog lhs,
+                                                                   ::SoC::detail::analog_watchdog rhs) noexcept
+        {
+            return ::SoC::detail::analog_watchdog{::std::to_underlying(lhs) | ::std::to_underlying(rhs)};
+        }
     }  // namespace detail
 
     /**
@@ -655,5 +745,167 @@ namespace SoC
          * @return std::pair{1LSB对应的电压, 温度}
          */
         ::std::pair<float, float> get_result() const noexcept;
+    };
+
+    /**
+     * @brief 模拟看门狗
+     *
+     */
+    struct analog_watchdog
+    {
+        using awd_enum = ::SoC::detail::analog_watchdog;
+
+    private:
+        ::ADC_TypeDef* adc_ptr;
+        awd_enum awd_channel;
+        ::std::size_t low_threshold;
+        ::std::size_t high_threshold;
+        constexpr inline static ::IRQn_Type irqn{::ADC_IRQn};
+
+    public:
+        using enum awd_enum;
+
+        /**
+         * @brief 配置adc模拟看门狗，会使能看门狗
+         *
+         * @param adc adc外设
+         * @param channel 要监视的通道
+         * @param low_threshold 低门限
+         * @param high_threshold 高门限
+         */
+        explicit analog_watchdog(::SoC::adc& adc,
+                                 awd_enum channel,
+                                 ::std::size_t low_threshold,
+                                 ::std::size_t high_threshold) noexcept;
+
+        /**
+         * @brief 失能看门狗
+         *
+         */
+        ~analog_watchdog() noexcept;
+
+        inline analog_watchdog(const analog_watchdog&) noexcept = delete;
+        inline analog_watchdog& operator= (const analog_watchdog&) noexcept = delete;
+        analog_watchdog(analog_watchdog&&) noexcept;
+        inline analog_watchdog& operator= (analog_watchdog&&) noexcept = delete;
+
+        /**
+         * @brief 获取adc外设指针
+         *
+         * @return adc外设指针
+         */
+        inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
+
+        /**
+         * @brief 获取adc外设枚举
+         *
+         * @return adc外设枚举
+         */
+        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::std::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
+
+        /**
+         * @brief 获取模拟看门狗监视的通道
+         *
+         * @return 模拟看门狗通道枚举
+         */
+        inline awd_enum get_channel() const noexcept { return awd_channel; }
+
+        /**
+         * @brief 判断模拟看门狗是否使能
+         *
+         * @return 模拟看门狗是否使能
+         */
+        bool is_enabled() const noexcept;
+
+        /**
+         * @brief 使能模拟看门狗
+         *
+         */
+        void enable() const noexcept;
+
+        /**
+         * @brief 失能模拟看门狗
+         *
+         */
+        void disable() const noexcept;
+
+        /**
+         * @brief 设置低门限
+         *
+         * @param threshold 门限值
+         */
+        void set_low_threshold(::std::size_t threshold) noexcept;
+
+        /**
+         * @brief 设置高门限
+         *
+         * @param threshold 门限值
+         */
+        void set_high_threshold(::std::size_t threshold) noexcept;
+
+        /**
+         * @brief 获取门限值
+         *
+         * @return std::pair{低门限, 高门限}
+         */
+        inline ::std::pair<::std::size_t, ::std::size_t> get_threshold() const noexcept
+        {
+            return ::std::pair{low_threshold, high_threshold};
+        }
+
+        /**
+         * @brief 使能模拟看门狗中断
+         *
+         * @param preempt_priority 抢占中断优先级
+         * @param sub_priority 响应中断优先级
+         */
+        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept;
+
+        /**
+         * @brief 使能模拟看门狗中断
+         *
+         * @param encoded_priority 编码后的中断优先级
+         */
+        void enable_irq(::std::size_t encoded_priority) const noexcept;
+
+        /**
+         * @brief 失能模拟看门狗中断
+         *
+         */
+        void disable_irq() const noexcept;
+
+        /**
+         * @brief 设置模拟看门狗中断源状态
+         *
+         * @param enable 模拟看门狗中断源是否使能
+         */
+        void set_it_awd(bool enable) const noexcept;
+
+        /**
+         * @brief 获取模拟看门狗中断源状态
+         *
+         * @return 模拟看门狗中断源状态
+         */
+        bool get_it_awd() const noexcept;
+
+        /**
+         * @brief 判断是否是模拟看门狗中断
+         *
+         * @return 是否是模拟看门狗中断
+         */
+        bool is_it_awd() const noexcept;
+
+        /**
+         * @brief 获取模拟看门狗中断标志
+         *
+         * @return 模拟看门狗中断标志
+         */
+        bool get_flag_awd() const noexcept;
+
+        /**
+         * @brief 清除模拟看门狗中断标志
+         *
+         */
+        void clear_flag_awd() const noexcept;
     };
 }  // namespace SoC
