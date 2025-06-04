@@ -453,6 +453,7 @@ namespace SoC
      *
      * @param device 输出设备
      * @param num 要输出的整数或浮点数
+     * @param buffer 输出缓冲区
      */
     constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device,
                                        ::SoC::detail::is_int_fp auto num,
@@ -659,6 +660,20 @@ namespace SoC
             auto output_size_left{output_size - buffer_size_left};
             buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
         }
+    }
+
+    /**
+     * @brief 将布尔值输出到设备或文件
+     *
+     * @param output 输出设备或文件
+     * @param value 要输出的布尔值
+     */
+    template <typename output_t>
+        requires (::SoC::is_output_device<output_t, char> || ::SoC::is_output_file<output_t>)
+    constexpr inline void do_print_arg(output_t& output, bool value) noexcept
+    {
+        using namespace ::std::string_view_literals;
+        ::SoC::do_print_arg(output, value ? "true"sv : "false"sv);
     }
 
     /**
