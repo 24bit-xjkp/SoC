@@ -367,6 +367,12 @@ namespace SoC
         ::SoC::do_print_arg(device, ::std::string_view{string});
     }
 
+    // 统一预分配的文本缓冲区类型
+    using unified_text_buffer = ::std::ranges::subrange<char*>;
+
+    // 统一预分配的二进制缓冲区类型
+    using unified_bin_buffer = ::std::ranges::subrange<::std::byte*>;
+
     namespace detail
     {
         /**
@@ -395,6 +401,45 @@ namespace SoC
                 return digits;
             }
         }
+
+        template <::std::integral num_t, ::SoC::detail::integer_base base>
+        consteval inline auto get_max_text_buffer_size() noexcept
+        {
+            constexpr auto bits{sizeof(num_t) * ::std::numeric_limits<char>::digits};
+            if constexpr(base == ::SoC::integer_base8)
+            {
+                constexpr auto is_signed{::std::signed_integral<num_t>};
+                constexpr auto significant_bits{bits - is_signed};
+                // 3位有效二进制对应1位八进制，符号占1字符，0o前缀占2字符
+                return (significant_bits + 2) / 3 + is_signed + 2;
+            }
+            else if constexpr(base == ::SoC::integer_base16)
+            {
+                // 4位二进制对应1位十六进制，0x前缀占2字符
+                return bits / 4 + 2;
+            }
+            else if constexpr(base == ::SoC::integer_base2)
+            {
+                // 0b前缀占2字符，符号位同样占用1字符，因此为位数+2
+                return bits + 2;
+            }
+        }
+
+        /**
+         * @brief 将进制前缀写入缓冲区
+         *
+         * @tparam base 进制
+         * @param buffer 缓冲区
+         * @return char* 写入后的缓冲区指针
+         */
+        template <::SoC::detail::integer_base base>
+        inline char* write_integer_base_prefix(char* buffer) noexcept
+        {
+            if constexpr(base == ::SoC::integer_base8) { ::std::memcpy(buffer, "0o", 2); }
+            else if constexpr(base == ::SoC::integer_base2) { ::std::memcpy(buffer, "0b", 2); }
+            else if constexpr(base == ::SoC::integer_base16) { ::std::memcpy(buffer, "0x", 2); }
+            return buffer + 2;
+        }
     }  // namespace detail
 
     /**
@@ -408,6 +453,14 @@ namespace SoC
     template <::SoC::detail::is_int_fp type>
     constexpr inline ::std::size_t max_text_buffer_size<type>{::SoC::detail::get_max_text_buffer_size<type>()};
 
+    template <::std::floating_point type>
+    constexpr inline ::std::size_t max_text_buffer_size<::SoC::detail::floating_point_format<type>>{
+        ::SoC::detail::get_max_text_buffer_size<type>()};
+
+    template <::std::integral type, ::SoC::detail::integer_base base>
+    constexpr inline ::std::size_t max_text_buffer_size<::SoC::detail::integer_format<type, base>>{
+        ::SoC::detail::get_max_text_buffer_size<type, base>()};
+
     /**
      * @brief 判断类型type是否具有最大io缓冲区大小
      *
@@ -415,12 +468,6 @@ namespace SoC
      */
     template <typename type>
     concept has_max_text_buffer_size = ::SoC::max_text_buffer_size<::std::remove_cvref_t<type>> != 0;
-
-    // 统一预分配的文本缓冲区类型
-    using unified_text_buffer = ::std::ranges::subrange<char*>;
-
-    // 统一预分配的二进制缓冲区类型
-    using unified_bin_buffer = ::std::ranges::subrange<::std::byte*>;
 
     /**
      * @brief 判断arg_t类型的对象能否输出到output_t类型的对象中，要求满足：
@@ -460,6 +507,40 @@ namespace SoC
                                        ::SoC::unified_text_buffer buffer) noexcept
     {
         ::SoC::write_to_device(device, buffer.begin(), ::std::to_chars(buffer.begin(), buffer.end(), num).ptr);
+    }
+
+    /**
+     * @brief 将带格式的浮点数输出到设备
+     *
+     * @param device 输出设备
+     * @param format_wrapper 带格式的浮点数包装对象
+     * @param buffer 输出缓冲区
+     */
+    template <::std::floating_point type>
+    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device,
+                                       ::SoC::detail::floating_point_format<type> format_wrapper,
+                                       ::SoC::unified_text_buffer buffer) noexcept
+    {
+        auto&& [num, format, precision]{format_wrapper};
+        ::SoC::write_to_device(device, buffer.begin(), ::std::to_chars(buffer.begin(), buffer.end(), num, format, precision).ptr);
+    }
+
+    /**
+     * @brief 将带进制的整数输出到设备
+     *
+     * @param device 输出设备
+     * @param format_wrapper 带进制的整数包装对象
+     * @param buffer 输出缓冲区
+     */
+    template <::std::integral type, ::SoC::detail::integer_base base>
+    constexpr inline void do_print_arg(::SoC::is_output_device<char> auto& device,
+                                       ::SoC::detail::integer_format<type, base> format_wrapper,
+                                       ::SoC::unified_text_buffer buffer) noexcept
+    {
+        auto ptr{::SoC::detail::write_integer_base_prefix<base>(buffer.begin())};
+        ::SoC::write_to_device(device,
+                               buffer.begin(),
+                               ::std::to_chars(ptr, buffer.end(), format_wrapper.value, ::std::to_underlying(base)).ptr);
     }
 
     /**
@@ -635,6 +716,7 @@ namespace SoC
      *
      * @param file 输出文件
      * @param num 整数或浮点数
+     * @param tmp_buffer 输出缓冲区
      */
     constexpr inline void do_print_arg(::SoC::is_output_file auto& file,
                                        ::SoC::detail::is_int_fp auto num,
@@ -674,6 +756,78 @@ namespace SoC
     {
         using namespace ::std::string_view_literals;
         ::SoC::do_print_arg(output, value ? "true"sv : "false"sv);
+    }
+
+    /**
+     * @brief 将带格式的浮点数输出到文件
+     *
+     * @param file 输出文件
+     * @param format_wrapper 带格式的浮点数包装对象
+     * @param tmp_buffer 输出缓冲区
+     */
+    template <::std::floating_point type>
+    constexpr inline void do_print_arg(::SoC::is_output_file auto& file,
+                                       ::SoC::detail::floating_point_format<type> format_wrapper,
+                                       ::SoC::unified_text_buffer tmp_buffer) noexcept
+    {
+        auto&& [num, format, precision]{format_wrapper};
+        auto&& [device, buffer]{::SoC::ofile_trait(file)};
+        constexpr auto max_text_buffer_size{::SoC::detail::get_max_text_buffer_size<decltype(num)>()};
+        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
+        {
+            auto&& current{buffer.current};
+            current = ::std::to_chars(current, buffer.get_buffer_end(), num, format, precision).ptr;
+        }
+        else
+        {
+            auto ptr{::std::to_chars(tmp_buffer.begin(), tmp_buffer.end(), num, format, precision).ptr};
+            auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
+            buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
+            if(output_size >= buffer_size_left) { file.template flush<true>(); }
+            else [[likely]]
+            {
+                return;
+            }
+            auto output_size_left{output_size - buffer_size_left};
+            buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
+        }
+    }
+
+    /**
+     * @brief 将带进制的整数输出到文件
+     *
+     * @param device 输出文件
+     * @param format_wrapper 带进制的整数包装对象
+     * @param tmp_buffer 输出缓冲区
+     */
+    template <::std::integral type, ::SoC::detail::integer_base base>
+    constexpr inline void do_print_arg(::SoC::is_output_file auto& file,
+                                       ::SoC::detail::integer_format<type, base> format_wrapper,
+                                       ::SoC::unified_text_buffer tmp_buffer) noexcept
+    {
+        auto&& [device, buffer]{::SoC::ofile_trait(file)};
+        auto num{format_wrapper.value};
+        constexpr auto max_text_buffer_size{::SoC::detail::get_max_text_buffer_size<type, base>()};
+        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
+        {
+            auto&& current{buffer.current};
+            current = ::SoC::detail::write_integer_base_prefix<base>(current);
+            current = ::std::to_chars(current, buffer.get_buffer_end(), num, ::std::to_underlying(base)).ptr;
+        }
+        else
+        {
+            auto ptr{::SoC::detail::write_integer_base_prefix<base>(tmp_buffer.begin())};
+            ptr = ::std::to_chars(ptr, tmp_buffer.end(), num, ::std::to_underlying(base)).ptr;
+            auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
+            buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
+            if(output_size >= buffer_size_left) { file.template flush<true>(); }
+            else [[likely]]
+            {
+                return;
+            }
+            auto output_size_left{output_size - buffer_size_left};
+            buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
+        }
     }
 
     /**

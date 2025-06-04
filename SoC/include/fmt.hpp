@@ -338,3 +338,97 @@ namespace SoC
         }
     };
 }  // namespace SoC
+
+namespace SoC
+{
+    namespace detail
+    {
+        /**
+         * @brief 带格式的浮点数包装体
+         *
+         * @tparam type 浮点类型
+         */
+        template <::std::floating_point type>
+        struct floating_point_format
+        {
+            type value;
+            ::std::chars_format format;
+            ::std::size_t precision;
+        };
+
+        /**
+         * @brief 整数进制
+         *
+         */
+        enum class integer_base
+        {
+            bin = 2,
+            oct = 8,
+            hex = 16
+        };
+
+        template <::std::integral type, ::SoC::detail::integer_base base_v>
+        struct integer_format
+        {
+            type value;
+            constexpr inline static auto base{base_v};
+        };
+    }  // namespace detail
+
+    /// 二进制
+    constexpr auto integer_base2{::SoC::detail::integer_base::bin};
+    /// 八进制
+    constexpr auto integer_base8{::SoC::detail::integer_base::oct};
+    /// 十六进制
+    constexpr auto integer_base16{::SoC::detail::integer_base::hex};
+
+    /**
+     * @brief 带格式的浮点数
+     *
+     * @param value 浮点数
+     * @param format 浮点格式
+     * @param precision 精度
+     * @return 包装类型
+     */
+    constexpr inline auto format(::std::floating_point auto value, ::std::chars_format format, ::std::size_t precision) noexcept
+    {
+        return ::SoC::detail::floating_point_format{value, format, precision};
+    }
+
+    /**
+     * @brief 带格式的浮点数
+     *
+     * @param value 浮点数
+     * @param format 浮点格式
+     * @return 包装类型
+     */
+    constexpr inline auto format(::std::floating_point auto value, ::std::chars_format format) noexcept
+    {
+        return ::SoC::detail::floating_point_format{value, format, 6};
+    }
+
+    /**
+     * @brief 带格式的浮点数
+     *
+     * @param value 浮点数
+     * @param precision 精度
+     * @return 包装类型
+     */
+    constexpr inline auto format(::std::floating_point auto value, ::std::size_t precision) noexcept
+    {
+        return ::SoC::detail::floating_point_format{value, ::std::chars_format::general, precision};
+    }
+
+    /**
+     * @brief 带格式的整数
+     *
+     * @tparam base 进制
+     * @param value 整数
+     * @return 包装类型
+     */
+    template <::SoC::detail::integer_base base>
+    constexpr inline auto format(::std::integral auto value) noexcept
+    {
+        return ::SoC::detail::integer_format<decltype(value), base>{value};
+    }
+}  // namespace SoC
