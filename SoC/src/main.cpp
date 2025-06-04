@@ -19,6 +19,7 @@ extern "C" void DMA2_Stream0_IRQHandler() noexcept
     if(adc_test::dma_stream->is_it_tc())
     {
         ::std::uint32_t p0_measure{}, p1_measure{};
+#pragma GCC unroll(4)
         for(auto&& [ch0, ch1]: adc_test::buffer)
         {
             p0_measure += ch0;
@@ -28,7 +29,7 @@ extern "C" void DMA2_Stream0_IRQHandler() noexcept
         p1_measure >>= 5;
         auto v_p0{p0_measure * adc_test::coefficient};
         auto v_p1{p1_measure * adc_test::coefficient};
-        ::SoC::println<"PC0电压: {}, PC1电压: {}", true>(*adc_test::file, v_p0, v_p1);
+        ::SoC::println<"{} {}", true>(*adc_test::file, ::SoC::round<4>(v_p0), ::SoC::round<4>(v_p1));
         adc_test::dma_stream->read(::adc_test::buffer.begin(), ::adc_test::buffer.end());
     }
 }

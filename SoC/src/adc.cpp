@@ -351,6 +351,7 @@ namespace SoC
         ::std::size_t raw_vrefint{};
         /// adc采样温度传感器的平均值
         ::std::size_t raw_temp{};
+#pragma GCC unroll(2)
         for(auto&& [vrefint, temp]: buffer)
         {
             raw_vrefint += vrefint;
@@ -365,6 +366,7 @@ namespace SoC
         /// 实际Vref引脚电压
         auto actual_vref{0.f};
         // 这是一个非线性方程，使用迭代法求解
+#pragma GCC unroll(2)
         for(auto i{0zu}; i != 4; ++i)
         {
             /// 根据温度修正内部参考电压
