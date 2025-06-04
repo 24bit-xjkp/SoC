@@ -1,4 +1,5 @@
 #include "../include/dma.hpp"
+#include "../include/nvic.hpp"
 
 namespace SoC
 {
@@ -95,7 +96,11 @@ namespace SoC
 
     ::SoC::dma_stream::~dma_stream() noexcept
     {
-        if(dma_ptr) [[likely]] { disable(); }
+        if(dma_ptr) [[likely]]
+        {
+            clear_flag_tc();
+            disable();
+        }
     }
 
     ::SoC::dma_stream::dma_stream(dma_stream&& other) noexcept
@@ -213,7 +218,7 @@ namespace SoC
     void ::SoC::dma_stream::write(const void* begin, const void* end) noexcept
     {
         wait_until_disabled();
-        clear_tc_flag();
+        clear_flag_tc();
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(direction == ::SoC::dma_direction::m2p, "仅内存到外设模式支持写入操作"sv);
@@ -227,7 +232,7 @@ namespace SoC
     void ::SoC::dma_stream::read(void* begin, void* end) noexcept
     {
         wait_until_disabled();
-        clear_tc_flag();
+        clear_flag_tc();
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(direction == ::SoC::dma_direction::p2m, "仅外设到内存模式支持读取操作"sv);
@@ -245,25 +250,118 @@ namespace SoC
         return mask;
     }
 
-    bool ::SoC::dma_stream::get_tc_flag() const noexcept
+    bool ::SoC::dma_stream::get_flag_tc() const noexcept
     {
         auto&& ref{get_stream() > st3 ? dma_ptr->HISR : dma_ptr->LISR};
         auto mask{get_tc_mask()};
         return (ref & mask) == mask;
     }
 
-    void ::SoC::dma_stream::clear_tc_flag() const noexcept
+    void ::SoC::dma_stream::clear_flag_tc() const noexcept
     {
         auto&& ref{get_stream() > st3 ? dma_ptr->HIFCR : dma_ptr->LIFCR};
         ref = get_tc_mask();
     }
 
+    auto ::SoC::dma_stream::get_ht_mask() const noexcept
+    {
+        constexpr ::std::size_t dma_ht_mask_table[]{DMA_LISR_HTIF0, DMA_LISR_HTIF1, DMA_LISR_HTIF2, DMA_LISR_HTIF3};
+        auto mask{dma_ht_mask_table[::std::to_underlying(stream) & ::SoC::mask_all_one<2>]};
+        return mask;
+    }
+
+    bool ::SoC::dma_stream::get_flag_ht() const noexcept
+    {
+        auto&& ref{get_stream() > st3 ? dma_ptr->HISR : dma_ptr->LISR};
+        auto mask{get_ht_mask()};
+        return (ref & mask) == mask;
+    }
+
+    void ::SoC::dma_stream::clear_flag_ht() const noexcept
+    {
+        auto&& ref{get_stream() > st3 ? dma_ptr->HIFCR : dma_ptr->LIFCR};
+        ref = get_ht_mask();
+    }
+
     bool ::SoC::dma_stream::is_ready() const noexcept
     {
-        if(mode == ::SoC::dma_mode::circle) { return get_tc_flag(); }
+        if(mode == ::SoC::dma_mode::circle) { return get_flag_tc(); }
         else
         {
             return !is_enabled();
         }
     }
+
+    ::IRQn_Type(::SoC::dma_stream::get_irqn)() noexcept
+    {
+        if(irqn != 0) [[likely]] { return irqn; }
+        else
+        {
+            // 由于irqn计算较为复杂，因此采用惰性计算
+            using enum ::SoC::dma::dma_enum;
+            switch(::std::bit_cast<::SoC::dma::dma_enum>(dma_ptr))
+            {
+                case dma1:
+                    irqn = stream == st7 ? ::DMA1_Stream7_IRQn
+                                         : ::std::bit_cast<::IRQn_Type>(::DMA1_Stream0_IRQn + ::std::to_underlying(stream));
+                    break;
+                case dma2:
+                    switch(stream)
+                    {
+                        case st0:
+                        case st1:
+                        case st2:
+                        case st3:
+                        case st4: irqn = ::std::bit_cast<::IRQn_Type>(::DMA2_Stream0_IRQn + ::std::to_underlying(stream)); break;
+                        default:
+                            irqn = ::std::bit_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::std::to_underlying(stream));
+                            break;
+                    }
+                    break;
+            }
+            return irqn;
+        }
+    }
+
+    void ::SoC::dma_stream::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept
+    {
+        auto irqn{get_irqn()};
+        ::SoC::set_priority(irqn, preempt_priority, sub_priority);
+        ::SoC::enable_irq(irqn);
+    }
+
+    void ::SoC::dma_stream::enable_irq(::std::size_t encoded_priority) noexcept
+    {
+        auto irqn{get_irqn()};
+        ::SoC::set_priority(irqn, encoded_priority);
+        ::SoC::enable_irq(irqn);
+    }
+
+    void ::SoC::dma_stream::disable_irq() noexcept { ::SoC::disable_irq(get_irqn()); }
+
+    void ::SoC::dma_stream::set_it_tc(bool enable) const noexcept
+    {
+        if(enable) { ::LL_DMA_EnableIT_TC(dma_ptr, ::std::to_underlying(stream)); }
+        else
+        {
+            ::LL_DMA_DisableIT_TC(dma_ptr, ::std::to_underlying(stream));
+        }
+    }
+
+    bool ::SoC::dma_stream::get_it_tc() const noexcept { return ::LL_DMA_IsEnabledIT_TC(dma_ptr, ::std::to_underlying(stream)); }
+
+    bool ::SoC::dma_stream::is_it_tc() const noexcept { return get_flag_tc() && get_it_tc(); }
+
+    void ::SoC::dma_stream::set_it_ht(bool enable) const noexcept
+    {
+        if(enable) { ::LL_DMA_EnableIT_HT(dma_ptr, ::std::to_underlying(stream)); }
+        else
+        {
+            ::LL_DMA_DisableIT_HT(dma_ptr, ::std::to_underlying(stream));
+        }
+    }
+
+    bool ::SoC::dma_stream::get_it_ht() const noexcept { return ::LL_DMA_IsEnabledIT_HT(dma_ptr, ::std::to_underlying(stream)); }
+
+    bool ::SoC::dma_stream::is_it_ht() const noexcept { return get_flag_ht() && get_it_ht(); }
 }  // namespace SoC

@@ -252,6 +252,7 @@ namespace SoC
         ::SoC::dma_memory_burst mem_burst;
         ::SoC::dma_periph_data_size pf_data_size;
         ::SoC::dma_periph_burst pf_burst;
+        ::IRQn_Type irqn{};
 
         /**
          * @brief 检测内存侧参数是否合法
@@ -305,9 +306,16 @@ namespace SoC
         /**
          * @brief 获取传输完成标志位掩码
          *
-         * @return std::pair{传输完成标志位引用, 传输完成标志位掩码}
+         * @return 传输完成标志位掩码
          */
         auto get_tc_mask() const noexcept;
+
+        /**
+         * @brief 获取传输半完成标志位掩码
+         *
+         * @return 传输半完成标志位掩码
+         */
+        auto get_ht_mask() const noexcept;
 
     public:
         /**
@@ -568,13 +576,26 @@ namespace SoC
          *
          * @return 传输完成标记
          */
-        bool get_tc_flag() const noexcept;
+        bool get_flag_tc() const noexcept;
 
         /**
          * @brief 清除传输完成标记
          *
          */
-        void clear_tc_flag() const noexcept;
+        void clear_flag_tc() const noexcept;
+
+        /**
+         * @brief 获取传输半完成标记
+         *
+         * @return 传输半完成标记
+         */
+        bool get_flag_ht() const noexcept;
+
+        /**
+         * @brief 清除传输半完成标记
+         *
+         */
+        void clear_flag_ht() const noexcept;
 
         /**
          * @brief 判断dma数据流是否就绪
@@ -583,5 +604,75 @@ namespace SoC
          * @return dma数据流是否就绪
          */
         bool is_ready() const noexcept;
+
+        /**
+         * @brief 获取中断号
+         *
+         * @return dma数据流对应的中断号
+         */
+        ::IRQn_Type get_irqn() noexcept;
+
+        /**
+         * @brief 开启dma中断
+         *
+         * @param preempt_priority 抢占中断优先级
+         * @param sub_priority 响应中断优先级
+         */
+        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept;
+
+        /**
+         * @brief 开启dma中断
+         *
+         * @param encoded_priority 编码后的中断优先级
+         */
+        void enable_irq(::std::size_t encoded_priority) noexcept;
+
+        /**
+         * @brief 关闭dma中断
+         *
+         */
+        void disable_irq() noexcept;
+
+        /**
+         * @brief 设置是否使能dma传输完成中断源
+         *
+         * @param enable 是否使能中断源
+         */
+        void set_it_tc(bool enable) const noexcept;
+
+        /**
+         * @brief 获取是否使能dma传输完成中断源
+         *
+         * @return 是否使能中断源
+         */
+        bool get_it_tc() const noexcept;
+
+        /**
+         * @brief 判断发生的dma中断是否为传输完成中断
+         *
+         * @return 是否为传输完成中断
+         */
+        bool is_it_tc() const noexcept;
+
+        /**
+         * @brief 设置是否使能dma传输半完成中断源
+         *
+         * @param enable 是否使能中断源
+         */
+        void set_it_ht(bool enable) const noexcept;
+
+        /**
+         * @brief 获取是否使能dma传输半完成中断源
+         *
+         * @return 是否使能中断源
+         */
+        bool get_it_ht() const noexcept;
+
+        /**
+         * @brief 判断发生的dma中断是否为传输半完成中断
+         *
+         * @return 是否为传输半完成中断
+         */
+        bool is_it_ht() const noexcept;
     };
 }  // namespace SoC
