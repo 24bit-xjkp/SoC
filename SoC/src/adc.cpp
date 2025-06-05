@@ -285,7 +285,10 @@ namespace SoC
 namespace SoC
 {
     ::SoC::adc_calibrator::adc_calibrator(::SoC::adc& adc, ::SoC::dma& dma) noexcept :
-        adc{adc}, internal_channel{::SoC::adc_internal_channel::vrefint | ::SoC::adc_internal_channel::temp_sensor}
+        adc{adc}, internal_channel{::SoC::adc_internal_channel::vrefint | ::SoC::adc_internal_channel::temp_sensor},
+        buffer{::SoC::ram_allocator.allocate<buffer_t>()},
+        adc_regular_group{::SoC::ram_allocator.allocate<::SoC::adc_regular_group>()},
+        dma_stream{::SoC::ram_allocator.allocate<::SoC::dma_stream>()}
     {
         if constexpr(::SoC::use_full_assert)
         {
@@ -302,18 +305,18 @@ namespace SoC
 
         constexpr auto sampling_time{::SoC::adc_sampling_time::cycles144};
         auto& regular_group{
-            *new(&adc_regular_group.obj)::SoC::adc_regular_group{
-                                                                 adc, ::SoC::adc_regular_trigger_source::software,
-                                                                 true, ::SoC::adc_regular_dma_mode::limited,
-                                                                 {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
-                                                                 }
+            *new(adc_regular_group)::SoC::adc_regular_group{
+                                                            adc, ::SoC::adc_regular_trigger_source::software,
+                                                            true, ::SoC::adc_regular_dma_mode::limited,
+                                                            {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
+                                                            }
         };
-        auto& adc_dma_stream{*new(&dma_stream.obj)::SoC::dma_stream{regular_group.enable_dma(dma,
-                                                                                             ::SoC::dma_mode::normal,
-                                                                                             ::SoC::dma_fifo_threshold::full,
-                                                                                             ::SoC::dma_memory_burst::inc8)}};
+        auto& adc_dma_stream{*new(dma_stream)::SoC::dma_stream{regular_group.enable_dma(dma,
+                                                                                        ::SoC::dma_mode::normal,
+                                                                                        ::SoC::dma_fifo_threshold::full,
+                                                                                        ::SoC::dma_memory_burst::inc8)}};
         adc.enable();
-        adc_dma_stream.read(buffer.begin(), buffer.end());
+        adc_dma_stream.read(buffer->begin(), buffer->end());
         regular_group.enable(::SoC::adc_trig_edge::software);
     }
 
@@ -325,7 +328,7 @@ namespace SoC
         if(old_alignment != alignment) { adc.set_alignment(old_alignment); }
     }
 
-    bool ::SoC::adc_calibrator::is_sample_ready() const noexcept { return dma_stream.obj.get_flag_tc(); }
+    bool ::SoC::adc_calibrator::is_sample_ready() const noexcept { return dma_stream->get_flag_tc(); }
 
     ::std::pair<float, float>(::SoC::adc_calibrator::get_result)() const noexcept
     {
@@ -352,14 +355,14 @@ namespace SoC
         /// adc采样温度传感器的平均值
         ::std::size_t raw_temp{};
 #pragma GCC unroll(2)
-        for(auto&& [vrefint, temp]: buffer)
+        for(auto&& [vrefint, temp]: *buffer)
         {
             raw_vrefint += vrefint;
             raw_temp += temp;
         }
-        constexpr auto shift{::std::countr_zero(sizeof(buffer) / sizeof(buffer.front()))};
-        raw_vrefint >>= shift;
-        raw_temp >>= shift;
+        constexpr auto size{sizeof(*buffer) / sizeof(buffer->front())};
+        raw_vrefint /= size;
+        raw_temp /= size;
 
         /// 实际温度
         auto temp{vrefint_temp_typical};

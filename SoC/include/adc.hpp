@@ -1,5 +1,6 @@
 #pragma once
 #include "dma.hpp"
+#include "heap.hpp"
 
 namespace SoC
 {
@@ -687,8 +688,9 @@ namespace SoC
     {
     private:
         ::SoC::adc& adc;
-        ::std::array<::std::array<::std::uint16_t, 2>, 8> buffer;
         [[no_unique_address]] ::SoC::adc_internal_channel internal_channel;
+        using buffer_t = ::std::array<::std::array<::std::uint16_t, 2>, 8>;
+        ::SoC::unique_ptr<buffer_t> buffer;
         bool old_scan_mode;
         ::SoC::adc_resolution old_resolution;
         ::SoC::adc_data_alignment old_alignment;
@@ -697,29 +699,14 @@ namespace SoC
         constexpr inline static auto scan_mode{true};
         constexpr inline static auto alignment{::SoC::adc_data_alignment::right};
 
-        union adc_regular_group_union
-        {
-            ::SoC::adc_regular_group obj;
-
-            inline adc_regular_group_union() {}
-
-            inline ~adc_regular_group_union() { ::std::destroy_at(&obj); }
-        } adc_regular_group;
-
-        union dma_stream_union
-        {
-            ::SoC::dma_stream obj;
-
-            inline dma_stream_union() {}
-
-            inline ~dma_stream_union() { ::std::destroy_at(&obj); }
-        } dma_stream;
+        ::SoC::unique_ptr<::SoC::adc_regular_group> adc_regular_group;
+        ::SoC::unique_ptr<::SoC::dma_stream> dma_stream;
 
     public:
         /**
          * @brief 创建adc校准器，不会阻塞控制流
          *
-         * @note 会开启adc内部通道
+         * @note 会开启adc内部通道，使用SoC::ram_allocator分配和释放内存
          * @param adc adc外设对象
          * @param dma dma外设对象
          */

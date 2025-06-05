@@ -3,7 +3,7 @@
 #include "../include/usart.hpp"
 #include "../include/tim.hpp"
 #include "../include/io.hpp"
-#include "../include/fmt.hpp"
+#include "../include/heap.hpp"
 #include "../include/adc.hpp"
 
 struct adc_test
@@ -77,6 +77,13 @@ int main()
                                ::SoC::gpio_af::af7};
     ::SoC::usart usart1{::SoC::usart::usart1, 115.2_K};
     ::SoC::log_device.set(usart1.write_wrapper, &usart1);
+    auto ram_heap{::SoC::make_ram_heap()};
+    ::SoC::ram_allocator.set_heap(ram_heap);
+
+    ::SoC::adc adc1{::SoC::adc::adc1, false};
+    ::SoC::dma dma2{::SoC::dma::dma2};
+    ::SoC::unique_ptr adc_calibrator{::SoC::ram_allocator.allocate<::SoC::adc_calibrator>()};
+    new(adc_calibrator)::SoC::adc_calibrator{adc1, dma2};
 
     ::SoC::gpio_port gpio_f{::SoC::gpio_port::pf};
     ::SoC::gpio_pin green_led{gpio_f, ::SoC::gpio_pin::p10, ::SoC::gpio_mode::output};
@@ -100,18 +107,15 @@ int main()
     ::SoC::tim_channel tim8_ch1{tim8, ::SoC::tim_channel::ch1, ::SoC::tim_oc_mode::pwm1, static_cast<::std::uint32_t>(arr * 0.5)};
     tim8.enable();
 
-    ::SoC::dma dma2{::SoC::dma::dma2};
     auto usart1_dma_write{usart1.enable_dma_write(dma2, ::SoC::dma_fifo_threshold::full, ::SoC::dma_memory_burst::inc16)};
     ::SoC::text_ofile file{usart1_dma_write, {}};
     ::adc_test::file = &file;
     // auto cnt{0zu};
 
-    ::SoC::adc adc1{::SoC::adc::adc1, false};
-    auto&& [coefficient, _]{
-        ::SoC::adc_calibrator{adc1, dma2}
-        .get_result()
-    };
+    auto&& [coefficient, _]{adc_calibrator->get_result()};
     ::adc_test::coefficient = coefficient;
+    adc_calibrator.release();
+
     ::SoC::adc_regular_group i_sample{adc1,
                                       ::SoC::adc_regular_trigger_source::tim8_trgo,
                                       false,
