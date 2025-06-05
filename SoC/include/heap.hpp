@@ -125,7 +125,7 @@ namespace SoC
          * @param ptr 块指针
          * @param actual_size 实际分配大小
          */
-        [[using gnu: noinline, cold]] void free_pages(void* ptr, ::std::size_t actual_size) noexcept;
+        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept;
 
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
@@ -159,7 +159,7 @@ namespace SoC
         [[using gnu: always_inline, artificial, hot]] constexpr inline static ::std::size_t
             get_actual_allocate_size(::std::size_t size) noexcept
         {
-            return ::std::bit_ceil(size);
+            return ::std::max(::std::bit_ceil(size), 32zu);
         }
 
         /**
@@ -168,7 +168,7 @@ namespace SoC
          * @param size 块大小
          * @return void* 块起始地址
          */
-        [[gnu::noinline]] void* allocate(::std::size_t size) noexcept;
+        void* allocate(::std::size_t size) noexcept;
 
         /**
          * @brief 释放指定块
@@ -176,7 +176,7 @@ namespace SoC
          * @param ptr 块起始地址
          * @param size 块大小
          */
-        [[gnu::noinline]] void free(void* ptr, ::std::size_t size) noexcept;
+        void deallocate(void* ptr, ::std::size_t size) noexcept;
     };
 
     /**
@@ -184,7 +184,7 @@ namespace SoC
      *
      * @return 用户堆
      */
-    ::SoC::heap make_user_heap() noexcept;
+    ::SoC::heap make_ram_heap() noexcept;
 
     /**
      * @brief 从ccmram创建堆
@@ -192,4 +192,158 @@ namespace SoC
      * @return ccmram堆
      */
     ::SoC::heap make_ccmram_heap() noexcept;
+
+    namespace detail
+    {
+        template <typename wrapper>
+        struct heap_allocator_impl
+        {
+            inline static void* allocate(::std::size_t size) noexcept { return wrapper::heap->allocate(size); }
+
+            template <typename type>
+            inline static type* allocate() noexcept
+            {
+                constexpr auto size{::std::max(sizeof(type), alignof(type))};
+                return reinterpret_cast<type*>(wrapper::heap->allocate(size));
+            }
+
+            template <typename type>
+            inline static ::SoC::allocation_result<type*> allocate(::std::size_t n) noexcept
+            {
+                constexpr auto size{::std::max(sizeof(type), alignof(type))};
+                auto actual_size{::SoC::heap::get_actual_allocate_size(size * n)};
+                return ::SoC::allocation_result<type*>{reinterpret_cast<type*>(wrapper::heap->allocate(size * n)),
+                                                       actual_size / size};
+            }
+
+            template <typename type>
+                requires (!::std::is_void_v<type>)
+            inline static void deallocate(type* ptr, ::std::size_t n = 1) noexcept
+            {
+                constexpr auto size{::std::max(sizeof(type), alignof(type))};
+                wrapper::heap->deallocate(ptr, size * n);
+            }
+
+            inline static void deallocate(void* ptr, ::std::size_t size) noexcept { wrapper::heap->deallocate(ptr, size); }
+
+            constexpr inline bool operator== (this auto, wrapper) noexcept { return true; }
+        };
+    }  // namespace detail
+
+    /**
+     * @brief 适配主内存堆的全局分配器
+     *
+     */
+    struct user_heap_allocator_t : ::SoC::detail::heap_allocator_impl<::SoC::user_heap_allocator_t>
+    {
+    private:
+        constinit inline static ::SoC::heap* heap{};
+        friend struct ::SoC::detail::heap_allocator_impl<::SoC::user_heap_allocator_t>;
+
+    public:
+        inline static void set_heap(::SoC::heap& heap_ref) noexcept { heap = &heap_ref; }
+    } inline constexpr ram_allocator{};
+
+    /**
+     * @brief 适配ccmram堆的全局分配器
+     *
+     */
+    struct ccmram_heap_allocator_t : ::SoC::detail::heap_allocator_impl<::SoC::ccmram_heap_allocator_t>
+    {
+    private:
+        constinit inline static ::SoC::heap* heap{};
+        friend struct ::SoC::detail::heap_allocator_impl<::SoC::ccmram_heap_allocator_t>;
+
+    public:
+        inline static void set_heap(::SoC::heap& heap_ref) noexcept { heap = &heap_ref; }
+    } inline constexpr ccmram_allocator{};
+}  // namespace SoC
+
+namespace SoC
+{
+    /**
+     * @brief 智能指针，未支持数组形式
+     *
+     * @tparam type 指向的类型
+     * @tparam allocator_t 分配器类型
+     */
+    template <typename type, typename allocator_t = ::SoC::user_heap_allocator_t>
+    struct unique_ptr
+    {
+        using value_type = type;
+        using pointer = type*;
+        using const_pointer = const type*;
+        using reference = type&;
+        using const_reference = const type&;
+        using allocator = allocator_t;
+
+    private:
+        pointer ptr;
+        [[no_unique_address]] allocator alloc;
+
+    public:
+        /**
+         * @brief 默认构造空的智能指针
+         *
+         */
+        constexpr inline unique_ptr(allocator alloc = ::SoC::ram_allocator) noexcept : ptr{nullptr}, alloc{alloc} {}
+
+        constexpr inline unique_ptr(pointer ptr, allocator alloc = ::SoC::ram_allocator) noexcept : ptr{ptr}, alloc{alloc} {}
+
+        inline unique_ptr(const unique_ptr&) noexcept = delete;
+        inline unique_ptr& operator= (const unique_ptr&) noexcept = delete;
+
+        constexpr inline unique_ptr(unique_ptr&& other) noexcept : ptr{other.ptr}, alloc{::std::move(other.alloc)}
+        {
+            other.ptr = nullptr;
+        }
+
+        constexpr inline unique_ptr& operator= (unique_ptr&& other) noexcept
+        {
+            unique_ptr temp{::std::move(other)};
+            ::std::ranges::swap(*this, temp);
+            return *this;
+        }
+
+        constexpr inline unique_ptr& operator= (pointer ptr) noexcept
+        {
+            release();
+            this->ptr = ptr;
+            return *this;
+        }
+
+        constexpr inline ~unique_ptr() noexcept { release(); }
+
+        /**
+         * @brief 释放智能指针指向的对象
+         *
+         */
+        constexpr inline void release() noexcept
+        {
+            if(ptr != nullptr)
+            {
+                ptr->~type();
+                alloc.deallocate(ptr);
+                ptr = nullptr;
+            }
+        }
+
+        constexpr inline auto&& operator* (this auto&& self) noexcept { return *self.ptr; }
+
+        constexpr inline auto operator->(this auto&& self) noexcept
+        {
+            using self_t = decltype(self);
+            if constexpr(::std::is_const_v<::std::remove_reference_t<self_t>>) { return const_pointer{self.ptr}; }
+            else
+            {
+                return pointer{self.ptr};
+            }
+        }
+
+        constexpr inline operator pointer() noexcept { return ptr; }
+
+        constexpr inline operator const_pointer() const noexcept { return ptr; }
+
+        constexpr inline operator bool() const noexcept { return ptr != nullptr; }
+    };
 }  // namespace SoC

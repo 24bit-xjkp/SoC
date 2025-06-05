@@ -147,7 +147,7 @@ namespace SoC
         return nullptr;
     }
 
-    void ::SoC::heap::free_pages(void* ptr [[maybe_unused]], ::std::size_t actual_size [[maybe_unused]]) noexcept
+    void ::SoC::heap::deallocate_pages(void* ptr [[maybe_unused]], ::std::size_t actual_size [[maybe_unused]]) noexcept
     {
         ::SoC::always_assert(false, "尚未实现多页释放"sv);
     }
@@ -184,7 +184,7 @@ namespace SoC
         }
     }
 
-    void ::SoC::heap::free(void* ptr, ::std::size_t size) noexcept
+    void ::SoC::heap::deallocate(void* ptr, ::std::size_t size) noexcept
     {
         auto page_ptr{reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr)};
         auto actual_size{get_actual_allocate_size(size)};
@@ -194,7 +194,7 @@ namespace SoC
             auto ptr_align{::std::countr_zero(reinterpret_cast<::std::uintptr_t>(page_ptr))};
             ::SoC::assert(ptr_align >= size_align, "非法块指针"sv);
         }
-        if(actual_size >= page_size) [[unlikely]] { free_pages(ptr, actual_size); }
+        if(actual_size >= page_size) [[unlikely]] { deallocate_pages(ptr, actual_size); }
         auto metadata_index{get_metadata_index(page_ptr)};
         auto&& metadata_ref{metadata[metadata_index]};
         auto&& [next_page, free_block_list, used_block]{metadata_ref};
@@ -219,7 +219,7 @@ namespace SoC
         extern ::std::uintptr_t _ccmram_heap_end[];
     }
 
-    ::SoC::heap make_user_heap() noexcept { return ::SoC::heap{::SoC::_user_heap_start, ::SoC::_user_heap_end}; }
+    ::SoC::heap make_ram_heap() noexcept { return ::SoC::heap{::SoC::_user_heap_start, ::SoC::_user_heap_end}; }
 
     ::SoC::heap make_ccmram_heap() noexcept { return ::SoC::heap{::SoC::_ccmram_heap_start, ::SoC::_ccmram_heap_end}; }
 }  // namespace SoC

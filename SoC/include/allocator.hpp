@@ -46,21 +46,28 @@ namespace SoC
     /**
      * @brief 判断type是否为分配器，要求满足：
      * - 是无状态分配器，即大小不超过一个指针，且
-     * - 可默认构造和复制构造，且
+     * - 可默认构造和平凡复制和移动构造，且
+     * - 可平凡复制和移动赋值，且
      * - 可相等性比较，且
+     * - void* type::allocate(std::size_t) noexcept，且
      * - template<typename t> t* type::allocate() noexcept，且
      * - template<typename t> SoC::allocation_result<t*> type::allocate(std::size_t) noexcept，且
-     * - void type::deallocate(auto* ptr, std::size_t = 1) noexcept
+     * - void type::deallocate(auto* ptr, std::size_t = 1) noexcept，且
+     * - void type::deallocate(void* ptr, std::size_t) noexcept，且
      * @tparam type 要判断的类型
      */
     template <typename type>
     concept is_allocator =
         sizeof(type) <= sizeof(void*) && ::std::is_trivially_copy_constructible_v<type> &&
-        ::std::is_default_constructible_v<type> && ::std::equality_comparable<type> && requires(type& allocator, int* ptr) {
+        ::std::is_trivially_move_constructible_v<type> && ::std::is_default_constructible_v<type> &&
+        ::std::is_trivially_copy_assignable_v<type> && ::std::is_trivially_move_assignable_v<type> &&
+        ::std::equality_comparable<type> && requires(type& allocator, int* ptr, ::std::size_t n, void* void_ptr) {
+            { allocator.allocate(n) } noexcept -> ::std::same_as<void*>;
             { allocator.template allocate<int>() } noexcept -> ::std::same_as<int*>;
-            { allocator.template allocate<int>(2) } noexcept -> ::std::same_as<::SoC::allocation_result<int*>>;
+            { allocator.template allocate<int>(n) } noexcept -> ::std::same_as<::SoC::allocation_result<int*>>;
             { allocator.deallocate(ptr) } noexcept -> ::std::same_as<void>;
-            { allocator.deallocate(ptr, 2) } noexcept -> ::std::same_as<void>;
+            { allocator.deallocate(ptr, n) } noexcept -> ::std::same_as<void>;
+            { allocator.deallocate(void_ptr, n) } noexcept -> ::std::same_as<void>;
         };
 
     /**
@@ -144,7 +151,10 @@ namespace SoC
             {
                 return ::SoC::detail::constexpr_allocator<type>.allocate_at_least(n);
             }
-            else { return ::SoC::allocation_result<type>{::SoC::detail::constexpr_allocator<type>.allocate(n), n}; }
+            else
+            {
+                return ::SoC::allocation_result<type>{::SoC::detail::constexpr_allocator<type>.allocate(n), n};
+            }
         }
 
         /**
