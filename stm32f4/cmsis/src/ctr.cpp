@@ -49,7 +49,7 @@ namespace SoC
     void _fini() noexcept
     {
 #pragma GCC unroll 0
-        for(auto i{::SoC::cxa_at_exit_callback_index}; i != -1zu; --i)
+        for(auto i{::SoC::cxa_at_exit_callback_index}; i != 0zu; --i)
         {
             (::SoC::cxa_at_exit_callback_array[i])(::SoC::cxa_at_exit_callback_arg_array[i]);
         }
