@@ -5,14 +5,27 @@
 #include "../include/io.hpp"
 #include "../include/heap.hpp"
 #include "../include/adc.hpp"
+// #include "../include/exti.hpp"
+#include "../include/pid.hpp"
+
+using namespace ::SoC::literal;
+using namespace ::std::string_view_literals;
+
+constexpr auto prescaler{1};
+constexpr auto arr{::SoC::rcc::apb2_tim_freq / 20_K};
+constexpr auto actual_arr{arr / 2};
 
 struct adc_test
 {
-    inline static float coefficient{0.0008f};
+    inline static float coefficient{};
     inline static ::SoC::dma_stream* dma_stream;
-    inline static ::std::array<::std::uint16_t, 128> buffer;
+    inline static ::std::array<::std::uint16_t, 4> buffer;
     inline static ::SoC::text_ofile<::SoC::dma_stream>* file;
     inline static ::SoC::adc_regular_group* i_sample;
+    inline static ::SoC::tim_channel* channel;
+    inline static ::SoC::pid* pid;
+    inline static float duty{0.8f};
+    inline static float i{};
 };
 
 extern "C" void ::SoC::DMA2_Stream0_IRQHandler() noexcept
@@ -22,9 +35,13 @@ extern "C" void ::SoC::DMA2_Stream0_IRQHandler() noexcept
         ::std::uint32_t p0_measure{};
 #pragma GCC unroll(4)
         for(auto ch0: adc_test::buffer) { p0_measure += ch0; }
-        p0_measure >>= 7;
+        p0_measure /= 4;
         auto v_p0{p0_measure * adc_test::coefficient};
-        ::SoC::println<"P0: {}", true>(*adc_test::file, ::SoC::round<4>(v_p0));
+        // ::SoC::println<"P0: {}", true>(*adc_test::file, ::SoC::round<4>(v_p0));
+        auto i{::std::max((v_p0 - 1.66f) / 0.132f, 0.f)};
+        adc_test::i = i;
+        adc_test::duty = (*adc_test::pid)(i);
+        adc_test::channel->set_compare_value(static_cast<::std::uint16_t>(actual_arr * adc_test::duty));
         adc_test::dma_stream->read(::adc_test::buffer.begin(), ::adc_test::buffer.end());
         adc_test::i_sample->reset_dma();
     }
@@ -61,10 +78,10 @@ extern "C" void ::SoC::ADC_IRQHandler() noexcept
     }
 }
 
+extern "C" void ::SoC::EXTI2_IRQHandler() noexcept { ::SoC::println(::SoC::log_device, "外部中断触发"); }
+
 int main()
 {
-    using namespace ::SoC::literal;
-    using namespace ::std::string_view_literals;
 
     ::SoC::system_clock_init();
     ::SoC::enable_prefetch_cache();
@@ -100,12 +117,26 @@ int main()
     // constexpr auto pwm_freq{100_K};
     // constexpr auto arr{::SoC::rcc::apb2_tim_freq / pwm_freq / 2 - 1};
     // constexpr auto repeat_cnt{10};
-    constexpr auto prescaler{::SoC::rcc::apb2_tim_freq / 128_K};
-    constexpr auto arr{1000};
-    ::SoC::tim tim8{::SoC::tim::tim8, prescaler - 1, arr, ::SoC::tim_mode::center_up_down, ::SoC::tim_clock_div::div1};
+    ::SoC::tim tim8{::SoC::tim::tim8, prescaler - 1, actual_arr, ::SoC::tim_mode::center_up_down};
     tim8.set_trigger_output(::SoC::tim_trigger_output::update);
-    ::SoC::tim_channel tim8_ch1{tim8, ::SoC::tim_channel::ch1, ::SoC::tim_oc_mode::pwm1, static_cast<::std::uint32_t>(arr * 0.5)};
+    ::SoC::tim_channel tim8_ch1{tim8,
+                                ::SoC::tim_channel::ch1,
+                                ::SoC::tim_oc_mode::pwm1,
+                                static_cast<::std::uint32_t>(actual_arr * 0.8)};
+    adc_test::channel = &tim8_ch1;
+    ::SoC::pid pid{1.05f, 0.2f, 0.02f, 0.02f};
+    adc_test::pid = &pid;
     tim8.enable();
+
+    // ::SoC::syscfg syscfg{};
+    // ::SoC::gpio_pin exti_pin{gpio_c,
+    //                          ::SoC::gpio_pin::p2,
+    //                          ::SoC::gpio_mode::input,
+    //                          ::SoC::gpio_af::default_af,
+    //                          ::SoC::gpio_speed::default_speed,
+    //                          ::SoC::gpio_pull::pull_up};
+    // ::SoC::exti_line exti{syscfg, exti_pin, {::SoC::exti_trigger_source::falling}};
+    // exti.enable_irq(1, 0);
 
     auto usart1_dma_write{usart1.enable_dma_write(dma2, ::SoC::dma_fifo_threshold::full, ::SoC::dma_memory_burst::inc16)};
     ::SoC::text_ofile file{usart1_dma_write, {}};
@@ -124,8 +155,8 @@ int main()
     ::adc_test::i_sample = &i_sample;
     auto i_sample_dma{i_sample.enable_dma(dma2,
                                           ::SoC::dma_mode::normal,
-                                          ::SoC::dma_fifo_threshold::disable,
-                                          ::SoC::dma_memory_burst::single,
+                                          ::SoC::dma_fifo_threshold::full,
+                                          ::SoC::dma_memory_burst::inc8,
                                           ::SoC::dma_priority::high)};
     adc1.enable();
     ::adc_test::dma_stream = &i_sample_dma;
@@ -153,5 +184,7 @@ int main()
     {
         ::SoC::wait_for(0.5_s);
         green_led.toggle();
+        ::SoC::println<"电流采样: {}">(file, adc_test::i);
+        ::SoC::println<"占空比: {}", true>(file, adc_test::duty);
     }
 }

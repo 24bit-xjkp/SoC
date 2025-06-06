@@ -4,7 +4,7 @@
 namespace SoC
 {
     /// pid最大输出
-    constexpr inline float max_pid_output{0.95f};
+    constexpr inline float max_pid_output{0.90f};
 
     /// pid最小输出
     constexpr inline float min_pid_output{0.05f};
@@ -12,18 +12,15 @@ namespace SoC
     /**
      * @brief pid控制
      *
-     * @tparam kp 比例系数
-     * @tparam ki 积分系数
-     * @tparam kd 微分系数
      */
-    template <float kp, float ki, float kd>
-        requires (kp != 0 && ki != 0)
     struct pid
     {
     private:
         float target;
-        float last_input;
         float error_sum{};
+        float kp;
+        float ki;
+        float kc;
 
     public:
         /**
@@ -31,7 +28,7 @@ namespace SoC
          *
          * @param target 目标值
          */
-        inline explicit pid(float target) noexcept : target{target}, last_input{target} {}
+        inline explicit pid(float target, float kp, float ki, float kc) noexcept : target{target}, kp{kp}, ki{ki}, kc{kc} {}
 
         /**
          * @brief 设置pid目标值
@@ -51,10 +48,11 @@ namespace SoC
             auto error{target - input};
             error_sum += error;
             auto output{kp * error + ki * error_sum};
-            if constexpr(kd != 0.f) { output += kd * (input - last_input); }
+            auto old_output{output};
             // 限幅
-            output = ::std::max(output, ::SoC::max_pid_output);
-            output = ::std::min(output, ::SoC::min_pid_output);
+            output = ::std::min(output, ::SoC::max_pid_output);
+            output = ::std::max(output, ::SoC::min_pid_output);
+            error_sum += (output - old_output) * kc;
             return output;
         }
     };
