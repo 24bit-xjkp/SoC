@@ -100,6 +100,7 @@ namespace SoC
         {
             clear_flag_tc();
             disable();
+            disable_irq();
         }
     }
 

@@ -88,6 +88,7 @@ namespace SoC
         {
             disable();
             callback();
+            disable_irq();
         }
     }
 
