@@ -70,8 +70,9 @@ namespace SoC
      */
     struct gpio_port
     {
-    private:
         using port_enum = ::SoC::detail::gpio_port;
+
+    private:
         port_enum port{};
 
         /**
@@ -116,7 +117,7 @@ namespace SoC
          */
         inline ::GPIO_TypeDef* get_port() const noexcept
         {
-            return reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400u * ::std::to_underlying(port));
+            return reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400zu * ::std::to_underlying(port));
         }
 
         /**
@@ -287,7 +288,17 @@ namespace SoC
          * @brief 获取gpio结构体指针
          *
          */
-        constexpr inline ::GPIO_TypeDef* get_gpio() const noexcept { return gpio; }
+        constexpr inline ::GPIO_TypeDef* get_port() const noexcept { return gpio; }
+
+        /**
+         * @brief 获取gpio端口枚举
+         *
+         * @return gpio端口枚举
+         */
+        inline ::SoC::gpio_port::port_enum get_port_enum() const noexcept
+        {
+            return ::SoC::gpio_port::port_enum{(reinterpret_cast<::std::uintptr_t>(gpio) - AHB1PERIPH_BASE) / 0x0400zu};
+        }
 
         /**
          * @brief 获取所有引脚
