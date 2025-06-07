@@ -486,3 +486,61 @@ namespace SoC::detail
         constexpr inline void operator() () const noexcept { close_clock_callback(clock_enum); }
     };
 }  // namespace SoC::detail
+
+namespace SoC
+{
+    /**
+     * @brief 可空引用
+     *
+     * @tparam type 引用类型
+     */
+    template <typename type>
+        requires (::std::is_lvalue_reference_v<type>)
+    struct optional
+    {
+        using value_type = ::std::remove_reference_t<type>;
+        using pointer = value_type*;
+        using const_pointer = const value_type*;
+        using reference = value_type&;
+        using const_reference = const value_type&;
+
+    private:
+        pointer ptr;
+
+    public:
+        explicit constexpr inline optional() noexcept : ptr{nullptr} {}
+
+        explicit constexpr inline optional(type& ref) noexcept : ptr{::std::addressof(ref)} {}
+
+        constexpr inline optional& operator= (type& ref) noexcept
+        {
+            ptr = ::std::addressof(ref);
+            return *this;
+        }
+
+        constexpr inline operator reference() noexcept { return *ptr; }
+
+        constexpr inline operator const_reference() const noexcept { return *ptr; }
+
+        constexpr inline auto&& operator* (this auto&& self) noexcept { return *self.ptr; }
+
+        constexpr inline operator bool() const noexcept { return ptr != nullptr; }
+
+        constexpr inline auto operator->(this auto&& self) noexcept { return self.ptr; }
+
+        template <typename... args_t>
+        constexpr inline ::std::invoke_result_t<value_type, args_t...>
+            operator() (this auto&& self, args_t&&... args) noexcept(noexcept((*self.ptr)(::std::forward<args_t>(args)...)))
+            requires requires() { (*self.ptr)(::std::forward<args_t>(args)...); }
+        {
+            return (*self.ptr)(::std::forward<args_t>(args)...);
+        }
+
+        /**
+         * @brief 获取绑定对象的引用
+         *
+         * @return 对象引用
+         */
+        constexpr inline auto&& get(this auto&& self) noexcept { return *self.ptr; }
+    };
+}  // namespace SoC
