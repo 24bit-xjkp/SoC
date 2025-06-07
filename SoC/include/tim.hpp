@@ -137,6 +137,24 @@ namespace SoC
     };
 
     /**
+     * @brief 定时器中断类型
+     *
+     */
+    enum class tim_irq : ::std::size_t
+    {
+        /// 高级定时器刹车中断
+        brk,
+        /// 高级定时器更新中断
+        update,
+        /// 高级定时器换向和触发中断
+        com_trig,
+        /// 高级定时器通道比较/捕获中断
+        cc,
+        /// 非高级定时器使用，统一中断入口
+        normal
+    };
+
+    /**
      * @brief tim外设
      *
      */
@@ -147,6 +165,26 @@ namespace SoC
         using tim_enum = ::SoC::detail::tim;
         ::TIM_TypeDef* tim_ptr;
         ::SoC::detail::dtor_close_clock_callback_t callback;
+
+        /**
+         * @brief 判断当前定时器是不是高级定时器
+         *
+         */
+        bool is_advanced_tim() const noexcept;
+
+        /**
+         * @brief 检查当前定时器是不是高级定时器，不是则断言失败
+         *
+         */
+        void check_advanced_tim() const noexcept;
+
+        /**
+         * @brief 根据中断类型获取中断号枚举
+         *
+         * @param irq 中断类型
+         * @return 中断号枚举
+         */
+        ::IRQn_Type get_irqn(::SoC::tim_irq irq) const noexcept;
 
     public:
         using enum tim_enum;
@@ -241,6 +279,176 @@ namespace SoC
          * @param trigger 定时器触发输出
          */
         void set_trigger_output(::SoC::tim_trigger_output trigger) const noexcept;
+
+        /**
+         * @brief 设置定时器刹车中断源是否使能
+         *
+         * @note 只有高级定时器支持
+         * @param enable 是否使能
+         */
+        void set_it_brk(bool enable) const noexcept;
+
+        /**
+         * @brief 获取定时器刹车中断源是否使能
+         *
+         * @note 只有高级定时器支持
+         * @return 定时器刹车中断源是否使能
+         */
+        bool get_it_brk() const noexcept;
+
+        /**
+         * @brief 设置定时器触发中断源是否使能
+         *
+         * @param enable 是否使能
+         */
+        void set_it_trig(bool enable) const noexcept;
+
+        /**
+         * @brief 获取定时器触发中断源是否使能
+         *
+         * @return 定时器触发中断源是否使能
+         */
+        bool get_it_trig() const noexcept;
+
+        /**
+         * @brief 设置定时器换向中断源是否使能
+         *
+         * @note 只有高级定时器支持
+         * @param enable 是否使能
+         */
+        void set_it_com(bool enable) const noexcept;
+
+        /**
+         * @brief 获取定时器换向中断源是否使能
+         *
+         * @note 只有高级定时器支持
+         * @return 定时器换向中断源是否使能
+         */
+        bool get_it_com() const noexcept;
+
+        /**
+         * @brief 设置定时器更新中断源是否使能
+         *
+         * @param enable 是否使能
+         */
+        void set_it_update(bool enable) const noexcept;
+
+        /**
+         * @brief 获取定时器更新中断源是否使能
+         *
+         * @return 定时器更新中断源是否使能
+         */
+        bool get_it_update() const noexcept;
+
+        /**
+         * @brief 使能定时器中断
+         *
+         * @param irq 要使能的中断
+         * @param encoded_priority 编码后的优先级
+         */
+        void enable_irq(::SoC::tim_irq irq, ::std::size_t encoded_priority) const noexcept;
+
+        /**
+         * @brief 使能定时器中断
+         *
+         * @param irq 要使能的中断
+         * @param preempt_priority 抢占优先级
+         * @param sub_priority 响应优先级
+         */
+        void enable_irq(::SoC::tim_irq irq, ::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept;
+
+        /**
+         * @brief 失能定时器中断
+         *
+         * @param irq 要失能的中断
+         */
+        void disable_irq(::SoC::tim_irq irq) const noexcept;
+
+        /**
+         * @brief 获取定时器刹车标志
+         *
+         * @note 只有高级定时器支持
+         * @return 定时器刹车标志
+         */
+        bool get_flag_brk() const noexcept;
+
+        /**
+         * @brief 清除定时器刹车标志
+         *
+         * @note 只有高级定时器支持
+         */
+        void clear_flag_brk() const noexcept;
+
+        /**
+         * @brief 获取定时器触发标志
+         *
+         * @return 定时器触发标志
+         */
+        bool get_flag_trig() const noexcept;
+
+        /**
+         * @brief 清除定时器触发标志
+         *
+         */
+        void clear_flag_trig() const noexcept;
+
+        /**
+         * @brief 获取定时器换向标志
+         *
+         * @note 只有高级定时器支持
+         * @return 定时器换向标志
+         */
+        bool get_flag_com() const noexcept;
+
+        /**
+         * @brief 清除定时器换向标志
+         *
+         * @note 只有高级定时器支持
+         */
+        void clear_flag_com() const noexcept;
+
+        /**
+         * @brief 获取定时器更新标志
+         *
+         * @return 定时器更新标志
+         */
+        bool get_flag_update() const noexcept;
+
+        /**
+         * @brief 清除定时器更新标志
+         *
+         */
+        void clear_flag_update() const noexcept;
+
+        /**
+         * @brief 判断当前中断是否是刹车中断
+         *
+         * @note 只有高级定时器支持
+         * @return 是否是刹车中断
+         */
+        bool is_it_brk() const noexcept;
+
+        /**
+         * @brief 判断当前中断是否是触发中断
+         *
+         * @return 是否是触发中断
+         */
+        bool is_it_trig() const noexcept;
+
+        /**
+         * @brief 判断当前中断是否是换向中断
+         *
+         * @note 只有高级定时器支持
+         * @return 是否是换向中断
+         */
+        bool is_it_com() const noexcept;
+
+        /**
+         * @brief 判断当前中断是否是更新中断
+         *
+         * @return 是否是更新中断
+         */
+        bool is_it_update() const noexcept;
     };
 
     /**
@@ -275,6 +483,13 @@ namespace SoC
          *
          */
         void check_mode_oc() const noexcept;
+
+        /**
+         * @brief 获取通道对应中断和标志的掩码
+         *
+         * @return 通道对应中断和标志的掩码
+         */
+        ::std::size_t get_it_flag_mask() const noexcept;
 
     public:
         using enum tim_channel_enum;
@@ -383,5 +598,39 @@ namespace SoC
          * @param force_update 是否强制立即更新，为true通过产生update事件实现立即更新
          */
         void set_compare_value(::std::uint32_t compare_value, bool force_update = false) const noexcept;
+
+        /**
+         * @brief 设置定时器比较/捕获中断是否使能
+         *
+         * @param enable 是否使能
+         */
+        void set_it_cc(bool enable) const noexcept;
+
+        /**
+         * @brief 判断定时器比较/捕获中断是否使能
+         *
+         * @return 定时器比较/捕获中断是否使能
+         */
+        bool get_it_cc() const noexcept;
+
+        /**
+         * @brief 获取定时器比较/捕获标志
+         *
+         * @return 定时器比较/捕获标志
+         */
+        bool get_flag_cc() const noexcept;
+
+        /**
+         * @brief 清除定时器比较/捕获标志
+         *
+         */
+        void clear_flag_cc() const noexcept;
+
+        /**
+         * @brief 判断当前中断是否为定时器比较/捕获中断
+         *
+         * @return 当前中断是否为定时器比较/捕获中断
+         */
+        bool is_it_cc() const noexcept;
     };
 }  // namespace SoC

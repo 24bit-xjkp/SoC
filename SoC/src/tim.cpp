@@ -1,4 +1,5 @@
 #include "../include/tim.hpp"
+#include "../include/nvic.hpp"
 
 namespace SoC
 {
@@ -249,31 +250,188 @@ namespace SoC
                                  auto _{trigger};
                              }
                          }};
-        switch(get_tim_enum())
+        if constexpr(::SoC::use_full_assert)
         {
-            case tim1: break;
-            case tim8: break;
-            case tim2:
-            case tim3:
-            case tim4:
-            case tim5:
-            case tim9:
-            case tim12:
-                if constexpr(::SoC::use_full_assert) { check(::SoC::tim_trigger_output::oc2ref); }
-                break;
-            case tim10:
-            case tim11:
-            case tim13:
-            case tim14:
-                if constexpr(::SoC::use_full_assert) { check(::SoC::tim_trigger_output::oc1ref); }
-                break;
-            case tim6:
-            case tim7:
-                if constexpr(::SoC::use_full_assert) { check(::SoC::tim_trigger_output::update); }
-                break;
+            switch(get_tim_enum())
+            {
+                case tim1: break;
+                case tim8: break;
+                case tim2:
+                case tim3:
+                case tim4:
+                case tim5:
+                case tim9:
+                case tim12: check(::SoC::tim_trigger_output::oc2ref); break;
+                case tim10:
+                case tim11:
+                case tim13:
+                case tim14: check(::SoC::tim_trigger_output::oc1ref); break;
+                case tim6:
+                case tim7: check(::SoC::tim_trigger_output::update); break;
+            }
         }
         ::LL_TIM_SetTriggerOutput(tim_ptr, ::std::to_underlying(trigger));
     }
+
+    bool ::SoC::tim::is_advanced_tim() const noexcept
+    {
+        auto tim{get_tim_enum()};
+        return tim == tim1 || tim == tim8;
+    }
+
+    void ::SoC::tim::check_advanced_tim() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(is_advanced_tim(), "只有高级定时器支持该功能"sv); }
+    }
+
+    void ::SoC::tim::set_it_brk(bool enable) const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        if(enable) { ::LL_TIM_EnableIT_BRK(tim_ptr); }
+        else
+        {
+            ::LL_TIM_DisableIT_BRK(tim_ptr);
+        }
+    }
+
+    bool ::SoC::tim::get_it_brk() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        return ::LL_TIM_IsEnabledIT_BRK(tim_ptr);
+    }
+
+    void ::SoC::tim::set_it_trig(bool enable) const noexcept
+    {
+        if(enable) { ::LL_TIM_EnableIT_TRIG(tim_ptr); }
+        else
+        {
+            ::LL_TIM_DisableIT_TRIG(tim_ptr);
+        }
+    }
+
+    bool ::SoC::tim::get_it_trig() const noexcept { return ::LL_TIM_IsEnabledIT_TRIG(tim_ptr); }
+
+    void ::SoC::tim::set_it_com(bool enable) const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        if(enable) { ::LL_TIM_EnableIT_COM(tim_ptr); }
+        else
+        {
+            ::LL_TIM_DisableIT_COM(tim_ptr);
+        }
+    }
+
+    bool ::SoC::tim::get_it_com() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        return ::LL_TIM_IsEnabledIT_COM(tim_ptr);
+    }
+
+    void ::SoC::tim::set_it_update(bool enable) const noexcept
+    {
+        if(enable) { ::LL_TIM_EnableIT_UPDATE(tim_ptr); }
+        else
+        {
+            ::LL_TIM_DisableIT_UPDATE(tim_ptr);
+        }
+    }
+
+    bool ::SoC::tim::get_it_update() const noexcept { return ::LL_TIM_IsEnabledIT_UPDATE(tim_ptr); }
+
+    ::IRQn_Type(::SoC::tim::get_irqn)(::SoC::tim_irq irq) const noexcept
+    {
+        if(is_advanced_tim())
+        {
+            if constexpr(::SoC::use_full_assert)
+            {
+                ::SoC::assert(irq != ::SoC::tim_irq::normal, "高级定时器使用多个中断入口，必须指明要使能的中断"sv);
+            }
+            constexpr auto tim1_irqn_base{::IRQn_Type::TIM1_BRK_TIM9_IRQn};
+            constexpr auto tim8_irqn_base{::IRQn_Type::TIM8_BRK_TIM12_IRQn};
+            auto irqn_base{get_tim_enum() == tim1 ? tim1_irqn_base : tim8_irqn_base};
+            return static_cast<::IRQn_Type>(irqn_base + ::std::to_underlying(irq));
+        }
+        else
+        {
+            if constexpr(::SoC::use_full_assert)
+            {
+                ::SoC::assert(irq == ::SoC::tim_irq::normal, "非高级定时器只有一个中断入口，必须设置为normal"sv);
+            }
+            switch(get_tim_enum())
+            {
+                case tim2: return ::IRQn_Type::TIM2_IRQn;
+                case tim3: return ::IRQn_Type::TIM3_IRQn;
+                case tim4: return ::IRQn_Type::TIM4_IRQn;
+                case tim5: return ::IRQn_Type::TIM5_IRQn;
+                case tim6: return ::IRQn_Type::TIM6_DAC_IRQn;
+                case tim7: return ::IRQn_Type::TIM7_IRQn;
+                case tim9: return ::IRQn_Type::TIM1_BRK_TIM9_IRQn;
+                case tim10: return ::IRQn_Type::TIM1_UP_TIM10_IRQn;
+                case tim11: return ::IRQn_Type::TIM1_TRG_COM_TIM11_IRQn;
+                case tim12: return ::IRQn_Type::TIM8_BRK_TIM12_IRQn;
+                case tim13: return ::IRQn_Type::TIM8_UP_TIM13_IRQn;
+                case tim14: return ::IRQn_Type::TIM8_TRG_COM_TIM14_IRQn;
+                case tim1:
+                case tim8: ::std::unreachable();
+            }
+        }
+    }
+
+    void ::SoC::tim::enable_irq(::SoC::tim_irq irq, ::std::size_t encoded_priority) const noexcept
+    {
+        auto irqn{get_irqn(irq)};
+        ::SoC::enable_irq(irqn);
+        ::SoC::set_priority(irqn, encoded_priority);
+    }
+
+    void ::SoC::tim::enable_irq(::SoC::tim_irq irq, ::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept
+    {
+        auto irqn{get_irqn(irq)};
+        ::SoC::enable_irq(irqn);
+        ::SoC::set_priority(irqn, preempt_priority, sub_priority);
+    }
+
+    void ::SoC::tim::disable_irq(::SoC::tim_irq irq) const noexcept { ::SoC::disable_irq(get_irqn(irq)); }
+
+    bool ::SoC::tim::get_flag_brk() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        return ::LL_TIM_IsActiveFlag_BRK(tim_ptr);
+    }
+
+    void ::SoC::tim::clear_flag_brk() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        ::LL_TIM_ClearFlag_BRK(tim_ptr);
+    }
+
+    bool ::SoC::tim::get_flag_trig() const noexcept { return ::LL_TIM_IsActiveFlag_TRIG(tim_ptr); }
+
+    void ::SoC::tim::clear_flag_trig() const noexcept { ::LL_TIM_ClearFlag_TRIG(tim_ptr); }
+
+    bool ::SoC::tim::get_flag_com() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        return ::LL_TIM_IsActiveFlag_COM(tim_ptr);
+    }
+
+    void ::SoC::tim::clear_flag_com() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
+        ::LL_TIM_ClearFlag_COM(tim_ptr);
+    }
+
+    bool ::SoC::tim::get_flag_update() const noexcept { return ::LL_TIM_IsActiveFlag_UPDATE(tim_ptr); }
+
+    void ::SoC::tim::clear_flag_update() const noexcept { ::LL_TIM_ClearFlag_UPDATE(tim_ptr); }
+
+    bool ::SoC::tim::is_it_brk() const noexcept { return get_flag_brk() && get_it_brk(); }
+
+    bool ::SoC::tim::is_it_trig() const noexcept { return get_flag_trig() && get_it_trig(); }
+
+    bool ::SoC::tim::is_it_com() const noexcept { return get_flag_com() && get_it_com(); }
+
+    bool ::SoC::tim::is_it_update() const noexcept { return get_flag_update() && get_it_update(); }
 }  // namespace SoC
 
 namespace SoC
@@ -389,4 +547,38 @@ namespace SoC
         }
         if(force_update) { ::LL_TIM_GenerateEvent_UPDATE(tim_ptr); }
     }
+
+    ::std::size_t(::SoC::tim_channel::get_it_flag_mask)() const noexcept
+    {
+        auto shift{::std::countr_zero(::std::to_underlying(channel))};
+        [[assume(shift <= 12)]];
+        shift /= 3;
+        return 1zu << shift;
+    }
+
+    void ::SoC::tim_channel::set_it_cc(bool enable) const noexcept
+    {
+        auto mask{get_it_flag_mask()};
+        if(enable) { tim_ptr->DIER |= mask; }
+        else
+        {
+            tim_ptr->DIER &= ~mask;
+        }
+    }
+
+    bool ::SoC::tim_channel::get_it_cc() const noexcept
+    {
+        auto mask{get_it_flag_mask()};
+        return (tim_ptr->DIER & mask) == mask;
+    }
+
+    bool ::SoC::tim_channel::get_flag_cc() const noexcept
+    {
+        auto mask{get_it_flag_mask()};
+        return (tim_ptr->SR & mask) == mask;
+    }
+
+    void ::SoC::tim_channel::clear_flag_cc() const noexcept { tim_ptr->SR = ~get_it_flag_mask(); }
+
+    bool ::SoC::tim_channel::is_it_cc() const noexcept { return get_flag_cc() && get_it_cc(); }
 }  // namespace SoC
