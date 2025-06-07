@@ -98,7 +98,7 @@ namespace SoC
         {
             clear_flag_eocs();
             clear_flag_ovr();
-            stop_dma();
+            disable_dma();
             disable();
         }
     }
@@ -265,7 +265,7 @@ namespace SoC
 
     ::std::size_t(::SoC::adc_regular_group::get_result)() const noexcept { return ::LL_ADC_REG_ReadConversionData12(adc_ptr); }
 
-    void ::SoC::adc_regular_group::stop_dma() const noexcept
+    void ::SoC::adc_regular_group::disable_dma() const noexcept
     {
         ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::std::to_underlying(::SoC::adc_regular_dma_mode::none));
     }
@@ -277,7 +277,7 @@ namespace SoC
 
     void ::SoC::adc_regular_group::reset_dma() const noexcept
     {
-        stop_dma();
+        disable_dma();
         set_dma();
     }
 }  // namespace SoC

@@ -634,7 +634,7 @@ namespace SoC
          * @brief 停止dma，将adc的dma标志清除
          *
          */
-        void stop_dma() const noexcept;
+        void disable_dma() const noexcept;
 
         /**
          * @brief 根据dma配置，设置adc的dma标志
