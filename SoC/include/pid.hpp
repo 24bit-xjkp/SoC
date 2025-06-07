@@ -7,7 +7,7 @@ namespace SoC
     constexpr inline float max_pid_output{0.90f};
 
     /// pid最小输出
-    constexpr inline float min_pid_output{0.05f};
+    constexpr inline float min_pid_output{0.f};
 
     /**
      * @brief pid控制
@@ -27,8 +27,25 @@ namespace SoC
          * @brief 初始化pid控制器
          *
          * @param target 目标值
+         * @param kp 比例因子
+         * @param ki 积分因子
+         * @param kc 反向积分因子
          */
         inline explicit pid(float target, float kp, float ki, float kc) noexcept : target{target}, kp{kp}, ki{ki}, kc{kc} {}
+
+        /**
+         * @brief 获取pid目标值
+         *
+         * @return pid目标值
+         */
+        inline float get_target() const noexcept { return target; }
+
+        /**
+         * @brief 目标值步进
+         *
+         * @param delta 步进值
+         */
+        inline void step(float delta) noexcept { target += delta; }
 
         /**
          * @brief 设置pid目标值
