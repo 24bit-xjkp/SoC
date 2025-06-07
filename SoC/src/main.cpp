@@ -39,6 +39,12 @@ namespace pid_controller
             i_sample_sum = 0.f;
             i_sample_cnt = 0;
         }
+        // 设置采样点数上限，避免更新过慢
+        else if(i_sample_cnt == 500)
+        {
+            i_sample_sum = 0.f;
+            i_sample_cnt = 0;
+        }
     }
 
     extern "C" void DMA2_Stream0_IRQHandler() noexcept
@@ -50,7 +56,7 @@ namespace pid_controller
             for(auto ch0: buffer) { p0_measure += ch0; }
             p0_measure /= 4;
             auto v_p0{p0_measure * coefficient};
-            auto i{::std::max((v_p0 - 1.66f) / 0.132f, 0.f)};
+            auto i{::std::max((v_p0 - 1.67f) / 0.132f, 0.f)};
             duty = pid(i);
             channel->set_compare_value(actual_arr * duty);
             calculate_i_sample_value(i);
@@ -168,7 +174,7 @@ int main()
                                 static_cast<::std::uint32_t>(actual_arr * 0.8)};
     tim8_ch1.enable_oc_preload();
     ::pid_controller::channel = tim8_ch1;
-    ::SoC::pid pid{1.05f, 0.2f, 0.02f, 0.02f, 1.05f, 2.05f};
+    ::SoC::pid pid{1.f, 0.2f, 0.04f, 0.03f, 1.f, 2.f, -0.02f};
     ::pid_controller::pid = pid;
     tim8.enable();
 
@@ -233,7 +239,7 @@ int main()
     {
         ::SoC::wait_for(0.5_s);
         green_led.toggle();
-        ::SoC::println<"电流采样: {}A">(file, ::pid_controller::i_sample_value);
+        ::SoC::println<"电流采样: {}A">(file, ::SoC::round<2>(::pid_controller::get_i_sample_value() + 0.02f));
         ::SoC::println<"占空比: {}%">(file, ::SoC::round<2>(::pid_controller::duty * 100.f));
         ::SoC::println<"pid目标值: {}A">(file, ::pid_controller::pid->get_target());
         ::SoC::println<true>(file, "--------------------"sv);
