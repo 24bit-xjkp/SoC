@@ -88,7 +88,7 @@ namespace SoC
     /// 毫秒
     using microseconds = ::SoC::duration<::std::kilo>;
     /// 系统时刻周期，在此处修改系统时刻
-    using systicks = ::SoC::duration<::std::hecto>;
+    using systicks = ::SoC::microseconds;
     /// 秒
     using seconds = ::SoC::duration<::std::mega>;
 }  // namespace SoC
