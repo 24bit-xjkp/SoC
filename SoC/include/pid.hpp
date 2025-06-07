@@ -21,6 +21,8 @@ namespace SoC
         float kp;
         float ki;
         float kc;
+        float target_min;
+        float target_max;
 
     public:
         /**
@@ -30,8 +32,13 @@ namespace SoC
          * @param kp 比例因子
          * @param ki 积分因子
          * @param kc 反向积分因子
+         * @param target_min 目标最小值
+         * @param target_max 目标最大值
          */
-        inline explicit pid(float target, float kp, float ki, float kc) noexcept : target{target}, kp{kp}, ki{ki}, kc{kc} {}
+        inline explicit pid(float target, float kp, float ki, float kc, float target_min, float target_max) noexcept :
+            target{target}, kp{kp}, ki{ki}, kc{kc}, target_min{target_min}, target_max{target_max}
+        {
+        }
 
         /**
          * @brief 获取pid目标值
@@ -45,14 +52,19 @@ namespace SoC
          *
          * @param delta 步进值
          */
-        inline void step(float delta) noexcept { target += delta; }
+        inline void step(float delta) noexcept { set_target(target + delta); }
 
         /**
          * @brief 设置pid目标值
          *
          * @param target 目标值
          */
-        inline void set_target(float target) noexcept { this->target = target; }
+        inline void set_target(float target) noexcept
+        {
+            target = ::std::min(target, target_max);
+            target = ::std::max(target, target_min);
+            this->target = target;
+        }
 
         /**
          * @brief 计算pid输出
