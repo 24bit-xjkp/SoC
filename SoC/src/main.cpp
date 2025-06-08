@@ -7,6 +7,7 @@
 #include "../include/adc.hpp"
 #include "../include/exti.hpp"
 #include "../include/pid.hpp"
+#include "../include/oled.hpp"
 
 using namespace ::SoC::literal;
 using namespace ::std::string_view_literals;
@@ -56,7 +57,7 @@ namespace pid_controller
             for(auto ch0: buffer) { p0_measure += ch0; }
             p0_measure /= 4;
             auto v_p0{p0_measure * coefficient};
-            auto i{::std::max((v_p0 - 1.67f) / 0.132f, 0.f)};
+            auto i{::std::max((v_p0 - 1.669f) / 0.13426063f, 0.f)};
             duty = pid(i);
             channel->set_compare_value(actual_arr * duty);
             calculate_i_sample_value(i);
@@ -78,28 +79,45 @@ namespace shutdown_awd
     inline ::SoC::optional<::SoC::adc_regular_group&> awd_sample;
     inline ::SoC::optional<::SoC::analog_watchdog&> awd;
     inline ::SoC::optional<::SoC::gpio_pin&> shutdown;
-    constexpr inline auto awd_noise_threshold{20};
+    constexpr inline auto awd_noise_threshold{20zu};
 
     extern "C" void ADC_IRQHandler() noexcept
     {
         if(awd->is_it_awd())
         {
-            using namespace ::std::string_view_literals;
             auto sample{awd_sample->get_result()};
             ::SoC::wait_until([] static noexcept { return awd_sample->get_flag_eocs(); });
             sample += awd_sample->get_result();
-            sample >>= 1;
+            sample /= 2;
+            // ::SoC::wait_until([] static noexcept { return awd_sample->get_flag_eocs(); });
+            // auto sample{awd_sample->get_result()};
+            // auto [_, high_threshold]{awd->get_threshold()};
             auto [_, high_threshold]{awd->get_threshold()};
+            ::SoC::println<"看门狗上限: {}, 实际值: {}", true>(file.get(), high_threshold, sample);
             if(sample >= high_threshold + awd_noise_threshold)
             {
                 shutdown->reset();
-                ::SoC::println(::file.get(), "\N{ESCAPE}[31m检测到过压，断开电源\N{ESCAPE}[39m"sv);
+                ::SoC::println<true>(::file.get(), "\N{ESCAPE}[31m检测到过压，断开电源\N{ESCAPE}[39m"sv);
+                awd->set_it_awd(false);
             }
             awd->clear_flag_awd();
-            awd->set_it_awd(false);
         }
     }
 }  // namespace shutdown_awd
+
+namespace oled
+{
+    ::SoC::optional<::SoC::oled&> oled;
+
+    extern "C" void DMA1_Stream6_IRQHandler() noexcept
+    {
+        if(auto& dma{oled->get_dma()}; dma.is_it_tc())
+        {
+            oled->get_i2c().stop();
+            dma.clear_flag_tc();
+        }
+    }
+}  // namespace oled
 
 namespace key_check_tim
 {
@@ -171,10 +189,10 @@ int main()
     ::SoC::tim_channel tim8_ch1{tim8,
                                 ::SoC::tim_channel::ch1,
                                 ::SoC::tim_oc_mode::pwm1,
-                                static_cast<::std::uint32_t>(actual_arr * 0.8)};
+                                static_cast<::std::uint32_t>(actual_arr * 0.5)};
     tim8_ch1.enable_oc_preload();
     ::pid_controller::channel = tim8_ch1;
-    ::SoC::pid pid{1.f, 0.2f, 0.04f, 0.03f, 1.f, 2.f, -0.02f};
+    ::SoC::pid pid{1.f, 0.141f, 0.028f, 0.014f, 1.f, 2.f, 0.000f};
     ::pid_controller::pid = pid;
     tim8.enable();
 
@@ -196,7 +214,20 @@ int main()
     auto usart1_dma_write{usart1.enable_dma_write(dma2, ::SoC::dma_fifo_threshold::full, ::SoC::dma_memory_burst::inc16)};
     ::SoC::text_ofile file{usart1_dma_write, {}};
     ::file = file;
-    // auto cnt{0zu};
+
+    ::SoC::gpio_port gpio_b{::SoC::gpio_port::pb};
+    ::SoC::gpio_pin oled_pin{gpio_b,
+                             ::SoC::gpio_pin::p6 | ::SoC::gpio_pin::p7,
+                             ::SoC::gpio_mode::alternate,
+                             ::SoC::gpio_af::af4,
+                             ::SoC::gpio_speed::high,
+                             ::SoC::gpio_pull::pull_up,
+                             ::SoC::gpio_output_type::open_drain};
+    ::SoC::i2c oled_i2c{::SoC::i2c::i2c1, 400_K, 0x78};
+    ::SoC::dma dma1{::SoC::dma::dma1};
+    ::SoC::oled oled{oled_i2c, dma1};
+    ::oled::oled = oled;
+    oled.init();
 
     auto&& [coefficient, _]{adc_calibrator->get_result()};
     ::pid_controller::coefficient = coefficient;
@@ -229,19 +260,39 @@ int main()
     ::shutdown_awd::awd_sample = awd_sample;
     adc2.enable();
     awd_sample.enable(::SoC::adc_trig_edge::software);
-    ::SoC::analog_watchdog awd{adc2, ::SoC::analog_watchdog::ch11_reg, 0, 3130};
+    ::SoC::analog_watchdog awd{adc2, ::SoC::analog_watchdog::ch11_reg, 0, static_cast<::std::size_t>(2.13f / coefficient)};
     ::shutdown_awd::awd = awd;
     awd.enable_irq(0);
     awd.set_it_awd(true);
 
+    auto cnt{0zu};
 #pragma GCC unroll 0
     while(true)
     {
-        ::SoC::wait_for(0.5_s);
-        green_led.toggle();
-        ::SoC::println<"电流采样: {}A">(file, ::SoC::round<2>(::pid_controller::get_i_sample_value() + 0.02f));
-        ::SoC::println<"占空比: {}%">(file, ::SoC::round<2>(::pid_controller::duty * 100.f));
-        ::SoC::println<"pid目标值: {}A">(file, ::pid_controller::pid->get_target());
-        ::SoC::println<true>(file, "--------------------"sv);
+        ::SoC::wait_for(0.1_s);
+        auto i_sample{::SoC::round<2>(::pid_controller::get_i_sample_value())};
+        if(++cnt == 5)
+        {
+            cnt = 0;
+            green_led.toggle();
+            ::SoC::println<"电流采样: {}A">(file, i_sample);
+            ::SoC::println<"占空比: {}%">(file, ::SoC::round<2>(::pid_controller::duty * 100.f));
+            ::SoC::println<"pid目标值: {}A">(file, ::pid_controller::pid->get_target());
+            ::SoC::println<"电压采样: {}">(file, awd_sample.get_result() * coefficient);
+            ::SoC::println<true>(file, "--------------------"sv);
+        }
+        char buffer[5];
+        auto ptr{::std::to_chars(buffer, buffer + 5, ::SoC::round<2>(i_sample)).ptr};
+        switch(ptr - buffer)
+        {
+            case 1:
+                *ptr++ = '.';
+                *ptr++ = '0';
+                *ptr++ = '0';
+                break;
+            case 3: *ptr++ = '0'; break;
+        }
+        *ptr++ = 'A';
+        oled.write(buffer, buffer + 5);
     }
 }
