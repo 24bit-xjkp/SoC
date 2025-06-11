@@ -14,17 +14,17 @@ namespace SoC
         static_assert(n != 1, "格式串不能为空");
         ::std::array<char, n - 1> buffer;
 
-        consteval inline fmt_string(const char (&string)[n]) noexcept { ::std::ranges::copy_n(string, n - 1, buffer.begin()); }
+        constexpr inline fmt_string(const char (&string)[n]) noexcept { ::std::ranges::copy_n(string, n - 1, buffer.begin()); }
 
-        consteval inline auto begin() const noexcept { return buffer.cbegin(); }
+        constexpr inline auto begin() const noexcept { return buffer.cbegin(); }
 
-        consteval inline auto end() const noexcept { return buffer.cend(); }
+        constexpr inline auto end() const noexcept { return buffer.cend(); }
 
-        consteval inline auto size() const noexcept { return n - 1; }
+        constexpr inline auto size() const noexcept { return n - 1; }
 
-        consteval inline char operator[] (::std::size_t i) const noexcept { return buffer[i]; }
+        constexpr inline char operator[] (::std::size_t i) const noexcept { return buffer[i]; }
 
-        consteval inline operator ::std::string_view () const noexcept { return {begin(), end()}; }
+        constexpr inline operator ::std::string_view () const noexcept { return {begin(), end()}; }
     };
 
     /**

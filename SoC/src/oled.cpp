@@ -8,10 +8,10 @@ namespace SoC
 
     namespace detail
     {
-        constexpr inline ::std::int8_t font8x16[]{
+        constexpr inline ::std::uint8_t font8x16[]{
 #embed "../assets/font_8x16.data"
         };
-        constexpr inline ::std::int8_t font16x16[]{
+        constexpr inline ::std::uint8_t font16x16[]{
 #embed "../assets/font_16x16.data"
         };
     }  // namespace detail

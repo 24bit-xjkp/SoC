@@ -43,7 +43,7 @@ namespace SoC
          * @param begin 字符串首指针
          * @param end 字符串尾哨位
          */
-        [[using gnu: always_inline]] void write_f8x16(const char* begin, const char* end) noexcept;
+        void write_f8x16(const char* begin, const char* end) noexcept;
 
         /**
          * @brief 将字符串写入缓冲区并刷新
@@ -51,7 +51,7 @@ namespace SoC
          * @param begin 字符串首指针
          * @param end 字符串尾哨位
          */
-        [[using gnu: always_inline]] void write_f16x16(const char* begin, const char* end) noexcept;
+        void write_f16x16(const char* begin, const char* end) noexcept;
 
     public:
         /**

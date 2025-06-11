@@ -377,7 +377,7 @@ namespace SoC
 
     template <typename target_type, ::std::size_t bytes>
         requires (::std::is_trivially_copyable_v<target_type> && bytes % sizeof(target_type) == 0)
-    constexpr inline auto array_cast(const ::std::int8_t (&array)[bytes]) noexcept
+    constexpr inline auto array_cast(const ::std::uint8_t (&array)[bytes]) noexcept
     {
         return ::std::bit_cast<::std::array<target_type, bytes / sizeof(target_type)>>(array);
     }

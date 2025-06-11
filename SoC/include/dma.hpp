@@ -381,6 +381,7 @@ namespace SoC
                 case ::SoC::dma_fifo_threshold::half: return ::SoC::dma_fifo_max_size / 2;
                 case ::SoC::dma_fifo_threshold::quart3: return ::SoC::dma_fifo_max_size / 4 * 3;
                 case ::SoC::dma_fifo_threshold::full: return ::SoC::dma_fifo_max_size;
+                default: ::std::unreachable();
             }
         }
 
@@ -396,6 +397,7 @@ namespace SoC
                 case ::SoC::dma_memory_data_size::byte: return 1;
                 case ::SoC::dma_memory_data_size::half_word: return 2;
                 case ::SoC::dma_memory_data_size::word: return 4;
+                default: ::std::unreachable();
             }
         }
 
@@ -412,6 +414,7 @@ namespace SoC
                 case ::SoC::dma_memory_burst::inc4: return 4;
                 case ::SoC::dma_memory_burst::inc8: return 8;
                 case ::SoC::dma_memory_burst::inc16: return 16;
+                default: ::std::unreachable();
             }
         }
 
@@ -427,6 +430,7 @@ namespace SoC
                 case ::SoC::dma_periph_data_size::byte: return 1;
                 case ::SoC::dma_periph_data_size::half_word: return 2;
                 case ::SoC::dma_periph_data_size::word: return 4;
+                default: ::std::unreachable();
             }
         }
 
@@ -443,6 +447,7 @@ namespace SoC
                 case ::SoC::dma_periph_burst::inc4: return 4;
                 case ::SoC::dma_periph_burst::inc8: return 8;
                 case ::SoC::dma_periph_burst::inc16: return 16;
+                default: ::std::unreachable();
             }
         }
 

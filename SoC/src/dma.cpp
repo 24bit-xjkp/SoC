@@ -11,6 +11,7 @@ namespace SoC
         {
             case dma1: return LL_AHB1_GRP1_PERIPH_DMA1;
             case dma2: return LL_AHB1_GRP1_PERIPH_DMA2;
+            default: ::std::unreachable();
         }
     }
 
@@ -304,7 +305,7 @@ namespace SoC
             {
                 case dma1:
                     irqn = stream == st7 ? ::DMA1_Stream7_IRQn
-                                         : ::std::bit_cast<::IRQn_Type>(::DMA1_Stream0_IRQn + ::std::to_underlying(stream));
+                                         : static_cast<::IRQn_Type>(::DMA1_Stream0_IRQn + ::std::to_underlying(stream));
                     break;
                 case dma2:
                     switch(stream)
@@ -313,9 +314,9 @@ namespace SoC
                         case st1:
                         case st2:
                         case st3:
-                        case st4: irqn = ::std::bit_cast<::IRQn_Type>(::DMA2_Stream0_IRQn + ::std::to_underlying(stream)); break;
+                        case st4: irqn = static_cast<::IRQn_Type>(::DMA2_Stream0_IRQn + ::std::to_underlying(stream)); break;
                         default:
-                            irqn = ::std::bit_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::std::to_underlying(stream));
+                            irqn = static_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::std::to_underlying(stream));
                             break;
                     }
                     break;

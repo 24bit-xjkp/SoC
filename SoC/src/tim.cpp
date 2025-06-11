@@ -372,7 +372,8 @@ namespace SoC
                 case tim13: return ::IRQn_Type::TIM8_UP_TIM13_IRQn;
                 case tim14: return ::IRQn_Type::TIM8_TRG_COM_TIM14_IRQn;
                 case tim1:
-                case tim8: ::std::unreachable();
+                case tim8:
+                default: ::std::unreachable();
             }
         }
     }

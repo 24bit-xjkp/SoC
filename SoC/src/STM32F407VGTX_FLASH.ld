@@ -166,7 +166,7 @@ SECTIONS
     . = ALIGN(4);
     _eccmram = .;       /* create a global symbol at ccmram end */
     . = ALIGN(8);
-    _ccmram_heap_start =.;
+    _ccmram_heap_start = .;
   } >CCMRAM AT> ROM
   _ccmram_heap_end = ORIGIN(CCMRAM) + LENGTH(CCMRAM);
 
@@ -200,7 +200,7 @@ SECTIONS
   .user_heap :
   {
    . = ALIGN(8);
-    _user_heap_start =.;
+    _user_heap_start = .;
     . = . + _Min_Heap_Size;
   } >RAM
   _user_heap_end = ORIGIN(RAM) + LENGTH(RAM);
