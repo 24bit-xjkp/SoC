@@ -14,7 +14,7 @@ namespace SoC
                         ::SoC::usart_direction direction,
                         ::SoC::usart_hardware_flow_control control,
                         ::SoC::usart_oversampling oversampling) noexcept :
-        usart_ptr{::std::bit_cast<::USART_TypeDef*>(usart)}, mode{mode}, data_width{data_width}, parity{parity}
+        usart_ptr{::std::bit_cast<::USART_TypeDef*>(usart)}, data_width{data_width}
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此串口不应处于使能状态"sv); }
         ::std::uint32_t clk{};
@@ -130,7 +130,7 @@ namespace SoC
     {
         if constexpr(::SoC::use_full_assert)
         {
-            ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && parity == ::SoC::usart_parity::none,
+            ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 && ::LL_USART_GetParity(usart_ptr) == ::std::to_underlying(::SoC::usart_parity::none),
                           "只有数据宽度为8位且未启用校验时支持9位输出"sv);
         }
 #pragma GCC unroll 0

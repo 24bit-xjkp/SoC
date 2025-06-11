@@ -116,9 +116,7 @@ namespace SoC
 
     private:
         ::USART_TypeDef* usart_ptr{};
-        ::SoC::usart_mode mode{};
         ::SoC::usart_data_width data_width{};
-        ::SoC::usart_parity parity{};
         ::SoC::detail::dtor_close_clock_callback_t callback;
         ::IRQn_Type irqn{};
 
@@ -181,13 +179,6 @@ namespace SoC
          * @return usart外设枚举
          */
         inline usart_enum get_usart_enum() const noexcept { return ::std::bit_cast<usart_enum>(usart_ptr); }
-
-        /**
-         * @brief 获取usart外设工作状态
-         *
-         * @return usart外设工作状态
-         */
-        inline ::SoC::usart_mode get_mode() const noexcept { return mode; }
 
         /**
          * @brief 获取中断枚举
