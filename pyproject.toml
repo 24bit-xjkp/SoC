@@ -1,0 +1,45 @@
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "SoC"
+version = "0.1.0"
+description = "基于STM32F407的开关电源."
+authors = [{ name = "24bit-xjkp", email = "2283572185@qq.com" }]
+license = "MIT"
+requires-python = "^3.12.0"
+dependencies = ["pyocd (>=0.36.0,<0.37.0)", "matplotlib (>=3.10.3,<4.0.0)", "numpy (>=2.3.0,<3.0.0)", "scipy (>=1.15.3,<2.0.0)",
+                "jupyter-client (>=8.6.3,<9.0.0)", "jupyter-core (>=5.8.1,<6.0.0)", "ipykernel (>=6.29.5,<7.0.0)"]
+
+[project.urls]
+repository = "https://github.com/24bit-xjkp/SoC"
+
+[tool.poetry]
+package-mode = false
+
+[tool.black]
+line-length = 140
+skip-string-normalization = false
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.vscode
+  | \.VSCodeCounter
+  | \.xmake
+  | buck-out
+  | build
+  | dist
+  | script\toolchains
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 140
+
+[tool.poetry.group.dev.dependencies]
+poetry = "^2.0.0"
+black = "^24.10.0"
+isort = "^5.13.2"
