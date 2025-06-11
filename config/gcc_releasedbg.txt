@@ -5,7 +5,7 @@
     ccache = true,
     clean = true,
     debug_info = "minsizerel",
-    debug_strip = "all",
+    debug_strip = "debug",
     enable_lto = true,
     host = "linux",
     kind = "static",
