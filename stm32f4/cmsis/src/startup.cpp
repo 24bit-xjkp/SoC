@@ -144,8 +144,8 @@ namespace SoC
         while(true);
     }
 
-    using isr_t = void (*const)();
-    [[using gnu: section(".isr_vector"), used]] isr_t isr_table[]{
+    using isr_t = void (*)();
+    [[using gnu: section(".isr_vector"), used]] const isr_t isr_table[]{
         reinterpret_cast<isr_t>(_estack),
         Reset_Handler,
         NMI_Handler,

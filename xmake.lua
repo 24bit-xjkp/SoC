@@ -22,6 +22,7 @@ add_defines("STM32F407xx", "USE_FULL_LL_DRIVER", "HSE_VALUE=8000000u")
 add_options("assert")
 add_cxflags("-mtune=cortex-m4", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16", "-ffunction-sections", "-fdata-sections",
             "-Wno-c23-extensions", "-Wimplicit-fallthrough", "-Wno-unknown-pragmas")
-add_cxxflags("-fno-rtti")
+add_cxxflags("-fno-rtti", "-Wno-psabi")
 add_ldflags("-Wl,--gc-sections", "-nostartfiles", { force = true })
+add_ldflags("gcc::-Wno-psabi")
 includes("*/xmake.lua")
