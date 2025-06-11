@@ -1,0 +1,20 @@
+{
+    arch = "arm",
+    assert = true,
+    buildir = "build",
+    ccache = true,
+    clean = true,
+    debug_info = "minsizerel",
+    debug_strip = "all",
+    enable_lto = true,
+    host = "linux",
+    kind = "static",
+    march = "armv7-m",
+    mode = "releasedbg",
+    ndk_stdcxx = true,
+    plat = "cross",
+    rtlib = "default",
+    sysroot = "detect",
+    toolchain = "arm-fpv4-none-eabi-gcc",
+    unwindlib = "default"
+}
