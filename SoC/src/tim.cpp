@@ -18,7 +18,7 @@ namespace SoC
             if(auto tim_enum{::std::bit_cast<::SoC::detail::tim>(tim_ptr)};
                tim_enum != ::SoC::tim::tim2 && tim_enum != ::SoC::tim::tim5)
             {
-                ::SoC::assert(val <= ::std::numeric_limits<::std::uint16_t>::max(), "此计数器为16位计数器."sv);
+                ::SoC::assert(::std::in_range<::std::uint16_t>(val), "此计数器为16位计数器."sv);
             }
         }
     }
@@ -61,8 +61,7 @@ namespace SoC
                                 {
                                     if constexpr(::SoC::use_full_assert)
                                     {
-                                        ::SoC::assert(rep_cnt <= ::std::numeric_limits<::std::uint8_t>::max(),
-                                                      "此计数器重复次数上限为255."sv);
+                                        ::SoC::assert(::std::in_range<::std::uint8_t>(rep_cnt), "此计数器重复次数上限为255."sv);
                                     }
                                     else
                                     {
