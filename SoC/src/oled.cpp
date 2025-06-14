@@ -16,8 +16,8 @@ namespace SoC
         };
     }  // namespace detail
 
-    constexpr inline auto font8x16{::SoC::array_cast<font8x16_t>(::SoC::detail::font8x16)};
-    constexpr inline auto font16x16{::SoC::array_cast<font16x16_t>(::SoC::detail::font16x16)};
+    constexpr inline auto font8x16{::SoC::array_cast<::SoC::font8x16_t>(::SoC::detail::font8x16)};
+    constexpr inline auto font16x16{::SoC::array_cast<::SoC::font16x16_t>(::SoC::detail::font16x16)};
 
     ::SoC::oled::oled(::SoC::i2c& i2c, ::SoC::dma& dma) noexcept :
         i2c{i2c}, dma_stream{i2c.enable_dma_write(dma,

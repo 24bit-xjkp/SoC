@@ -4,9 +4,9 @@ namespace SoC
 {
     ::std::uint64_t(::SoC::systick_t::load)() const noexcept
     {
-        // 非标准行为，通过数据依赖建立同步关系
-        // 在有针对内存的数据缓存的平台上依然需要acquire语义
-        return systick[index.load(::std::memory_order_relaxed)];
+        auto i{index.load(::std::memory_order_relaxed)};
+        ::std::atomic_signal_fence(::std::memory_order_acquire);
+        return systick[i];
     }
 
     ::SoC::systick_t::operator ::std::uint64_t () const noexcept { return load(); }
