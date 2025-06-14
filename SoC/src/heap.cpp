@@ -36,21 +36,14 @@ namespace SoC
 
     ::std::size_t(::SoC::heap::get_metadata_index)(::SoC::detail::free_block_list_t* page_ptr) const noexcept
     {
+        // (page_ptr - data) * ptr_size得到距离数据区首指针的字节数，除以页大小得到页数
         return (page_ptr - data) * ptr_size / page_size;
     }
 
     ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(block_size_enum block_size) noexcept
     {
         auto&& free_page{free_page_list[::std::to_underlying(page)]};
-        if(free_page == nullptr) [[unlikely]]
-        {
-            free_page = page_gc();
-            if constexpr(::SoC::use_full_assert) { ::SoC::assert(free_page != nullptr, "剩余堆空间不足"sv); }
-            else
-            {
-                if(free_page == nullptr) [[unlikely]] { ::SoC::fast_fail(); }
-            }
-        }
+        if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
         // 空闲页基址
         auto page_begin{free_page->free_block_list};
         // 从空闲页表里取出一页
@@ -90,12 +83,11 @@ namespace SoC
         return page_metadata;
     }
 
-    ::SoC::detail::heap_page_metadata* ::SoC::heap::page_gc() noexcept
+    ::SoC::detail::heap_page_metadata* ::SoC::heap::page_gc(bool assert) noexcept
     {
 #pragma GCC unroll(0)
-        for(auto i{0zu}; i != 4; ++i)
+        for(auto&& block_list: ::std::ranges::subrange{free_page_list.begin(), free_page_list.end() - 1})
         {
-            auto&& block_list{free_page_list[i]};
             while(block_list != nullptr && block_list->used_block == 0) { block_list = insert_block_into_page_list(block_list); }
             // 一次回收未完全完成，继续通过游标遍历链表
             if(block_list != nullptr)
@@ -111,56 +103,151 @@ namespace SoC
                 }
             }
         }
-        return free_page_list[::std::to_underlying(page)];
+        auto free_page{free_page_list[::std::to_underlying(page)]};
+        if(assert)
+        {
+            if constexpr(::SoC::use_full_assert) { ::SoC::assert(free_page != nullptr, "剩余堆空间不足"sv); }
+            else
+            {
+                if(free_page == nullptr) [[unlikely]] { ::SoC::fast_fail(); }
+            }
+        }
+        return free_page;
     }
 
     void* ::SoC::heap::allocate_slow(::std::size_t actual_size, ::std::size_t free_page_list_index) noexcept
     {
         auto step{actual_size / ptr_size};
         auto&& free_list{free_page_list[free_page_list_index]};
-        if(actual_size != page_size) [[likely]]
+        auto page_begin{make_block_in_page(static_cast<block_size_enum>(free_page_list_index))};
+        free_list->free_block_list = free_list->free_block_list + step;
+        ++free_list->used_block;
+        return page_begin;
+    }
+
+    void* ::SoC::heap::remove_pages(::SoC::detail::free_block_list_t* range_begin,
+                                    ::SoC::detail::free_block_list_t* range_end) noexcept
+    {
+        auto&& head{free_page_list[::std::to_underlying(page)]};
+        // 移除除了head外所有范围内的页
+        for(auto ptr{head}; ptr->next_page != nullptr;)
         {
-            auto page_begin{make_block_in_page(static_cast<block_size_enum>(free_page_list_index))};
-            free_list->free_block_list = free_list->free_block_list + step;
-            ++free_list->used_block;
-            return page_begin;
+            auto&& next_page{ptr->next_page};
+            if(auto page_ptr{next_page->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
+            {
+                next_page->used_block = 1;
+                next_page = next_page->next_page;
+            }
+            else
+            {
+                ptr = ptr->next_page;
+            }
+        }
+        // 若head也在范围内则删除
+        if(auto page_ptr{head->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
+        {
+            head->used_block = 1;
+            head = head->next_page;
+        }
+        return range_begin;
+    }
+
+    void* ::SoC::heap::allocate_pages(::std::size_t page_cnt) noexcept
+    {
+        // 分配一个页的快速路径
+        if(page_cnt == 1) [[likely]]
+        {
+            constexpr auto page_index{::std::to_underlying(page)};
+            auto free_page{free_page_list[page_index]};
+            if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
+            free_page_list[page_index] = free_page->next_page;
+            free_page->used_block = 1;
+            return free_page->free_block_list;
         }
         else
         {
-            auto free_page{page_gc()};
-            if constexpr(::SoC::use_full_assert) { ::SoC::assert(free_page != nullptr, "剩余堆空间不足"sv); }
+            page_gc(false);
+
+            for(auto metadata_ptr{metadata.begin()}, metadata_end{metadata.end()}; metadata_ptr != metadata_end;)
+            {
+                if(metadata_ptr->used_block == 0)
+                {
+                    ::std::size_t continuous_page_cnt{1};
+                    // 闭区间[range_begin, range_end]表示连续页范围
+                    auto range_begin = metadata_ptr->free_block_list;
+                    auto range_end = metadata_ptr->free_block_list;
+                    // 向后搜索
+                    for(auto&& ref: ::std::ranges::subrange{metadata_ptr + 1, metadata.end()})
+                    {
+                        if(auto&& [_, free_block_list, used_cnt]{ref}; used_cnt == 0)
+                        {
+                            range_end = free_block_list;
+                            if(++continuous_page_cnt == page_cnt) { return remove_pages(range_begin, range_end); }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    // 连续页范围占用的字节数
+                    auto delta{reinterpret_cast<::std::uintptr_t>(range_end) - reinterpret_cast<::std::uintptr_t>(range_begin)};
+                    // 转化为连续页数，由于是闭区间，因此+1
+                    auto advance{delta / page_size + 1};
+                    metadata_ptr += advance;
+                }
+                else
+                {
+                    ++metadata_ptr;
+                }
+            }
+
+            if constexpr(::SoC::use_full_assert) { ::SoC::assert(false, "堆中剩余连续分页数量不足"sv); }
             else
             {
-                if(free_page == nullptr) [[unlikely]] { ::SoC::fast_fail(); }
+                ::SoC::fast_fail();
             }
-            auto&& [next_page, free_list, used_block]{*free_page};
-            ++used_block;
-            auto result = free_list;
-            next_page = next_page->next_page;
-            return result;
+            return nullptr;
         }
     }
 
-    void* ::SoC::heap::allocate_pages(::std::size_t actual_size [[maybe_unused]]) noexcept
+    void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t size) noexcept
     {
-        ::SoC::always_assert(false, "尚未实现多页分配"sv);
-        return nullptr;
+        auto page_cnt{(size + page_size - 1) / page_size};
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % page_size == 0, "释放范围首指针不满足页对齐"sv);
+        }
+        auto metadata_index{get_metadata_index(reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr))};
+        auto page_ptr{reinterpret_cast<::std::uintptr_t>(ptr)};
+        auto&& head{free_page_list[::std::to_underlying(page)]};
+        for(auto&& metadata: ::std::ranges::subrange{&metadata[metadata_index], &metadata[metadata_index + page_cnt]})
+        {
+            auto&& [next_page, free_block_list, used_cnt]{metadata};
+            used_cnt = 0;
+            free_block_list = reinterpret_cast<::SoC::detail::free_block_list_t*>(page_ptr);
+            page_ptr += page_size;
+            next_page = ::std::exchange(head, &metadata);
+        }
     }
 
-    void ::SoC::heap::deallocate_pages(void* ptr [[maybe_unused]], ::std::size_t actual_size [[maybe_unused]]) noexcept
+    void* ::SoC::heap::allocate_cold_path(::std::size_t size) noexcept
     {
-        ::SoC::always_assert(false, "尚未实现多页释放"sv);
+        auto actual_size{get_actual_allocate_size(size)};
+        auto free_page_list_index{::std::countr_zero(actual_size) - 5};
+        if(actual_size >= page_size) { return allocate_pages((size + page_size - 1) / page_size); }
+        else
+        {
+            return allocate_slow(actual_size, free_page_list_index);
+        }
     }
 
     void* ::SoC::heap::allocate(::std::size_t size) noexcept
     {
         auto actual_size{get_actual_allocate_size(size)};
         auto free_page_list_index{::std::countr_zero(actual_size) - 5};
-        auto&& free_list{free_page_list[free_page_list_index]};
-        if(actual_size >= page_size) [[unlikely]] { return allocate_pages(actual_size); }
-        else if(free_list == nullptr) [[unlikely]] { return allocate_slow(actual_size, free_page_list_index); }
-        else
+        if(actual_size < page_size && free_page_list[free_page_list_index] != nullptr) [[likely]]
         {
+            auto&& free_list{free_page_list[free_page_list_index]};
             auto&& [next_page, free_block_list, used_block] = *free_list;
             // 由于空页会移除空闲链表，因此free_block_list不为nullptr
             void* result{free_block_list};
@@ -182,6 +269,10 @@ namespace SoC
             }
             return result;
         }
+        else
+        {
+            return allocate_cold_path(size);
+        }
     }
 
     void ::SoC::heap::deallocate(void* ptr, ::std::size_t size) noexcept
@@ -194,7 +285,7 @@ namespace SoC
             auto ptr_align{::std::countr_zero(reinterpret_cast<::std::uintptr_t>(page_ptr))};
             ::SoC::assert(ptr_align >= size_align, "非法块指针"sv);
         }
-        if(actual_size >= page_size) [[unlikely]] { deallocate_pages(ptr, actual_size); }
+        if(actual_size >= page_size) [[unlikely]] { return deallocate_pages(ptr, size); }
         auto metadata_index{get_metadata_index(page_ptr)};
         auto&& metadata_ref{metadata[metadata_index]};
         auto&& [next_page, free_block_list, used_block]{metadata_ref};

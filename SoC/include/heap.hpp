@@ -91,8 +91,10 @@ namespace SoC
         /**
          * @brief 从空闲的已分块页中回收页到空闲页链表
          *
+         * @param assert 是否断言空闲页链表非空
+         * @return 空闲页链表首指针
          */
-        [[using gnu: noinline, cold]] ::SoC::detail::heap_page_metadata* page_gc() noexcept;
+        [[using gnu: noinline, cold]] ::SoC::detail::heap_page_metadata* page_gc(bool assert) noexcept;
 
         /**
          * @brief 获取页内指针所在页对应的元数据数组索引
@@ -110,22 +112,38 @@ namespace SoC
          * @param free_page_list_index 空闲块链表索引
          * @return void* 块起始地址
          */
-        [[using gnu: noinline, cold]] void* allocate_slow(::std::size_t actual_size, ::std::size_t free_page_list_index) noexcept;
+        void* allocate_slow(::std::size_t actual_size, ::std::size_t free_page_list_index) noexcept;
 
         /**
-         * @brief 分配多个页，慢速路径
+         * @brief 从空闲页链表中删除范围[range_begin, range_end]内的页
          *
-         * @param actual_size 实际分配大小
+         * @param range_begin 页范围首指针
+         * @param range_end 页范围尾指针
+         * @return void* 页范围首指针
          */
-        [[using gnu: noinline, cold]] void* allocate_pages(::std::size_t actual_size) noexcept;
+        void* remove_pages(::SoC::detail::free_block_list_t* range_begin, ::SoC::detail::free_block_list_t* range_end) noexcept;
 
         /**
-         * @brief 释放多个页，慢速路径
+         * @brief 分配一个或多个，慢速路径
+         *
+         * @param page_cnt 要操作的页数量
+         */
+        void* allocate_pages(::std::size_t page_cnt) noexcept;
+
+        /**
+         * @brief 释放一个或多个，慢速路径
          *
          * @param ptr 块指针
-         * @param actual_size 实际分配大小
+         * @param size 要释放的大小
          */
-        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept;
+        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t size) noexcept;
+
+        /**
+         * @brief 分配冷路径
+         *
+         * @param size 要分配的大小
+         */
+        [[using gnu: noinline, cold]] void* allocate_cold_path(::std::size_t size) noexcept;
 
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
