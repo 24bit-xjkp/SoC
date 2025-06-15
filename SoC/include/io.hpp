@@ -66,36 +66,73 @@ namespace SoC
     concept is_general_device = ::SoC::is_general_output_device<device_t> || ::SoC::is_general_input_device<device_t>;
 
     /**
-     * @brief 判断device_t是否具有就绪标记，要求满足：
-     * - bool device_t.is_ready() noexcept，或
-     * - bool is_ready(device_t&) noexcept，考虑adl
+     * @brief 判断device_t是否具有写就绪标记，要求满足：
+     * - bool device_t.is_write_ready() noexcept，或
+     * - bool is_write_ready(device_t&) noexcept，考虑adl
      * @tparam device_t 设备类型
+     * @note 对于阻塞写入的设备无需此标记
      */
     template <typename device_t>
-    concept has_ready_flag_device = ::SoC::is_general_device<device_t> && (requires(device_t& dev) {
-        { dev.is_ready() } noexcept -> ::std::same_as<bool>;
+    concept has_write_ready_flag_device = ::SoC::is_general_device<device_t> && (requires(device_t& dev) {
+        { dev.is_write_ready() } noexcept -> ::std::same_as<bool>;
     } || requires(device_t& dev) {
-        { is_ready(dev) } noexcept -> ::std::same_as<bool>;
+        { is_write_ready(dev) } noexcept -> ::std::same_as<bool>;
     });
 
     /**
-     * @brief 轮询等待直到设备就绪
+     * @brief 判断device_t是否具有读就绪标记，要求满足：
+     * - bool device_t.is_read_ready() noexcept，或
+     * - bool is_read_ready(device_t&) noexcept，考虑adl
+     * @tparam device_t 设备类型
+     * @note 对于阻塞读取的设备无需此标记
+     */
+    template <typename device_t>
+    concept has_read_ready_flag_device = ::SoC::is_general_device<device_t> && (requires(device_t& dev) {
+        { dev.is_read_ready() } noexcept -> ::std::same_as<bool>;
+    } || requires(device_t& dev) {
+        { is_read_ready(dev) } noexcept -> ::std::same_as<bool>;
+    });
+
+    /**
+     * @brief 轮询等待直到设备写端口就绪
      *
      * @tparam device_t 设备类型
      * @param device 设备对象
      */
     template <::SoC::is_general_device device_t>
-    constexpr inline void wait_until_device_ready(device_t& device) noexcept
+    constexpr inline void wait_until_write_ready(device_t& device) noexcept
     {
-        if constexpr(::SoC::has_ready_flag_device<device_t>)
+        if constexpr(::SoC::has_write_ready_flag_device<device_t>)
         {
-            if constexpr(requires() { device.is_ready(); })
+            if constexpr(requires() { device.is_write_ready(); })
             {
-                ::SoC::wait_until([&device] noexcept { return device.is_ready(); });
+                ::SoC::wait_until([&device] noexcept { return device.is_write_ready(); });
             }
             else
             {
-                ::SoC::wait_until([&device] noexcept { is_ready(device); });
+                ::SoC::wait_until([&device] noexcept { is_write_ready(device); });
+            }
+        }
+    }
+
+    /**
+     * @brief 轮询等待直到设备读端口就绪
+     *
+     * @tparam device_t 设备类型
+     * @param device 设备对象
+     */
+    template <::SoC::is_general_device device_t>
+    constexpr inline void wait_until_read_ready(device_t& device) noexcept
+    {
+        if constexpr(::SoC::has_read_ready_flag_device<device_t>)
+        {
+            if constexpr(requires() { device.is_read_ready(); })
+            {
+                ::SoC::wait_until([&device] noexcept { return device.is_read_ready(); });
+            }
+            else
+            {
+                ::SoC::wait_until([&device] noexcept { is_read_ready(device); });
             }
         }
     }
@@ -583,7 +620,7 @@ namespace SoC
         constexpr inline void flush() noexcept
         {
             ::SoC::write_to_device(device, obuffer.begin, obuffer.current);
-            if constexpr(block) { ::SoC::wait_until_device_ready(device); }
+            if constexpr(block) { ::SoC::wait_until_write_ready(device); }
             obuffer.clear();
         }
     };
@@ -673,9 +710,9 @@ namespace SoC
      * @param file 文件对象
      */
     template <::SoC::is_general_file file_t>
-    constexpr inline void wait_until_device_ready(file_t& file) noexcept
+    constexpr inline void wait_until_write_ready(file_t& file) noexcept
     {
-        ::SoC::wait_until_device_ready(file.device);
+        ::SoC::wait_until_write_ready(file.device);
     }
 
     /**
@@ -894,7 +931,7 @@ namespace SoC
         template <typename output_t, typename... args_t>
         constexpr inline void print_wrapper(output_t& output, args_t&&... args) noexcept
         {
-            ::SoC::wait_until_device_ready(output);
+            ::SoC::wait_until_write_ready(output);
             if constexpr(constexpr auto buffer_size{::SoC::detail::get_unified_text_buffer_size<args_t...>()}; buffer_size != 0)
             {
                 ::std::array<char, buffer_size> buffer;

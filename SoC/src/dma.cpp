@@ -285,8 +285,25 @@ namespace SoC
         ref = get_ht_mask();
     }
 
-    bool ::SoC::dma_stream::is_ready() const noexcept
+    bool ::SoC::dma_stream::is_write_ready() const noexcept
     {
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(direction != ::SoC::dma_direction::p2m, "dma数据流在外设到内存模式下不能进行写操作"sv);
+        }
+        if(mode == ::SoC::dma_mode::circle) { return get_flag_tc(); }
+        else
+        {
+            return !is_enabled();
+        }
+    }
+
+    bool ::SoC::dma_stream::is_read_ready() const noexcept
+    {
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(direction != ::SoC::dma_direction::p2m, "dma数据流在内存到外设模式下不能进行读操作"sv);
+        }
         if(mode == ::SoC::dma_mode::circle) { return get_flag_tc(); }
         else
         {
@@ -315,9 +332,7 @@ namespace SoC
                         case st2:
                         case st3:
                         case st4: irqn = static_cast<::IRQn_Type>(::DMA2_Stream0_IRQn + ::std::to_underlying(stream)); break;
-                        default:
-                            irqn = static_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::std::to_underlying(stream));
-                            break;
+                        default: irqn = static_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::std::to_underlying(stream)); break;
                     }
                     break;
             }

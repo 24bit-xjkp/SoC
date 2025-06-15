@@ -603,12 +603,20 @@ namespace SoC
         void clear_flag_ht() const noexcept;
 
         /**
-         * @brief 判断dma数据流是否就绪
+         * @brief 判断dma数据流写操作是否就绪
          *
          * @note 对于非循环模式，判断dma数据流是否失能；对于循环模式，判断传输完成标记是否置位
          * @return dma数据流是否就绪
          */
-        bool is_ready() const noexcept;
+        bool is_write_ready() const noexcept;
+
+        /**
+         * @brief 判断dma数据流读操作是否就绪
+         *
+         * @note 对于非循环模式，判断dma数据流是否失能；对于循环模式，判断传输完成标记是否置位
+         * @return dma数据流是否就绪
+         */
+        bool is_read_ready() const noexcept;
 
         /**
          * @brief 获取中断号
