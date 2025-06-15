@@ -948,7 +948,9 @@ namespace SoC
         /// 换行
         lf,
         /// 回车换行
-        crlf
+        crlf,
+        /// 默认换行符
+        default_endl = crlf
     };
 
     namespace detail
@@ -981,7 +983,7 @@ namespace SoC
      * @param device 输出设备
      * @param args 参数列表
      */
-    template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+    template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
               ::SoC::is_output_device<char> device_t,
               ::SoC::is_printable_to_device<device_t>... args_t>
     constexpr inline void println(device_t& device, args_t&&... args) noexcept
@@ -1000,7 +1002,7 @@ namespace SoC
      * @param args 参数列表
      */
     template <bool flush = false,
-              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
               ::SoC::is_output_file file_t,
               ::SoC::is_printable_to_file<file_t>... args_t>
     constexpr inline void println(file_t& file, args_t&&... args) noexcept
@@ -1140,7 +1142,7 @@ namespace SoC
      * @param args 参数列表
      */
     template <::SoC::fmt_string fmt,
-              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
               ::SoC::is_output_device<char> device_t,
               ::SoC::is_printable_to_device<device_t>... args_t>
     constexpr inline void println(device_t& device, args_t&&... args) noexcept
@@ -1160,7 +1162,7 @@ namespace SoC
      */
     template <::SoC::fmt_string fmt,
               bool flush = false,
-              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::crlf,
+              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
               ::SoC::is_output_file file_t,
               ::SoC::is_printable_to_file<file_t>... args_t>
     constexpr inline void println(file_t& file, args_t&&... args) noexcept
