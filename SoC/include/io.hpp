@@ -1070,11 +1070,19 @@ namespace SoC
             {
                 constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser::get_split_string_tuple()};
                 constexpr auto tuple_index_array{parser::get_tuple_index_array()};
-                ::SoC::detail::print_wrapper(
-                    output,
-                    split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(
-                        ::std::forward<args_t...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]>(
-                            args...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]))...);
+                if constexpr(placehold_num != 0)
+                {
+                    ::SoC::detail::print_wrapper(
+                        output,
+                        split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(
+                            ::std::forward<args_t...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]>(
+                                args...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]))...);
+                }
+                else
+                {
+                    constexpr auto array{::std::get<0>(split_string_tuple.tuple)};
+                    ::SoC::detail::print_wrapper(output, ::std::string_view{array.begin(), array.end()});
+                }
             }
         }
 

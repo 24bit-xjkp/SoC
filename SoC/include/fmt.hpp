@@ -139,7 +139,7 @@ namespace SoC
                 [](optional_placehold_list_t optional) static constexpr noexcept -> optional_size_t
                 {
                     ::std::span placehold_list{*optional};
-                    if(placehold_list.empty()) { return 0; }
+                    if(placehold_list.empty()) { return fmt.size() == 0 ? 0 : 1; }
 
                     auto ptr{placehold_list.front()};
                     ::std::size_t cnt{ptr != fmt.begin()};
@@ -217,6 +217,11 @@ namespace SoC
             ::std::array<string_and_size_t, *get_split_string_and_size_array_size()> buffer{};
             auto placehold_list{*get_placehold_list()};
             ::std::span placehold_view{placehold_list};
+            if(placehold_view.empty())
+            {
+                buffer[0] = get_string_and_size({fmt.begin(), fmt.end()});
+                return buffer;
+            }
             auto ptr{fmt.begin()};
             if(ptr == placehold_view.front()) { placehold_view = placehold_view.subspan(1); }
             auto i{0zu};
