@@ -544,3 +544,22 @@ namespace SoC
         constexpr inline auto&& get(this auto&& self) noexcept { return *self.ptr; }
     };
 }  // namespace SoC
+
+namespace SoC
+{
+    /**
+     * @brief 指定类型type是否可以平凡重定位，特化此模板以进行指定
+     *
+     * @tparam type 要指定的类型
+     */
+    template <typename type>
+    constexpr inline bool is_trivially_replaceable_v{true};
+
+    /**
+     * @brief 判断类型type是否可以平凡重定位
+     *
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_trivially_replaceable = ::SoC::is_trivially_replaceable_v<type>;
+}
