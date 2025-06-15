@@ -10,15 +10,18 @@ namespace SoC
      *
      * @param tim_ptr tim外设指针
      * @param val 要检查的数据
+     * @param location 源代码位置
      */
-    inline void check_tim_u16(::TIM_TypeDef* tim_ptr, ::std::uint32_t val) noexcept
+    inline void check_tim_u16(::TIM_TypeDef* tim_ptr,
+                              ::std::uint32_t val,
+                              ::std::source_location location = ::std::source_location::current()) noexcept
     {
         if constexpr(::SoC::use_full_assert)
         {
             if(auto tim_enum{::std::bit_cast<::SoC::detail::tim>(tim_ptr)};
                tim_enum != ::SoC::tim::tim2 && tim_enum != ::SoC::tim::tim5)
             {
-                ::SoC::assert(::std::in_range<::std::uint16_t>(val), "此计数器为16位计数器."sv);
+                ::SoC::assert(::std::in_range<::std::uint16_t>(val), "此计数器为16位计数器."sv, location);
             }
         }
     }
@@ -278,9 +281,9 @@ namespace SoC
         return tim == tim1 || tim == tim8;
     }
 
-    void ::SoC::tim::check_advanced_tim() const noexcept
+    void ::SoC::tim::check_advanced_tim(::std::source_location location) const noexcept
     {
-        if constexpr(::SoC::use_full_assert) { ::SoC::assert(is_advanced_tim(), "只有高级定时器支持该功能"sv); }
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(is_advanced_tim(), "只有高级定时器支持该功能"sv, location); }
     }
 
     void ::SoC::tim::set_it_brk(bool enable) const noexcept
@@ -490,11 +493,11 @@ namespace SoC
         return has_compl_channel() && ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::std::to_underlying(compl_channel));
     }
 
-    void ::SoC::tim_channel::check_mode_oc() const noexcept
+    void ::SoC::tim_channel::check_mode_oc(::std::source_location location) const noexcept
     {
         if constexpr(::SoC::use_full_assert)
         {
-            ::SoC::assert(channel_mode == ::SoC::tim_channel::tim_channel_mode::oc, "此通道应处于输出比较模式"sv);
+            ::SoC::assert(channel_mode == ::SoC::tim_channel::tim_channel_mode::oc, "此通道应处于输出比较模式"sv, location);
         }
     }
 

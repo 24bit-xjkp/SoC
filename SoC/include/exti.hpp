@@ -131,9 +131,10 @@ namespace SoC
          * @brief 检查中断线枚举是否合法
          *
          * @param lines 中断线枚举
+         * @param location 源代码位置
          * @return 若lines为default_lines则返回当前对象管理的中断线，否则返回lines
          */
-        exti_line_enum check_lines(exti_line_enum lines) const noexcept;
+        exti_line_enum check_lines(exti_line_enum lines, ::std::source_location location = ::std::source_location::current()) const noexcept;
 
     public:
         /**

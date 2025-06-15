@@ -175,8 +175,9 @@ namespace SoC
         /**
          * @brief 检查当前定时器是不是高级定时器，不是则断言失败
          *
+         * @param location 源代码位置
          */
-        void check_advanced_tim() const noexcept;
+        void check_advanced_tim(::std::source_location location = ::std::source_location::current()) const noexcept;
 
         /**
          * @brief 根据中断类型获取中断号枚举
@@ -481,8 +482,9 @@ namespace SoC
         /**
          * @brief 检查当前通道的模式是否是输出比较模式
          *
+         * @param location 源代码位置
          */
-        void check_mode_oc() const noexcept;
+        void check_mode_oc(::std::source_location location = ::std::source_location::current()) const noexcept;
 
         /**
          * @brief 获取通道对应中断和标志的掩码
