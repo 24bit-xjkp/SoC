@@ -179,7 +179,7 @@ namespace SoC
                     // 向后搜索
                     for(auto&& ref: ::std::ranges::subrange{metadata_ptr + 1, metadata.end()})
                     {
-                        if(auto&& [_, free_block_list, used_cnt]{ref}; used_cnt == 0)
+                        if(auto&& [_, free_block_list, used_block]{ref}; used_block == 0)
                         {
                             range_end = free_block_list;
                             if(++continuous_page_cnt == page_cnt) { return remove_pages(range_begin, range_end); }
@@ -222,8 +222,8 @@ namespace SoC
         auto&& head{free_page_list[::std::to_underlying(page)]};
         for(auto&& metadata: ::std::ranges::subrange{&metadata[metadata_index], &metadata[metadata_index + page_cnt]})
         {
-            auto&& [next_page, free_block_list, used_cnt]{metadata};
-            used_cnt = 0;
+            auto&& [next_page, free_block_list, used_block]{metadata};
+            used_block = 0;
             free_block_list = reinterpret_cast<::SoC::detail::free_block_list_t*>(page_ptr);
             page_ptr += page_size;
             next_page = ::std::exchange(head, &metadata);
@@ -239,6 +239,16 @@ namespace SoC
         {
             return allocate_slow(actual_size, free_page_list_index);
         }
+    }
+
+    ::std::size_t(::SoC::heap::get_free_pages)() const noexcept
+    {
+        ::std::size_t cnt{};
+        for(auto&& metadata: metadata)
+        {
+            if(metadata.used_block == 0) { ++cnt; }
+        }
+        return cnt;
     }
 
     void* ::SoC::heap::allocate(::std::size_t size) noexcept

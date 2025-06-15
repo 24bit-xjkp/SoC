@@ -57,7 +57,7 @@ namespace SoC
      */
     struct heap
     {
-    public:
+    private:
         using block_size_enum = ::SoC::detail::heap_block_size_type;
         using enum block_size_enum;
 
@@ -181,6 +181,27 @@ namespace SoC
         }
 
         /**
+         * @brief 获取当前堆的总页数
+         *
+         * @return 总页数
+         */
+        inline ::std::size_t get_total_pages() const noexcept { return metadata.size(); }
+
+        /**
+         * @brief 获取当前堆中空闲页数，不论是否分块
+         *
+         * @return 空闲页数
+         */
+        ::std::size_t get_free_pages() const noexcept;
+
+        /**
+         * @brief 获取当前堆中正在使用的页数，不论是否分块
+         *
+         * @return 正在使用的页数
+         */
+        inline ::std::size_t get_using_pages() const noexcept { return get_total_pages() - get_free_pages(); }
+
+        /**
          * @brief 分配指定大小的块
          *
          * @param size 块大小
@@ -213,38 +234,95 @@ namespace SoC
 
     namespace detail
     {
+        /**
+         * @brief 判断类型type是否可以通过堆进行知类型分配，要求满足:
+         * - type不为void
+         * - type的对齐不超过堆的页大小
+         * @tparam type 要判断的类型
+         */
+        template <typename type>
+        concept is_known_type_allocatable = !::std::is_void_v<type> && alignof(type) <= ::SoC::heap::page_size;
+
         template <typename wrapper>
         struct heap_allocator_impl
         {
+            /**
+             * @brief 分配至少size个字节
+             *
+             * @param size 要分配的字节数
+             * @return 内存区域首指针
+             */
             inline static void* allocate(::std::size_t size) noexcept { return wrapper::heap->allocate(size); }
 
-            template <typename type>
+            /**
+             * @brief 分配一个type类型对象所需的空间
+             *
+             * @tparam type 要分配的类型
+             * @return 内存区域首指针
+             */
+            template <::SoC::detail::is_known_type_allocatable type>
             inline static type* allocate() noexcept
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
                 return reinterpret_cast<type*>(wrapper::heap->allocate(size));
             }
 
-            template <typename type>
+            /**
+             * @brief 分配至少连续n个type类型对象所需的空间
+             *
+             * @tparam type 要分配的类型
+             * @param n 要分配的对象个数
+             * @return SoC::allocation_result<type*> 内存区域首指针和实际可容纳对象数
+             */
+            template <::SoC::detail::is_known_type_allocatable type>
             inline static ::SoC::allocation_result<type*> allocate(::std::size_t n) noexcept
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
-                auto actual_size{::SoC::heap::get_actual_allocate_size(size * n)};
+                constexpr auto page_size{::SoC::heap::page_size};
+                auto total_size{size * n};
+                // 对齐到2^N字节
+                auto actual_size{::SoC::heap::get_actual_allocate_size(total_size)};
+                // 当分配大小超过页大小时转为对齐到整数页
+                if(actual_size >= page_size) [[unlikely]] { actual_size = (total_size + page_size - 1) / page_size * page_size; }
                 return ::SoC::allocation_result<type*>{reinterpret_cast<type*>(wrapper::heap->allocate(size * n)),
                                                        actual_size / size};
             }
 
-            template <typename type>
-                requires (!::std::is_void_v<type>)
+            /**
+             * @brief 释放n个type类型对象占用的空间
+             *
+             * @tparam type 要释放的类型
+             * @param ptr 内存区域首指针
+             * @param n 要释放的对象个数
+             */
+            template <::SoC::detail::is_known_type_allocatable type>
             inline static void deallocate(type* ptr, ::std::size_t n = 1) noexcept
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
                 wrapper::heap->deallocate(ptr, size * n);
             }
 
+            /**
+             * @brief 释放ptr起连续size个字节的内存区域
+             *
+             * @param ptr 内存区域首指针
+             * @param size 要释放的字节数，需要和分配时保持一致
+             */
             inline static void deallocate(void* ptr, ::std::size_t size) noexcept { wrapper::heap->deallocate(ptr, size); }
 
+            /**
+             * @brief 比较两个分配器对象是否相同
+             *
+             * @return 分配器对象是否相同
+             */
             constexpr inline bool operator== (this auto, wrapper) noexcept { return true; }
+
+            /**
+             * @brief 将堆对象绑定到分配器
+             *
+             * @param heap_ref 堆对象引用
+             */
+            inline static void set_heap(::SoC::heap& heap_ref) noexcept { wrapper::heap = &heap_ref; }
         };
     }  // namespace detail
 
@@ -257,9 +335,6 @@ namespace SoC
     private:
         constinit inline static ::SoC::heap* heap{};
         friend struct ::SoC::detail::heap_allocator_impl<::SoC::user_heap_allocator_t>;
-
-    public:
-        inline static void set_heap(::SoC::heap& heap_ref) noexcept { heap = &heap_ref; }
     } inline constexpr ram_allocator{};
 
     /**
@@ -271,9 +346,6 @@ namespace SoC
     private:
         constinit inline static ::SoC::heap* heap{};
         friend struct ::SoC::detail::heap_allocator_impl<::SoC::ccmram_heap_allocator_t>;
-
-    public:
-        inline static void set_heap(::SoC::heap& heap_ref) noexcept { heap = &heap_ref; }
     } inline constexpr ccmram_allocator{};
 }  // namespace SoC
 
