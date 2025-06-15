@@ -102,8 +102,11 @@ namespace SoC
          * @param page_ptr 页内指针
          * @return 元数据数组索引
          */
-        [[using gnu: always_inline, hot]] ::std::size_t
-            get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept;
+        [[using gnu: always_inline, hot]] inline ::std::size_t
+            get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept
+        {
+            return (page_ptr - data) * ptr_size / page_size;
+        }
 
         /**
          * @brief 分配指定大小的块，在块空闲链表耗尽时的慢速路径
