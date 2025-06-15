@@ -95,22 +95,25 @@ namespace SoC
         }
     }
 
-    auto ::SoC::gpio_pin::check_pin(pin_enum pin_in) const noexcept -> pin_enum
+    auto ::SoC::gpio_pin::check_pin(pin_enum pin_in, ::std::source_location location) const noexcept -> pin_enum
     {
         if(pin_in == default_pins) { return pin; }
         else
         {
             if constexpr(::SoC::use_full_assert)
             {
-                ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv);
+                ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv, location);
             }
             return pin_in;
         }
     }
 
-    void ::SoC::gpio_pin::check_output_mode() const noexcept
+    void ::SoC::gpio_pin::check_output_mode(::std::source_location location) const noexcept
     {
-        if constexpr(::SoC::use_full_assert) { ::SoC::assert(mode == ::SoC::gpio_mode::output, "当前引脚模式不支持此操作"sv); }
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(mode == ::SoC::gpio_mode::output, "当前引脚模式不支持此操作"sv, location);
+        }
     }
 
     void ::SoC::gpio_pin::toggle(pin_enum pin_in) const noexcept

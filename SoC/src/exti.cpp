@@ -65,14 +65,14 @@ namespace SoC
 
     void ::SoC::exti_line::disable_irq() const noexcept { ::SoC::disable_irq(irqn); }
 
-    ::SoC::exti_line::exti_line_enum(::SoC::exti_line::check_lines)(exti_line_enum lines) const noexcept
+    ::SoC::exti_line::exti_line_enum(::SoC::exti_line::check_lines)(exti_line_enum lines, ::std::source_location location) const noexcept
     {
         if(lines == default_lines) { return line; }
         else
         {
             auto value{::std::to_underlying(lines)};
             auto mask{::std::to_underlying(line)};
-            if constexpr(::SoC::use_full_assert) { ::SoC::assert((value & mask) == value, "访问未绑定到当前对象的中断线"sv); }
+            if constexpr(::SoC::use_full_assert) { ::SoC::assert((value & mask) == value, "访问未绑定到当前对象的中断线"sv, location); }
             return lines;
         }
     }

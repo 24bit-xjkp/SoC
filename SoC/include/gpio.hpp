@@ -252,15 +252,17 @@ namespace SoC
          * @brief 断言输入引脚列表在已经初始化的引脚列表内，并返回映射后的引脚列表
          *
          * @param pin_in 输入引脚列表，若为default_pins则映射到this->pin
+         * @param location 源代码位置
          * @return pin_enum 映射后的引脚列表
          */
-        pin_enum check_pin(pin_enum pin_in) const noexcept;
+        pin_enum check_pin(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) const noexcept;
 
         /**
          * @brief 断言当前对象中的引脚工作在输出模式下
          *
+         * @param location 源代码位置
          */
-        void check_output_mode() const noexcept;
+        void check_output_mode(::std::source_location location = ::std::source_location::current()) const noexcept;
 
     public:
         using enum pin_enum;
