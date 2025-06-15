@@ -34,12 +34,6 @@ namespace SoC
         free_page_list[::std::to_underlying(page)] = metadata.begin();
     }
 
-    ::std::size_t(::SoC::heap::get_metadata_index)(::SoC::detail::free_block_list_t* page_ptr) const noexcept
-    {
-        // (page_ptr - data) * ptr_size得到距离数据区首指针的字节数，除以页大小得到页数
-        return (page_ptr - data) * ptr_size / page_size;
-    }
-
     ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(block_size_enum block_size) noexcept
     {
         auto&& free_page{free_page_list[::std::to_underlying(page)]};
