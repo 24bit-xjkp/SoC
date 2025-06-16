@@ -14,7 +14,7 @@ task("flash", function()
         usage = "xmake flash [option]",
         description = "Program target to the flash of the mcu.",
         options = {
-            { "f", "frequency", "kv", "10m",           "Set the frequency of the SWD clock." },
+            { "f", "frequency", "kv", "5m",           "Set the frequency of the SWD clock." },
             { "t", "type",      "kv", "stm32f407zgtx", "Set the type of the mcu." }
         }
     }
@@ -36,7 +36,7 @@ task("gdb", function()
         usage = "xmake gdb [option]",
         description = "Launch gdbserver.",
         options = {
-            { "f", "frequency", "kv", "10m",           "Set the frequency of the SWD clock." },
+            { "f", "frequency", "kv", "5m",           "Set the frequency of the SWD clock." },
             { "t", "type",      "kv", "stm32f407zgtx", "Set the type of the mcu." },
             { "p", "port",      "kv", "3333",          "The port number for the GDB server." }
         }
