@@ -22,11 +22,9 @@ namespace SoC
         data = reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr);
 
 #pragma GCC unroll(2)
-        for(auto& page: metadata)
+        for(auto&& page: metadata)
         {
-            page.next_page = &page + 1;
-            page.free_block_list = reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr);
-            page.used_block = 0;
+            page = ::SoC::detail::heap_page_metadata{&page + 1, reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr), 0};
             ptr += page_size;
         }
         metadata.back().next_page = nullptr;
@@ -171,9 +169,9 @@ namespace SoC
                     auto range_begin = metadata_ptr->free_block_list;
                     auto range_end = metadata_ptr->free_block_list;
                     // 向后搜索
-                    for(auto&& ref: ::std::ranges::subrange{metadata_ptr + 1, metadata.end()})
+                    for(auto&& [_, free_block_list, used_block]: ::std::ranges::subrange{metadata_ptr + 1, metadata.end()})
                     {
-                        if(auto&& [_, free_block_list, used_block]{ref}; used_block == 0)
+                        if(used_block == 0)
                         {
                             range_end = free_block_list;
                             if(++continuous_page_cnt == page_cnt) { return remove_pages(range_begin, range_end); }
@@ -252,7 +250,7 @@ namespace SoC
         if(actual_size < page_size && free_page_list[free_page_list_index] != nullptr) [[likely]]
         {
             auto&& free_list{free_page_list[free_page_list_index]};
-            auto&& [next_page, free_block_list, used_block] = *free_list;
+            auto&& [next_page, free_block_list, used_block]{*free_list};
             // 由于空页会移除空闲链表，因此free_block_list不为nullptr
             void* result{free_block_list};
             ++used_block;
@@ -300,17 +298,19 @@ namespace SoC
         {
             // 原先页是满的，不在空闲链表里，现在将其插入链表
             auto free_page_list_index{size_align - 5};
-            auto& free_list{free_page_list[free_page_list_index]};
-            auto old_head{::std::exchange(free_list, &metadata_ref)};
-            next_page = old_head;
+            next_page = ::std::exchange(free_page_list[free_page_list_index], &metadata_ref);
         }
     }
 
     extern "C"
     {
+        /// 主内存堆起始地址
         extern ::std::uintptr_t _user_heap_start[];
+        /// 主内存堆终止地址
         extern ::std::uintptr_t _user_heap_end[];
+        /// ccmram堆起始地址
         extern ::std::uintptr_t _ccmram_heap_start[];
+        /// ccmram堆终止地址
         extern ::std::uintptr_t _ccmram_heap_end[];
     }
 
