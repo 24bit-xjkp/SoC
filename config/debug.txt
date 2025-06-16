@@ -1,7 +1,6 @@
 {
     arch = "arm",
     assert = true,
-    buildir = "build",
     ccache = true,
     debug_info = "minsizerel",
     debug_strip = "debug",
