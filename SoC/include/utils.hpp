@@ -154,6 +154,45 @@ namespace SoC::detail
     void wait_for(::SoC::cycles cycles) noexcept;
 }  // namespace SoC::detail
 
+namespace SoC::detail
+{
+    /**
+     * @brief 判断type是否在list中
+     *
+     * @tparam type 要判断的类型
+     * @tparam list 类型列表
+     */
+    template <typename type, typename... list>
+    concept either = (::std::same_as<type, list> || ...);
+
+    /**
+     * @brief 判断type是否是io的目标类型，要求为字符或std::byte
+     *
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_io_target_type = ::SoC::detail::either<type, char, ::std::byte>;
+
+    /**
+     * @brief 判断type是否是整数、浮点
+     *
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_int_fp = ::std::integral<type> || ::std::floating_point<type>;
+
+    /**
+     * @brief 判断callable类型的对象能否通过类型为args...的参数列表调用并将返回值转化为result类型
+     *
+     * @tparam callable 可调用类型
+     * @tparam result 返回值类型
+     * @tparam args 参数列表类型
+     */
+    template <typename callable, typename result, typename... args>
+    concept invocable_r =
+        ::std::invocable<callable, args...> && ::std::convertible_to<::std::invoke_result_t<callable, args...>, result>;
+}  // namespace SoC::detail
+
 namespace SoC
 {
     /**
@@ -178,7 +217,7 @@ namespace SoC
      * @param args 参数列表
      */
     template <typename func_t, typename... args_t>
-        requires (::std::invocable<func_t, args_t...> && ::std::convertible_to<::std::invoke_result_t<func_t, args_t...>, bool>)
+        requires (::SoC::detail::invocable_r<func_t, bool, args_t...>)
     constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept
     {
 #pragma GCC unroll 0
@@ -444,34 +483,6 @@ namespace SoC
 namespace SoC::detail
 {
     /**
-     * @brief 判断type是否在list中
-     *
-     * @tparam type 要判断的类型
-     * @tparam list 类型列表
-     */
-    template <typename type, typename... list>
-    concept either = (::std::same_as<type, list> || ...);
-
-    /**
-     * @brief 判断type是否是io的目标类型，要求为字符或std::byte
-     *
-     * @tparam type 要判断的类型
-     */
-    template <typename type>
-    concept is_io_target_type = ::SoC::detail::either<type, char, ::std::byte>;
-
-    /**
-     * @brief 判断type是否是整数、浮点
-     *
-     * @tparam type 要判断的类型
-     */
-    template <typename type>
-    concept is_int_fp = ::std::integral<type> || ::std::floating_point<type>;
-}  // namespace SoC::detail
-
-namespace SoC::detail
-{
-    /**
      * @brief 外设对象析构时关闭时钟使用的回调对象类型
      *
      */
@@ -562,4 +573,4 @@ namespace SoC
      */
     template <typename type>
     concept is_trivially_replaceable = ::SoC::is_trivially_replaceable_v<type>;
-}
+}  // namespace SoC
