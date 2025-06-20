@@ -29,19 +29,19 @@ namespace SoC
         }
         metadata.back().next_page = nullptr;
 
-        free_page_list[::std::to_underlying(page)] = metadata.begin();
+        free_page_list.back() = metadata.begin();
     }
 
-    ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(block_size_enum block_size) noexcept
+    ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(::std::size_t free_list_index) noexcept
     {
-        auto&& free_page{free_page_list[::std::to_underlying(page)]};
+        auto&& free_page{free_page_list.back()};
         if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
         // 空闲页基址
         auto page_begin{free_page->free_block_list};
         // 从空闲页表里取出一页
         free_page = free_page->next_page;
 
-        auto heap_block_size{::SoC::detail::get_heap_block_size(block_size)};
+        auto heap_block_size{1zu << (free_list_index + min_block_shift)};
         auto page_ptr{page_begin};
         auto step{heap_block_size / ptr_size};
 #pragma GCC unroll(0)
@@ -55,7 +55,7 @@ namespace SoC
         }
         *(page_ptr - step) = ::SoC::detail::free_block_list_t{};
 
-        auto&& block_metadata_ptr{free_page_list[::std::to_underlying(block_size)]};
+        auto&& block_metadata_ptr{free_page_list[free_list_index]};
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(block_metadata_ptr == nullptr, "仅在块空闲链表为空时调用此函数"sv); }
         auto metadata_index{get_metadata_index(page_begin)};
         metadata[metadata_index].next_page = nullptr;
@@ -70,7 +70,7 @@ namespace SoC
     {
         auto old_head{::std::exchange(page_metadata, page_metadata->next_page)};
         old_head->free_block_list = (old_head - metadata.begin()) * page_size / ptr_size + data;
-        auto old_page_head{::std::exchange(free_page_list[::std::to_underlying(page)], old_head)};
+        auto old_page_head{::std::exchange(free_page_list.back(), old_head)};
         old_head->next_page = old_page_head;
         return page_metadata;
     }
@@ -95,7 +95,7 @@ namespace SoC
                 }
             }
         }
-        auto free_page{free_page_list[::std::to_underlying(page)]};
+        auto free_page{free_page_list.back()};
         if(assert)
         {
             if constexpr(::SoC::use_full_assert) { ::SoC::assert(free_page != nullptr, "剩余堆空间不足"sv); }
@@ -107,20 +107,10 @@ namespace SoC
         return free_page;
     }
 
-    void* ::SoC::heap::allocate_slow(::std::size_t actual_size, ::std::size_t free_page_list_index) noexcept
-    {
-        auto step{actual_size / ptr_size};
-        auto&& free_list{free_page_list[free_page_list_index]};
-        auto page_begin{make_block_in_page(static_cast<block_size_enum>(free_page_list_index))};
-        free_list->free_block_list = free_list->free_block_list + step;
-        ++free_list->used_block;
-        return page_begin;
-    }
-
     void* ::SoC::heap::remove_pages(::SoC::detail::free_block_list_t* range_begin,
                                     ::SoC::detail::free_block_list_t* range_end) noexcept
     {
-        auto&& head{free_page_list[::std::to_underlying(page)]};
+        auto&& head{free_page_list.back()};
         // 移除除了head外所有范围内的页
         for(auto ptr{head}; ptr->next_page != nullptr;)
         {
@@ -149,10 +139,9 @@ namespace SoC
         // 分配一个页的快速路径
         if(page_cnt == 1) [[likely]]
         {
-            constexpr auto page_index{::std::to_underlying(page)};
-            auto free_page{free_page_list[page_index]};
+            auto free_page{free_page_list.back()};
             if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
-            free_page_list[page_index] = free_page->next_page;
+            free_page_list.back() = free_page->next_page;
             free_page->used_block = 1;
             return free_page->free_block_list;
         }
@@ -211,7 +200,7 @@ namespace SoC
         }
         auto metadata_index{get_metadata_index(reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr))};
         auto page_ptr{reinterpret_cast<::std::uintptr_t>(ptr)};
-        auto&& head{free_page_list[::std::to_underlying(page)]};
+        auto&& head{free_page_list.back()};
         for(auto&& metadata: ::std::ranges::subrange{&metadata[metadata_index], &metadata[metadata_index + page_cnt]})
         {
             auto&& [next_page, free_block_list, used_block]{metadata};
@@ -225,17 +214,23 @@ namespace SoC
     void* ::SoC::heap::allocate_cold_path(::std::size_t size) noexcept
     {
         auto actual_size{get_actual_allocate_size(size)};
-        auto free_page_list_index{::std::countr_zero(actual_size) - 5};
+        auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
         if(actual_size >= page_size) { return allocate_pages((size + page_size - 1) / page_size); }
         else
         {
-            return allocate_slow(actual_size, free_page_list_index);
+            auto step{actual_size / ptr_size};
+            auto&& free_list{free_page_list[free_page_list_index]};
+            auto page_begin{make_block_in_page(free_page_list_index)};
+            free_list->free_block_list = free_list->free_block_list + step;
+            ++free_list->used_block;
+            return page_begin;
         }
     }
 
     ::std::size_t(::SoC::heap::get_free_pages)() const noexcept
     {
         ::std::size_t cnt{};
+#pragma GCC unroll(4)
         for(auto&& metadata: metadata)
         {
             if(metadata.used_block == 0) { ++cnt; }
@@ -246,7 +241,7 @@ namespace SoC
     void* ::SoC::heap::allocate(::std::size_t size) noexcept
     {
         auto actual_size{get_actual_allocate_size(size)};
-        auto free_page_list_index{::std::countr_zero(actual_size) - 5};
+        auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
         if(actual_size < page_size && free_page_list[free_page_list_index] != nullptr) [[likely]]
         {
             auto&& free_list{free_page_list[free_page_list_index]};

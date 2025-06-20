@@ -6,31 +6,6 @@ namespace SoC
     namespace detail
     {
         /**
-         * @brief 堆块大小类型
-         *
-         */
-        enum class heap_block_size_type : ::std::uint8_t
-        {
-            byte32,
-            byte64,
-            byte128,
-            byte256,
-            byte512,
-            page = byte512
-        };
-
-        /**
-         * @brief 从堆块大小枚举获取堆块大小
-         *
-         * @param type 堆块大小枚举
-         * @return 堆块大小
-         */
-        constexpr inline ::std::size_t get_heap_block_size(::SoC::detail::heap_block_size_type type) noexcept
-        {
-            return 1zu << (::std::to_underlying(type) + 5);
-        }
-
-        /**
          * @brief 空闲块链表
          *
          */
@@ -58,13 +33,16 @@ namespace SoC
     struct heap
     {
     private:
-        using block_size_enum = ::SoC::detail::heap_block_size_type;
-        using enum block_size_enum;
-
         /// 元数据区
         ::std::ranges::subrange<::SoC::detail::heap_page_metadata*> metadata;
 
-        using free_list_t = ::std::array<::SoC::detail::heap_page_metadata*, 5>;
+        /// 最小块大小的左移量
+        constexpr inline static auto min_block_shift{4zu};
+
+        /// 页大小的左移量
+        constexpr inline static auto page_shift{9zu};
+
+        using free_list_t = ::std::array<::SoC::detail::heap_page_metadata*, page_shift - min_block_shift + 1>;
 
         /// 空闲链表
         free_list_t free_page_list{};
@@ -75,10 +53,10 @@ namespace SoC
         /**
          * @brief 寻找一个空闲页并在其中划分出内存块，将其移除空闲页链表
          *
-         * @param block_size 内存块大小枚举
+         * @param free_list_index 空闲链表索引
          * @return 页起始地址
          */
-        ::SoC::detail::free_block_list_t* make_block_in_page(block_size_enum block_size) noexcept;
+        ::SoC::detail::free_block_list_t* make_block_in_page(::std::size_t free_list_index) noexcept;
 
         /**
          * @brief 将已分块的页从块空闲链表中删除，插入页空闲链表中
@@ -107,15 +85,6 @@ namespace SoC
         {
             return (page_ptr - data) * ptr_size / page_size;
         }
-
-        /**
-         * @brief 分配指定大小的块，在块空闲链表耗尽时的慢速路径
-         *
-         * @param size 实际块大小
-         * @param free_page_list_index 空闲块链表索引
-         * @return void* 块起始地址
-         */
-        void* allocate_slow(::std::size_t actual_size, ::std::size_t free_page_list_index) noexcept;
 
         /**
          * @brief 从空闲页链表中删除范围[range_begin, range_end]内的页
@@ -153,7 +122,10 @@ namespace SoC
 
     public:
         /// 堆页大小
-        constexpr inline static auto page_size{512zu};
+        constexpr inline static auto page_size{1zu << page_shift};
+
+        /// 最小块大小
+        constexpr inline static auto min_block_size{1zu << min_block_shift};
 
         /**
          * @brief 初始化堆
@@ -180,7 +152,7 @@ namespace SoC
         [[using gnu: always_inline, artificial, hot]] constexpr inline static ::std::size_t
             get_actual_allocate_size(::std::size_t size) noexcept
         {
-            return ::std::max(::std::bit_ceil(size), 32zu);
+            return ::std::max(::std::bit_ceil(size), min_block_size);
         }
 
         /**
