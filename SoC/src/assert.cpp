@@ -19,12 +19,7 @@ namespace SoC
     [[noreturn]] [[using gnu: noinline, cold]] void assert_failed(::std::string_view message,
                                                                   ::std::source_location location) noexcept
     {
-        ::SoC::println<MSG_START "文件: {}({}:{}) `{}`: {}" MSG_END>(::SoC::log_device,
-                                                                     location.file_name(),
-                                                                     location.line(),
-                                                                     location.column(),
-                                                                     location.function_name(),
-                                                                     message);
+        ::SoC::println<MSG_START "{}: {}" MSG_END>(::SoC::log_device, location, message);
         ::SoC::fast_fail();
     }
 

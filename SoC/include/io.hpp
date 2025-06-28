@@ -498,6 +498,10 @@ namespace SoC
     constexpr inline ::std::size_t max_text_buffer_size<::SoC::detail::integer_format<type, base>>{
         ::SoC::detail::get_max_text_buffer_size<type, base>()};
 
+    template <>
+    constexpr inline ::std::size_t max_text_buffer_size<::std::source_location>{
+        ::SoC::max_text_buffer_size<::std::uint_least32_t>};
+
     /**
      * @brief 判断类型type是否具有最大io缓冲区大小
      *
@@ -784,6 +788,7 @@ namespace SoC
     /**
      * @brief 将布尔值输出到设备或文件
      *
+     * @tparam output_t 输出设备或文件类型
      * @param output 输出设备或文件
      * @param value 要输出的布尔值
      */
@@ -1134,6 +1139,40 @@ namespace SoC
             return ::SoC::fmt_string{buffer};
         }
     }  // namespace detail
+
+    /**
+     * @brief 将源代码位置信息输出到设备或文件
+     *
+     * @tparam output_t 输出设备或文件类型
+     * @param output 输出设备或文件
+     * @param location 源代码位置信息
+     * @param tmp_buffer 输出缓冲区
+     */
+    template <typename output_t>
+        requires (::SoC::is_output_device<output_t, char> || ::SoC::is_output_file<output_t>)
+    constexpr inline void
+        do_print_arg(output_t& output, ::std::source_location location, ::SoC::unified_text_buffer tmp_buffer) noexcept
+    {
+        using parser = ::SoC::fmt_parser<"文件: {}({}:{}) `{}`">;
+        constexpr auto placehold_num{parser::get_placehold_num()};
+        constexpr auto no_placehold_num{parser::get_no_placehold_num()};
+        const auto wrapper{
+            [&output, &tmp_buffer]<::std::size_t... indexes>(::std::index_sequence<indexes...>, auto... args) constexpr noexcept
+            {
+                constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser::get_split_string_tuple()};
+                constexpr auto tuple_index_array{parser::get_tuple_index_array()};
+                (::SoC::detail::do_print_arg_wrapper(output,
+                                                     split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(
+                                                         args...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]),
+                                                     tmp_buffer),
+                 ...);
+            }};
+        wrapper(::std::make_index_sequence<placehold_num + no_placehold_num>{},
+                location.file_name(),
+                location.line(),
+                location.column(),
+                location.function_name());
+    }
 
     /**
      * @brief 将参数列表输出到设备
