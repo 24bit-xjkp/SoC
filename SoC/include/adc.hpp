@@ -142,9 +142,13 @@ namespace SoC
      */
     enum class adc_resolution : ::std::size_t
     {
+        /// 12位分辨率，最小转换时间12个ADC时钟周期
         bit12 = LL_ADC_RESOLUTION_12B,
+        /// 10位分辨率，最小转换时间10个ADC时钟周期
         bit10 = LL_ADC_RESOLUTION_10B,
+        /// 8位分辨率，最小转换时间8个ADC时钟周期
         bit8 = LL_ADC_RESOLUTION_8B,
+        /// 6位分辨率，最小转换时间6个ADC时钟周期
         bit6 = LL_ADC_RESOLUTION_6B
     };
 
@@ -154,7 +158,9 @@ namespace SoC
      */
     enum class adc_data_alignment : ::std::size_t
     {
+        /// 右对齐，高位进行填充
         right = LL_ADC_DATA_ALIGN_RIGHT,
+        /// 左对齐，低位进行填充
         left = LL_ADC_DATA_ALIGN_LEFT
     };
 
@@ -281,23 +287,41 @@ namespace SoC
      */
     enum class adc_channel : ::std::size_t
     {
+        /// 外部通道1
         ch1 = LL_ADC_CHANNEL_1,
+        /// 外部通道2
         ch2 = LL_ADC_CHANNEL_2,
+        /// 外部通道3
         ch3 = LL_ADC_CHANNEL_3,
+        /// 外部通道4
         ch4 = LL_ADC_CHANNEL_4,
+        /// 外部通道5
         ch5 = LL_ADC_CHANNEL_5,
+        /// 外部通道6
         ch6 = LL_ADC_CHANNEL_6,
+        /// 外部通道7
         ch7 = LL_ADC_CHANNEL_7,
+        /// 外部通道8
         ch8 = LL_ADC_CHANNEL_8,
+        /// 外部通道9
         ch9 = LL_ADC_CHANNEL_9,
+        /// 外部通道10
         ch10 = LL_ADC_CHANNEL_10,
+        /// 外部通道11
         ch11 = LL_ADC_CHANNEL_11,
+        /// 外部通道12
         ch12 = LL_ADC_CHANNEL_12,
+        /// 外部通道13
         ch13 = LL_ADC_CHANNEL_13,
+        /// 外部通道14
         ch14 = LL_ADC_CHANNEL_14,
+        /// 外部通道15
         ch15 = LL_ADC_CHANNEL_15,
+        /// 外部通道16
         ch16 = LL_ADC_CHANNEL_16,
+        /// 外部通道17
         ch17 = LL_ADC_CHANNEL_17,
+        /// 外部通道18
         ch18 = LL_ADC_CHANNEL_18,
         /// 电池供电电压通道
         ch_vbat = LL_ADC_CHANNEL_VBAT,
@@ -313,13 +337,21 @@ namespace SoC
      */
     enum class adc_sampling_time : ::std::size_t
     {
+        /// 采样3个ADC时钟周期
         cycles3 = LL_ADC_SAMPLINGTIME_3CYCLES,
+        /// 采样15个ADC时钟周期
         cycles15 = LL_ADC_SAMPLINGTIME_15CYCLES,
+        /// 采样28个ADC时钟周期
         cycles28 = LL_ADC_SAMPLINGTIME_28CYCLES,
+        /// 采样56个ADC时钟周期
         cycles56 = LL_ADC_SAMPLINGTIME_56CYCLES,
+        /// 采样84个ADC时钟周期
         cycles84 = LL_ADC_SAMPLINGTIME_84CYCLES,
+        /// 采样112个ADC时钟周期
         cycles112 = LL_ADC_SAMPLINGTIME_112CYCLES,
+        /// 采样144个ADC时钟周期
         cycles144 = LL_ADC_SAMPLINGTIME_144CYCLES,
+        /// 采样480个ADC时钟周期
         cycles480 = LL_ADC_SAMPLINGTIME_480CYCLES,
     };
 
@@ -329,22 +361,39 @@ namespace SoC
      */
     enum class adc_regular_trigger_source : ::std::size_t
     {
+        /// 软件触发
         software = LL_ADC_REG_TRIG_SOFTWARE,
+        /// 定时器1通道1比较事件触发
         tim1_ch1 = LL_ADC_REG_TRIG_EXT_TIM1_CH1,
+        /// 定时器1通道2比较事件触发
         tim1_ch2 = LL_ADC_REG_TRIG_EXT_TIM1_CH2,
+        /// 定时器1通道3比较事件触发
         tim1_ch3 = LL_ADC_REG_TRIG_EXT_TIM1_CH3,
+        /// 定时器2通道2比较事件触发
         tim2_ch2 = LL_ADC_REG_TRIG_EXT_TIM2_CH2,
+        /// 定时器2通道3比较事件触发
         tim2_ch3 = LL_ADC_REG_TRIG_EXT_TIM2_CH3,
+        /// 定时器2通道4比较事件触发
         tim2_ch4 = LL_ADC_REG_TRIG_EXT_TIM2_CH4,
+        /// 定时器2触发事件触发
         tim2_trgo = LL_ADC_REG_TRIG_EXT_TIM2_TRGO,
+        /// 定时器3通道1比较事件触发
         tim3_ch1 = LL_ADC_REG_TRIG_EXT_TIM3_CH1,
+        /// 定时器3触发事件触发
         tim3_trgo = LL_ADC_REG_TRIG_EXT_TIM3_TRGO,
+        /// 定时器4通道4比较事件触发
         tim4_ch4 = LL_ADC_REG_TRIG_EXT_TIM4_CH4,
+        /// 定时器5通道1比较事件触发
         tim5_ch1 = LL_ADC_REG_TRIG_EXT_TIM5_CH1,
+        /// 定时器5通道2比较事件触发
         tim5_ch2 = LL_ADC_REG_TRIG_EXT_TIM5_CH2,
+        /// 定时器5通道3比较事件触发
         tim5_ch3 = LL_ADC_REG_TRIG_EXT_TIM5_CH3,
+        /// 定时器8通道1比较事件触发
         tim8_ch1 = LL_ADC_REG_TRIG_EXT_TIM8_CH1,
+        /// 定时器8触发事件触发
         tim8_trgo = LL_ADC_REG_TRIG_EXT_TIM8_TRGO,
+        /// 外部中断线11触发事件触发
         exti_line11 = LL_ADC_REG_TRIG_EXT_EXTI_LINE11,
     };
 
@@ -411,9 +460,13 @@ namespace SoC
      */
     enum class adc_trig_edge : ::std::size_t
     {
+        // 软件触发时不涉及触发边沿
         software = 0,
+        // 上升沿触发
         rising = LL_ADC_REG_TRIG_EXT_RISING,
+        // 下降沿触发
         falling = LL_ADC_REG_TRIG_EXT_FALLING,
+        // 上升沿和下降沿均触发
         rising_falling = LL_ADC_REG_TRIG_EXT_RISINGFALLING
     };
 
