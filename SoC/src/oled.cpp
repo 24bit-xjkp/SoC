@@ -6,18 +6,12 @@ namespace SoC
     using font8x16_t = ::std::array<::std::array<::std::uint8_t, 2>, 8>;
     using font16x16_t = ::std::array<::std::array<::std::uint8_t, 2>, 16>;
 
-    namespace detail
-    {
-        constexpr inline ::std::uint8_t font8x16[]{
+    constexpr inline auto font8x16{::SoC::array_cast<::SoC::font8x16_t>({
 #embed "../assets/font_8x16.data"
-        };
-        constexpr inline ::std::uint8_t font16x16[]{
+    })};
+    constexpr inline auto font16x16{::SoC::array_cast<::SoC::font16x16_t>({
 #embed "../assets/font_16x16.data"
-        };
-    }  // namespace detail
-
-    constexpr inline auto font8x16{::SoC::array_cast<::SoC::font8x16_t>(::SoC::detail::font8x16)};
-    constexpr inline auto font16x16{::SoC::array_cast<::SoC::font16x16_t>(::SoC::detail::font16x16)};
+    })};
 
     ::SoC::oled::oled(::SoC::i2c& i2c, ::SoC::dma& dma) noexcept :
         i2c{i2c}, dma_stream{i2c.enable_dma_write(dma,
