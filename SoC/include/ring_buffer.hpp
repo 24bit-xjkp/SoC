@@ -21,7 +21,6 @@ namespace SoC
         using size_t = ::std::size_t;
 
     private:
-
         /// 缓冲区元素数组
         ::SoC::union_wrapper<type> buffer[buffer_size];
         ::std::size_t head{};
@@ -47,6 +46,11 @@ namespace SoC
             }
         }
 
+        /**
+         * @brief 断言缓冲区非空
+         *
+         * @param location 源代码位置信息
+         */
         constexpr inline void assert_not_empty(::std::source_location location = ::std::source_location::current()) const noexcept
         {
             if constexpr(::SoC::use_full_assert)
@@ -83,9 +87,28 @@ namespace SoC
             }
         }
 
+        /**
+         * @brief 复制构造函数，因非原子性而删除
+         *
+         */
         constexpr inline ring_buffer(const ring_buffer&) = delete;
-        constexpr inline ring_buffer& operator= (const ring_buffer&) = delete;
+
+        /**
+         * @brief 移动构造函数，因非原子性而删除
+         *
+         */
         constexpr inline ring_buffer(ring_buffer&&) = delete;
+
+        /**
+         * @brief 复制赋值运算符，因非原子性而删除
+         *
+         */
+        constexpr inline ring_buffer& operator= (const ring_buffer&) = delete;
+
+        /**
+         * @brief 移动赋值运算符，因非原子性而删除
+         *
+         */
         constexpr inline ring_buffer& operator= (ring_buffer&&) = delete;
 
         /**
@@ -152,6 +175,11 @@ namespace SoC
             return ::std::move(ref);
         }
 
+        /**
+         * @brief 从缓冲区移除元素（原子操作）
+         *
+         * @return 移除的元素
+         */
         constexpr inline value_type atomic_pop_front() noexcept
         {
             ::std::atomic_ref head_ref{head};
