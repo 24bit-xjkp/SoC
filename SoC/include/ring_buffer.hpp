@@ -40,8 +40,6 @@ namespace SoC
         ::std::size_t tail{};
         /// 缓冲区容量掩码
         constexpr inline static ::std::size_t buffer_mask = buffer_size - 1;
-        /// 缓冲区CAS操作内存序
-        constexpr inline static auto cas_mo{::std::memory_order_relaxed};
 
         /**
          * @brief 断言缓冲区未满
@@ -144,16 +142,7 @@ namespace SoC
         constexpr inline void atomic_emplace_back(::std::constructible_from<type> auto&&... args) noexcept
         {
             ::std::atomic_ref tail_ref{tail};
-            ::std::size_t old_tail{tail};
-            pointer ptr;
-            do
-            {
-                assert_not_full();
-                ::std::atomic_signal_fence(::std::memory_order_acquire);
-                ptr = &buffer[(old_tail + 1) & buffer_mask].value;
-                ::std::atomic_signal_fence(::std::memory_order_release);
-            }
-            while(tail_ref.compare_exchange_weak(old_tail, old_tail + 1, cas_mo, cas_mo));
+            auto ptr{&buffer[tail_ref.fetch_add(1, ::std::memory_order_relaxed) & buffer_mask].value};
             new(ptr) type{::std::forward<decltype((args))>(args)...};
         }
 
@@ -173,18 +162,9 @@ namespace SoC
         constexpr inline value_type atomic_pop_front() noexcept
         {
             ::std::atomic_ref head_ref{head};
-            ::std::size_t old_head{head};
-            pointer ptr;
-            do
-            {
-                assert_not_empty();
-                ::std::atomic_signal_fence(::std::memory_order_acquire);
-                ptr = &buffer[(old_head + 1) & buffer_mask].value;
-                ::std::atomic_signal_fence(::std::memory_order_release);
-            }
-            while(head_ref.compare_exchange_weak(old_head, old_head + 1, cas_mo, cas_mo));
-            destructure_guard _{*ptr};
-            return ::std::move(*ptr);
+            auto&& ref{buffer[head_ref.fetch_add(1, ::std::memory_order_relaxed) & buffer_mask].value};
+            destructure_guard _{ref};
+            return ::std::move(ref);
         }
     };
 }  // namespace SoC
