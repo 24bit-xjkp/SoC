@@ -38,6 +38,9 @@
 #include <vector>
 #include <optional>
 #include <initializer_list>
+#include <coroutine>
+#include <system_error>
+#include <algorithm>
 
 namespace SoC
 {
