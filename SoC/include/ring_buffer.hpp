@@ -95,6 +95,11 @@ namespace SoC
             while(!empty()) { pop_front(); }
         }
 
+        constexpr inline ring_buffer(const ring_buffer&) = delete;
+        constexpr inline ring_buffer& operator= (const ring_buffer&) = delete;
+        constexpr inline ring_buffer(ring_buffer&&) = delete;
+        constexpr inline ring_buffer& operator= (ring_buffer&&) = delete;
+
         /**
          * @brief 检查缓冲区是否为空
          *
