@@ -21,21 +21,9 @@ namespace SoC
         using size_t = ::std::size_t;
 
     private:
-        /**
-         * @brief 缓冲区元素
-         *
-         */
-        union wrapper
-        {
-            type value;
-
-            constexpr inline wrapper() noexcept {}
-
-            constexpr inline ~wrapper() noexcept {}
-        };
 
         /// 缓冲区元素数组
-        wrapper buffer[buffer_size];
+        ::SoC::union_wrapper<type> buffer[buffer_size];
         ::std::size_t head{};
         ::std::size_t tail{};
         /// 缓冲区容量掩码
@@ -72,13 +60,6 @@ namespace SoC
             }
         }
 
-        struct destructure_guard
-        {
-            reference ref;
-
-            ~destructure_guard() noexcept { ref.~type(); }
-        };
-
     public:
         /**
          * @brief 构造一个环形缓冲区
@@ -92,7 +73,14 @@ namespace SoC
          */
         constexpr inline ~ring_buffer() noexcept
         {
-            while(!empty()) { pop_front(); }
+            if constexpr(!::std::is_trivially_destructible_v<type>)
+            {
+                while(!empty())
+                {
+                    auto&& ref{buffer[head++ & buffer_mask].value};
+                    ref.~type();
+                }
+            }
         }
 
         constexpr inline ring_buffer(const ring_buffer&) = delete;
@@ -160,7 +148,7 @@ namespace SoC
         {
             assert_not_empty();
             auto&& ref{buffer[head++ & buffer_mask].value};
-            destructure_guard _{ref};
+            ::SoC::destructure_guard _{ref};
             return ::std::move(ref);
         }
 
@@ -168,7 +156,7 @@ namespace SoC
         {
             ::std::atomic_ref head_ref{head};
             auto&& ref{buffer[head_ref.fetch_add(1, ::std::memory_order_relaxed) & buffer_mask].value};
-            destructure_guard _{ref};
+            ::SoC::destructure_guard _{ref};
             return ::std::move(ref);
         }
     };

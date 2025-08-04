@@ -531,6 +531,45 @@ namespace SoC
          */
         constexpr inline auto&& get(this auto&& self) noexcept { return *self.ptr; }
     };
+
+    /**
+     * @brief 联合体包装器，用于跳过自动构造析构
+     *
+     * @tparam type 要存储的类型
+     */
+    template <typename type>
+    union union_wrapper
+    {
+        using value_type = type;
+        using pointer = type*;
+        using const_pointer = const type*;
+        using reference = type&;
+        using const_reference = const type&;
+
+        value_type value;
+
+        constexpr inline union_wrapper() noexcept {}
+
+        constexpr inline ~union_wrapper() noexcept {}
+    };
+
+    /**
+     * @brief 析构守卫
+     *
+     * @tparam type 要存储的类型
+     */
+    template <typename type>
+    struct destructure_guard
+    {
+        using value_type = type;
+        using pointer = type*;
+        using const_pointer = const type*;
+        using reference = type&;
+        using const_reference = const type&;
+        reference ref;
+
+        ~destructure_guard() noexcept { ref.~type(); }
+    };
 }  // namespace SoC
 
 namespace SoC
