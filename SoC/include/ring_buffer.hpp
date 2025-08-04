@@ -11,7 +11,7 @@ namespace SoC
      */
     template <typename type, ::std::size_t buffer_size>
         requires (::std::has_single_bit(buffer_size))
-    struct ring_buffer
+    struct ring_buffer : private ::SoC::container_asserter
     {
         using value_type = type;
         using pointer = type*;
@@ -27,42 +27,6 @@ namespace SoC
         ::std::size_t tail{};
         /// 缓冲区容量掩码
         constexpr inline static ::std::size_t buffer_mask = buffer_size - 1;
-
-        /**
-         * @brief 断言缓冲区未满
-         *
-         * @param location 源代码位置信息
-         */
-        constexpr inline void assert_not_full(::std::source_location location = ::std::source_location::current()) const noexcept
-        {
-            if constexpr(::SoC::use_full_assert)
-            {
-                using namespace ::std::string_view_literals;
-                ::SoC::assert(!full(), "环形缓冲区已满"sv, location);
-            }
-            else
-            {
-                if(full()) [[unlikely]] { ::SoC::fast_fail(); }
-            }
-        }
-
-        /**
-         * @brief 断言缓冲区非空
-         *
-         * @param location 源代码位置信息
-         */
-        constexpr inline void assert_not_empty(::std::source_location location = ::std::source_location::current()) const noexcept
-        {
-            if constexpr(::SoC::use_full_assert)
-            {
-                using namespace ::std::string_view_literals;
-                ::SoC::assert(!empty(), "环形缓冲区已空"sv, location);
-            }
-            else
-            {
-                if(empty()) [[unlikely]] { ::SoC::fast_fail(); }
-            }
-        }
 
     public:
         /**
