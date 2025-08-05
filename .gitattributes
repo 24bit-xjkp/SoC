@@ -1,5 +1,6 @@
 *.o filter=lfs diff=lfs merge=lfs -text
 *.data filter=lfs diff=lfs merge=lfs -text
+*.svd filter=lfs diff=lfs merge=lfs -text
 *.c linguist-vendored
 *.h linguist-vendored
 stm32f4/hal_ll/include/stm32_assert.h -linguist-vendored linguist-language=C++
