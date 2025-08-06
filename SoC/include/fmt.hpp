@@ -11,7 +11,7 @@ namespace SoC
     template <::std::size_t n>
     struct fmt_string
     {
-        static_assert(n != 1, "格式串不能为空");
+        static_assert(n != 1zu, "格式串不能为空");
         ::std::array<char, n - 1> buffer;
 
         constexpr inline fmt_string(const char (&string)[n]) noexcept { ::std::ranges::copy_n(string, n - 1, buffer.begin()); }
@@ -341,7 +341,36 @@ namespace SoC
             }
             return result;
         }
+
+        constexpr inline static auto get_fmt_string() noexcept { return fmt; }
     };
+
+    namespace detail
+    {
+        template <typename type>
+        constexpr inline bool is_fmt_parser_impl{false};
+
+        template <::SoC::fmt_string fmt_string>
+        constexpr inline bool is_fmt_parser_impl<::SoC::fmt_parser<fmt_string>>{true};
+
+        template <typename type>
+        concept is_fmt_parser = ::SoC::detail::is_fmt_parser_impl<type>;
+    }  // namespace detail
+
+    namespace literal
+    {
+        /**
+         * @brief 将字符串字面量转化为格式串解析器
+         *
+         * @tparam fmt_string 包装成格式串的字符串字面量
+         * @return 格式串解析器
+         */
+        template <::SoC::fmt_string fmt_string>
+        inline consteval auto operator""_fmt () noexcept
+        {
+            return ::SoC::fmt_parser<fmt_string>{};
+        }
+    }  // namespace literal
 }  // namespace SoC
 
 namespace SoC

@@ -93,11 +93,11 @@ namespace shutdown_awd
             // auto sample{awd_sample->get_result()};
             // auto [_, high_threshold]{awd->get_threshold()};
             auto [_, high_threshold]{awd->get_threshold()};
-            ::SoC::println<"看门狗上限: {}, 实际值: {}", true>(file.get(), high_threshold, sample);
+            ::SoC::println<true>(*::file, "看门狗上限: {}, 实际值: {}"_fmt, high_threshold, sample);
             if(sample >= high_threshold + awd_noise_threshold)
             {
                 shutdown->reset();
-                ::SoC::println<true>(::file.get(), "\N{ESCAPE}[31m检测到过压，断开电源\N{ESCAPE}[39m"sv);
+                ::SoC::println<true>(*::file, "\N{ESCAPE}[31m检测到过压，断开电源\N{ESCAPE}[39m"sv);
                 awd->set_it_awd(false);
             }
             awd->clear_flag_awd();
@@ -138,7 +138,7 @@ namespace key_check_tim
                 {
                     if constexpr(::SoC::use_full_assert)
                     {
-                        ::SoC::println<"按键{}被按下">(::file.get(), ::std::countr_zero(::std::to_underlying(pin)) - 1);
+                        ::SoC::println(::file.get(), "按键{}被按下"_fmt, ::std::countr_zero(::std::to_underlying(pin)) - 1);
                     }
                     auto delta{pin == ::SoC::gpio_pin::p2 ? 0.1f : -0.1f};
                     ::pid_controller::pid->step(delta);
@@ -151,7 +151,6 @@ namespace key_check_tim
 
 int main()
 {
-
     ::SoC::system_clock_init();
     ::SoC::enable_prefetch_cache();
     ::SoC::set_priority_group();
@@ -275,10 +274,10 @@ int main()
         {
             cnt = 0;
             green_led.toggle();
-            ::SoC::println<"电流采样: {}A">(file, i_sample);
-            ::SoC::println<"占空比: {}%">(file, ::SoC::round<2>(::pid_controller::duty * 100.f));
-            ::SoC::println<"pid目标值: {}A">(file, ::pid_controller::pid->get_target());
-            ::SoC::println<"电压采样: {}">(file, awd_sample.get_result() * coefficient);
+            ::SoC::println(file, "电流采样: {}A"_fmt, i_sample);
+            ::SoC::println(file, "占空比: {}%"_fmt, ::SoC::round<2>(::pid_controller::duty * 100.f));
+            ::SoC::println(file, "pid目标值: {}A"_fmt, ::pid_controller::pid->get_target());
+            ::SoC::println(file, "电压采样: {}"_fmt, awd_sample.get_result() * coefficient);
             ::SoC::println<true>(file, "--------------------"sv);
         }
         char buffer[5];

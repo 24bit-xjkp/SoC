@@ -1094,15 +1094,18 @@ namespace SoC
          * @tparam output_t 可进行输出操作的类型
          * @tparam args_t 参数类型列表
          * @param output 可进行输出操作的对象
+         * @param parser 格式串解析器
          * @param args 参数列表
          */
-        template <::SoC::fmt_string fmt, typename output_t, ::std::size_t... indexes, typename... args_t>
-        constexpr inline void print_wrapper(output_t& output, ::std::index_sequence<indexes...>, args_t&&... args) noexcept
+        template <typename output_t, ::std::size_t... indexes, typename... args_t>
+        constexpr inline void print_wrapper(output_t& output,
+                                            ::SoC::detail::is_fmt_parser auto parser,
+                                            ::std::index_sequence<indexes...>,
+                                            args_t&&... args) noexcept
         {
-            using parser = ::SoC::fmt_parser<fmt>;
-            constexpr auto placehold_num{parser::get_placehold_num()};
+            constexpr auto placehold_num{parser.get_placehold_num()};
             static_assert(placehold_num == sizeof...(args), "占位符个数和参数个数不同");
-            constexpr auto no_placehold_num{parser::get_no_placehold_num()};
+            constexpr auto no_placehold_num{parser.get_no_placehold_num()};
             if constexpr(no_placehold_num == 0)
             {
                 // 不含需要交错输出的字符串
@@ -1110,8 +1113,8 @@ namespace SoC
             }
             else
             {
-                constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser::get_split_string_tuple()};
-                constexpr auto tuple_index_array{parser::get_tuple_index_array()};
+                constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser.get_split_string_tuple()};
+                constexpr auto tuple_index_array{parser.get_tuple_index_array()};
                 if constexpr(placehold_num != 0)
                 {
                     ::SoC::detail::print_wrapper(
@@ -1128,14 +1131,15 @@ namespace SoC
             }
         }
 
-        template <::SoC::fmt_string fmt, ::SoC::end_line_sequence endl>
-        constexpr inline auto get_fmt_string_with_endl() noexcept
+        template <::SoC::end_line_sequence endl>
+        constexpr inline auto get_fmt_string_with_endl(::SoC::detail::is_fmt_parser auto fmt) noexcept
         {
             constexpr auto endl_string{::SoC::detail::get_endl<endl>()};
+            constexpr auto fmt_string{fmt.get_fmt_string()};
             // fmt_string要求输入是空结尾的字符串，因此填充1位
-            char buffer[fmt.size() + endl_string.size() + 1]{};
-            ::std::ranges::copy(fmt, buffer);
-            ::std::ranges::copy(endl_string, buffer + fmt.size());
+            char buffer[fmt_string.size() + endl_string.size() + 1]{};
+            ::std::ranges::copy(fmt_string, buffer);
+            ::std::ranges::copy(endl_string, buffer + fmt_string.size());
             return ::SoC::fmt_string{buffer};
         }
     }  // namespace detail
@@ -1153,7 +1157,8 @@ namespace SoC
     constexpr inline void
         do_print_arg(output_t& output, ::std::source_location location, ::SoC::unified_text_buffer tmp_buffer) noexcept
     {
-        using parser = ::SoC::fmt_parser<"文件: {}({}:{}) `{}`">;
+        using namespace ::SoC::literal;
+        using parser = decltype("文件: {}({}:{}) `{}`"_fmt);
         constexpr auto placehold_num{parser::get_placehold_num()};
         constexpr auto no_placehold_num{parser::get_no_placehold_num()};
         const auto wrapper{
@@ -1161,10 +1166,11 @@ namespace SoC
             {
                 constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser::get_split_string_tuple()};
                 constexpr auto tuple_index_array{parser::get_tuple_index_array()};
-                (::SoC::detail::do_print_arg_wrapper(output,
-                                                     split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(
-                                                         args...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]),
-                                                     tmp_buffer),
+                (::SoC::detail::do_print_arg_wrapper(
+                     output,
+                     split_string_tuple.template get_fmt_arg<tuple_index_array[indexes]>(
+                         args...[(tuple_index_array[indexes] - no_placehold_num) % placehold_num]),
+                     tmp_buffer),
                  ...);
             }};
         wrapper(::std::make_index_sequence<placehold_num + no_placehold_num>{},
@@ -1181,57 +1187,54 @@ namespace SoC
      * @tparam device_t 输出设备类型
      * @tparam args_t 参数类型列表
      * @param device 输出设备
+     * @param fmt 格式串，使用SoC::literal::operator""_fmt创建
      * @param args 参数列表
      */
-    template <::SoC::fmt_string fmt, ::SoC::is_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
-    constexpr inline void print(device_t& device, args_t&&... args) noexcept
+    template <::SoC::is_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void print(device_t& device, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        using parser = ::SoC::fmt_parser<fmt>;
-        ::SoC::detail::print_wrapper<fmt>(device,
-                                          ::std::make_index_sequence<parser::get_total_num()>{},
-                                          ::std::forward<args_t>(args)...);
+        ::SoC::detail::print_wrapper(device,
+                                     fmt,
+                                     ::std::make_index_sequence<fmt.get_total_num()>{},
+                                     ::std::forward<args_t>(args)...);
     }
 
     /**
      * @brief 将参数列表输出到文件
      *
-     * @tparam fmt 格式串
      * @tparam flush 输出结束后是否刷新缓冲区
      * @tparam file_t 输出文件类型
      * @tparam args_t 参数类型列表
      * @param file 输出文件
+     * @param fmt 格式串，使用SoC::literal::operator""_fmt创建
      * @param args 参数列表
      */
-    template <::SoC::fmt_string fmt,
-              bool flush = false,
-              ::SoC::is_output_file file_t,
-              ::SoC::is_printable_to_file<file_t>... args_t>
-    constexpr inline void print(file_t& file, args_t&&... args) noexcept
+    template <bool flush = false, ::SoC::is_output_file file_t, ::SoC::is_printable_to_file<file_t>... args_t>
+    constexpr inline void print(file_t& file, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        using parser = ::SoC::fmt_parser<fmt>;
-        ::SoC::detail::print_wrapper<fmt>(file,
-                                          ::std::make_index_sequence<parser::get_total_num()>{},
-                                          ::std::forward<args_t>(args)...);
+        ::SoC::detail::print_wrapper(file,
+                                     fmt,
+                                     ::std::make_index_sequence<fmt.get_total_num()>{},
+                                     ::std::forward<args_t>(args)...);
         if constexpr(flush) { file.flush(); }
     }
 
     /**
      * @brief 将参数列表输出到设备，输出完成后换行
      *
-     * @tparam fmt 格式串
      * @tparam endl 行尾序列
      * @tparam device_t 输出设备类型
      * @tparam args_t 参数类型列表
      * @param device 输出设备
+     * @param fmt 格式串，使用SoC::literal::operator""_fmt创建
      * @param args 参数列表
      */
-    template <::SoC::fmt_string fmt,
-              ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
+    template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
               ::SoC::is_output_device<char> device_t,
               ::SoC::is_printable_to_device<device_t>... args_t>
-    constexpr inline void println(device_t& device, args_t&&... args) noexcept
+    constexpr inline void println(device_t& device, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        ::SoC::print<::SoC::detail::get_fmt_string_with_endl<fmt, endl>()>(device, ::std::forward<args_t>(args)...);
+        ::SoC::print(device, ::SoC::fmt_parser<::SoC::detail::get_fmt_string_with_endl<endl>(fmt)>{}, ::std::forward<args_t>(args)...);
     }
 
     /**
@@ -1242,15 +1245,15 @@ namespace SoC
      * @tparam file_t 输出文件类型
      * @tparam args_t 参数类型列表
      * @param file 输出文件
+     * @param fmt 格式串，使用SoC::literal::operator""_fmt创建
      * @param args 参数列表
      */
-    template <::SoC::fmt_string fmt,
-              bool flush = false,
+    template <bool flush = false,
               ::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
               ::SoC::is_output_file file_t,
               ::SoC::is_printable_to_file<file_t>... args_t>
-    constexpr inline void println(file_t& file, args_t&&... args) noexcept
+    constexpr inline void println(file_t& file, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        ::SoC::print<::SoC::detail::get_fmt_string_with_endl<fmt, endl>(), flush>(file, ::std::forward<args_t>(args)...);
+        ::SoC::print<flush>(file, ::SoC::fmt_parser<::SoC::detail::get_fmt_string_with_endl<endl>(fmt)>{}, ::std::forward<args_t>(args)...);
     }
 }  // namespace SoC
