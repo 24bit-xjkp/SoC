@@ -6,6 +6,15 @@ namespace SoC
     namespace detail
     {
         /**
+         * @brief 判断类型callable_t是否具有static operator() (args_t...)
+         *
+         * @tparam callable_t 可调用类型
+         * @tparam args_t 参数类型列表
+         */
+        template <typename callable_t, typename... args_t>
+        concept static_call_operator = ::std::invocable<decltype(&callable_t::operator()), args_t...>;
+
+        /**
          * @brief 函数包装体
          *
          * @tparam callable_t 可调用类型
@@ -19,27 +28,50 @@ namespace SoC
             requires (!::std::is_reference_v<callable_t>)
         inline return_t function_wrapper(void* ptr, args_t... args) noexcept
         {
-            return ::std::invoke_r<return_t>(*reinterpret_cast<callable_t*>(ptr), ::std::forward<args_t>(args)...);
+            if constexpr(::std::is_pointer_v<callable_t>)
+            {
+                return ::std::invoke_r<return_t>(reinterpret_cast<callable_t>(ptr), ::std::forward<args_t>(args)...);
+            }
+            else if constexpr(::SoC::detail::static_call_operator<callable_t>)
+            {
+                return ::std::invoke_r<return_t>(reinterpret_cast<decltype(&callable_t::operator())>(ptr),
+                                                 ::std::forward<args_t>(args)...);
+            }
+            else
+            {
+                return ::std::invoke_r<return_t>(*reinterpret_cast<callable_t*>(ptr), ::std::forward<args_t>(args)...);
+            }
         }
 
-        template <typename type>
-            requires (!::std::is_reference_v<type>)
+        /**
+         * @brief 用于释放动态分配的可调用对象的回调函数
+         *
+         * @tparam callable_t 可调用对象类型
+         */
+        template <typename callable_t>
+            requires (!::std::is_reference_v<callable_t>)
         inline ::std::size_t function_destroy_callback(void* ptr) noexcept
         {
-            reinterpret_cast<type*>(ptr)->~type();
-            return sizeof(type);
+            reinterpret_cast<callable_t*>(ptr)->~callable_t();
+            constexpr auto allocated_size{::std::max(sizeof(callable_t), alignof(callable_t))};
+            return allocated_size;
         }
+
     }  // namespace detail
 
     /**
-     * @brief 类型擦除的函数对象
+     * @brief 类型擦除的函数对象，具有智能语义
      *
+     * @note 在绑定到指针时使用值语义，无分配开销 @n
+     *       在绑定到具有static operator()的类型时，使用值语义，无分配开销 @n
+     *       在绑定到其他类型右值时，使用拥有语义，会发生动态分配和释放 @n
+     *       在绑定到其他类型左值时，使用引用语义，需要保证左值的生命周期大于等于函数对象的生命周期
      * @tparam allocator_t 分配器类型
-     * @tparam return_t
-     * @tparam args_t
+     * @tparam return_t 返回类型
+     * @tparam args_t 参数类型列表
      */
     template <::SoC::is_allocator allocator_t, typename return_t, typename... args_t>
-    struct basic_function
+    struct basic_smart_function
     {
     private:
         [[no_unique_address]] allocator_t allocator;
@@ -48,8 +80,6 @@ namespace SoC
         func_t func{};
         using destroy_t = ::std::size_t (*)(void*) noexcept;
         destroy_t destroy_callback{};
-        template <typename, typename...>
-        friend struct function_ref;
 
         /**
          * @brief 析构函数对象并释放内存
@@ -57,11 +87,7 @@ namespace SoC
          */
         void destroy() noexcept
         {
-            if(ptr)
-            {
-                auto size{destroy_callback(ptr)};
-                if(ptr != this) { allocator.deallocate(ptr, size); }
-            }
+            if(destroy_callback) { allocator.deallocate(ptr, destroy_callback(ptr)); }
         }
 
     public:
@@ -70,7 +96,7 @@ namespace SoC
          *
          * @param allocator 分配器
          */
-        inline basic_function(allocator_t allocator = ::SoC::ram_allocator) noexcept : allocator{allocator} {}
+        inline basic_smart_function(allocator_t allocator = allocator_t{}) noexcept : allocator{allocator} {}
 
         /**
          * @brief 将函数绑定到可调用对象
@@ -80,21 +106,36 @@ namespace SoC
          * @param allocator 分配器
          */
         template <::SoC::detail::invocable_r<return_t, args_t...> callable_t>
-            requires (::std::is_rvalue_reference_v<callable_t &&> &&
-                      ::std::is_move_constructible_v<::std::remove_reference_t<callable_t>>)
-        inline basic_function(callable_t&& callable, allocator_t allocator = ::SoC::ram_allocator) :
+            requires (::std::is_move_constructible_v<::std::remove_reference_t<callable_t>>)
+        inline basic_smart_function(callable_t&& callable, allocator_t allocator = allocator_t{}) noexcept :
             func{::SoC::detail::function_wrapper<::std::remove_reference_t<callable_t>, return_t, args_t...>},
-            allocator{allocator},
-            destroy_callback{::SoC::detail::function_destroy_callback<::std::remove_reference_t<callable_t>>}
+            allocator{allocator}
         {
-            if constexpr(!::std::is_empty_v<callable_t>)
+            using no_ref_callable_t = ::std::remove_cvref_t<callable_t>;
+            if constexpr(::std::is_lvalue_reference_v<callable_t>)
             {
-                ptr = allocator.allocate(sizeof(callable_t));
-                new(ptr)::std::remove_cvref_t<callable_t>{::std::move(callable)};
+                // 对于左值采用引用语义
+                ptr = const_cast<void*>(reinterpret_cast<const void*>(&callable));
+            }
+            else if constexpr(::std::is_pointer_v<no_ref_callable_t>)
+            {
+                // 对于指针采用值语义直接储存
+                ptr = callable;
             }
             else
             {
-                ptr = this;
+                if constexpr(::SoC::detail::static_call_operator<no_ref_callable_t, args_t...>)
+                {
+                    // 对于具有static operator()的类型进行优化，直接存储指针
+                    ptr = &no_ref_callable_t::operator();
+                }
+                else
+                {
+                    // 对于其他类型，采用拥有语义，进行动态分配
+                    ptr = allocator.template allocate<no_ref_callable_t>();
+                    ::new(ptr) no_ref_callable_t{::std::move(callable)};
+                    destroy_callback = ::SoC::detail::function_destroy_callback<no_ref_callable_t>;
+                }
             }
         }
 
@@ -105,32 +146,59 @@ namespace SoC
          * @param callable 可调用对象
          */
         template <::SoC::detail::invocable_r<return_t, args_t...> callable_t>
-            requires (::std::is_rvalue_reference_v<callable_t &&> &&
-                      ::std::is_move_constructible_v<::std::remove_reference_t<callable_t>>)
-        inline basic_function& operator= (callable_t&& callable) noexcept
+            requires (::std::is_move_constructible_v<::std::remove_reference_t<callable_t>>)
+        inline basic_smart_function& operator= (callable_t&& callable) noexcept
         {
-            basic_function temp{::std::forward<callable_t>(callable), allocator};
+            basic_smart_function temp{::std::forward<callable_t>(callable), allocator};
             ::std::swap(*this, temp);
             return *this;
         }
 
-        inline ~basic_function() noexcept { destroy(); }
+        /**
+         * @brief 析构函数，根据情况释放内存
+         *
+         */
+        inline ~basic_smart_function() noexcept { destroy(); }
 
-        inline basic_function(basic_function&& other) noexcept :
+        /**
+         * @brief 移动构造函数
+         *
+         * @param other 其他对象
+         */
+        inline basic_smart_function(basic_smart_function&& other) noexcept :
             ptr{::std::exchange(other.ptr, nullptr)}, func{::std::exchange(other.func, nullptr)}, allocator{other.allocator},
-            destroy_callback{other.destroy_callback}
+            destroy_callback{::std::exchange(other.destroy_callback, nullptr)}
         {
         }
 
-        inline basic_function& operator= (basic_function&& other) noexcept
+        /**
+         * @brief 移动赋值函数
+         *
+         * @param other 其他对象
+         * @return 当前对象引用
+         */
+        inline basic_smart_function& operator= (basic_smart_function&& other) noexcept
         {
             auto temp{::std::move(other)};
             ::std::swap(*this, temp);
             return *this;
         }
 
-        inline basic_function(const basic_function&) noexcept = delete;
-        inline basic_function& operator= (const basic_function&) noexcept = delete;
+        /**
+         * @brief 禁止拷贝构造
+         *
+         */
+        inline basic_smart_function(const basic_smart_function&) noexcept =
+            delete("为简单和高效起见，实现为仅支持移动的类型擦除包装器");
+        inline basic_smart_function(basic_smart_function&,
+                                    allocator_t = allocator_t{}) noexcept = delete("应当使用引用而不是构造新对象");
+        /**
+         * @brief 禁止拷贝赋值
+         *
+         */
+        inline basic_smart_function&
+            operator= (const basic_smart_function&) noexcept = delete("为简单和高效起见，实现为仅支持移动的类型擦除包装器");
+        inline basic_smart_function& operator= (basic_smart_function&) noexcept = delete("应当使用引用而不是构造新对象");
 
         /**
          * @brief 调用对象
@@ -138,7 +206,19 @@ namespace SoC
          * @param args 参数列表
          * @return 返回值
          */
-        inline return_t operator() (args_t... args) noexcept { return func(ptr, ::std::forward<args_t>(args)...); }
+        inline return_t operator() (args_t... args) noexcept
+        {
+            if constexpr(::SoC::use_full_assert)
+            {
+                using namespace ::std::string_view_literals;
+                ::SoC::assert(func, "未绑定到可调用对象"sv);
+            }
+            else
+            {
+                if(!func) [[unlikely]] { ::SoC::fast_fail(); }
+            }
+            return func(ptr, ::std::forward<args_t>(args)...);
+        }
 
         /**
          * @brief 判断函数是否绑定到可调用对象
@@ -166,7 +246,7 @@ namespace SoC
          *
          * @return 函数引用
          */
-        inline basic_function& operator= (::std::nullptr_t) noexcept
+        inline basic_smart_function& operator= (::std::nullptr_t) noexcept
         {
             destroy();
             ptr = nullptr;
@@ -176,95 +256,12 @@ namespace SoC
         }
     };
 
-    template <typename return_t, typename... args_t>
-    using function = ::SoC::basic_function<::SoC::user_heap_allocator_t, return_t, args_t...>;
-
     /**
-     * @brief 类型擦除的函数引用
+     * @brief 类型擦除的函数对象，具有智能语义
      *
      * @tparam return_t 返回类型
-     * @tparam args_t 参数列表
+     * @tparam args_t 参数类型列表
      */
     template <typename return_t, typename... args_t>
-    struct function_ref
-    {
-    private:
-        void* ptr{};
-        using func_t = return_t (*)(void*, args_t...) noexcept;
-        func_t func{};
-
-    public:
-        /**
-         * @brief 默认构造，不绑定到可调用对象
-         *
-         */
-        inline function_ref() noexcept = default;
-
-        /**
-         * @brief 将函数引用绑定到可调用对象
-         *
-         * @tparam callable_t 可调用类型
-         * @param callable 可调用对象
-         */
-        template <::SoC::detail::invocable_r<return_t, args_t...> callable_t>
-            requires (::std::is_lvalue_reference_v<callable_t>)
-        inline function_ref(callable_t&& callable) noexcept :
-            ptr{const_cast<void*>(reinterpret_cast<const void*>(::std::addressof(callable)))},
-            func{::SoC::detail::function_wrapper<::std::remove_reference_t<callable_t>, return_t, args_t...>}
-        {
-        }
-
-        /**
-         * @brief 将函数引用绑定到函数对象
-         *
-         * @tparam allocator 函数对象使用的分配器类型
-         * @param fun 函数对象引用
-         */
-        template <typename allocator>
-        inline function_ref(::SoC::basic_function<allocator, return_t, args_t...>& fun) noexcept : ptr{fun.ptr}, func{fun.func}
-        {
-        }
-
-        // /**
-        //  * @brief 将函数引用绑定到可调用对象
-        //  *
-        //  * @tparam callable_t 可调用类型
-        //  * @param callable 可调用对象
-        //  */
-        // template <::SoC::detail::invocable_r<return_t, args_t...> callable_t>
-        //     requires (::std::is_lvalue_reference_v<callable_t>)
-        // inline function_ref& operator= (callable_t&& callable) noexcept
-        // {
-        //     ptr = const_cast<void*>(reinterpret_cast<const void*>(::std::addressof(callable)));
-        //     func = ::SoC::detail::function_wrapper<::std::remove_reference_t<callable_t>, return_t, args_t...>;
-        //     return *this;
-        // }
-
-        /**
-         * @brief 清空函数引用绑定的可调用对象
-         *
-         * @return 函数引用
-         */
-        inline function_ref& operator= (::std::nullptr_t) noexcept
-        {
-            ptr = nullptr;
-            func = nullptr;
-            return *this;
-        }
-
-        /**
-         * @brief 调用对象
-         *
-         * @param args 参数列表
-         * @return 返回值
-         */
-        inline return_t operator() (args_t... args) noexcept { return func(ptr, ::std::forward<args_t>(args)...); }
-
-        /**
-         * @brief 判断函数引用是否绑定到可调用对象
-         *
-         * @return 是否绑定到可调用对象
-         */
-        inline operator bool() const noexcept { return func != nullptr; }
-    };
+    using smart_function = ::SoC::basic_smart_function<::SoC::user_heap_allocator_t, return_t, args_t...>;
 }  // namespace SoC
