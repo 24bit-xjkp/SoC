@@ -168,7 +168,7 @@ int main()
     ::SoC::adc adc1{::SoC::adc::adc1, false};
     ::SoC::dma dma2{::SoC::dma::dma2};
     ::SoC::unique_ptr adc_calibrator{::SoC::ram_allocator.allocate<::SoC::adc_calibrator>()};
-    new(adc_calibrator)::SoC::adc_calibrator{adc1, dma2};
+    ::new(adc_calibrator)::SoC::adc_calibrator{adc1, dma2};
 
     ::SoC::gpio_port gpio_f{::SoC::gpio_port::pf};
     ::SoC::gpio_pin green_led{gpio_f, ::SoC::gpio_pin::p10, ::SoC::gpio_mode::output};

@@ -305,13 +305,13 @@ namespace SoC
 
         constexpr auto sampling_time{::SoC::adc_sampling_time::cycles144};
         auto& regular_group{
-            *new(adc_regular_group)::SoC::adc_regular_group{
+            *::new(adc_regular_group)::SoC::adc_regular_group{
                                                             adc, ::SoC::adc_regular_trigger_source::software,
                                                             true, ::SoC::adc_regular_dma_mode::limited,
                                                             {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
                                                             }
         };
-        auto& adc_dma_stream{*new(dma_stream)::SoC::dma_stream{regular_group.enable_dma(dma,
+        auto& adc_dma_stream{*::new(dma_stream)::SoC::dma_stream{regular_group.enable_dma(dma,
                                                                                         ::SoC::dma_mode::normal,
                                                                                         ::SoC::dma_fifo_threshold::full,
                                                                                         ::SoC::dma_memory_burst::inc8)}};

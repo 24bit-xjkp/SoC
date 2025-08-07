@@ -111,7 +111,7 @@ namespace SoC
         constexpr inline void emplace_back(::std::constructible_from<type> auto&&... args) noexcept
         {
             assert_not_full();
-            new(&buffer[tail++ & buffer_mask].value) type{::std::forward<decltype((args))>(args)...};
+            ::new(&buffer[tail++ & buffer_mask].value) type{::std::forward<decltype((args))>(args)...};
         }
 
         /**
@@ -123,7 +123,7 @@ namespace SoC
         {
             ::std::atomic_ref tail_ref{tail};
             auto ptr{&buffer[tail_ref.fetch_add(1, ::std::memory_order_relaxed) & buffer_mask].value};
-            new(ptr) type{::std::forward<decltype((args))>(args)...};
+            ::new(ptr) type{::std::forward<decltype((args))>(args)...};
         }
 
         /**
