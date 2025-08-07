@@ -55,25 +55,25 @@ namespace SoC
          * @brief 复制构造函数，因非原子性而删除
          *
          */
-        constexpr inline ring_buffer(const ring_buffer&) = delete;
+        constexpr inline ring_buffer(const ring_buffer&) = delete("复制构造是非原子操作");
 
         /**
          * @brief 移动构造函数，因非原子性而删除
          *
          */
-        constexpr inline ring_buffer(ring_buffer&&) = delete;
+        constexpr inline ring_buffer(ring_buffer&&) = delete("移动构造是非原子操作");
 
         /**
          * @brief 复制赋值运算符，因非原子性而删除
          *
          */
-        constexpr inline ring_buffer& operator= (const ring_buffer&) = delete;
+        constexpr inline ring_buffer& operator= (const ring_buffer&) = delete("复制赋值是非原子操作");
 
         /**
          * @brief 移动赋值运算符，因非原子性而删除
          *
          */
-        constexpr inline ring_buffer& operator= (ring_buffer&&) = delete;
+        constexpr inline ring_buffer& operator= (ring_buffer&&) = delete("移动赋值是非原子操作");
 
         /**
          * @brief 检查缓冲区是否为空
