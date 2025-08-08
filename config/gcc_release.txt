@@ -15,5 +15,6 @@
     rtlib = "default",
     sysroot = "detect",
     toolchain = "arm-fpv4-none-eabi-gcc",
-    unwindlib = "default"
+    unwindlib = "default",
+    runtimes = "stdc++_static"
 }
