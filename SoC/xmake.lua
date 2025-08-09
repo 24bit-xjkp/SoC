@@ -1,3 +1,5 @@
+add_cxxflags("-Wno-experimental-header-units")
+includes("freestanding/xmake.lua")
 target("SoC")
     add_deps("hal_ll")
     add_files("src/*.cpp", "src/*.ld")

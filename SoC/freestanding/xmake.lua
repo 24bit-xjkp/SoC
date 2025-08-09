@@ -1,0 +1,6 @@
+target("SoC.freestanding")
+    set_kind("static")
+    add_files("*.cppm", {public = true})
+    add_files("*.cpp")
+    set_policy("build.c++.modules.fallbackscanner", true)
+target_end()
