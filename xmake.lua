@@ -2,6 +2,7 @@ set_project("SoC")
 set_version("0.1.0")
 set_xmakever("2.9.0")
 set_policy("check.auto_ignore_flags", false)
+set_policy("build.c++.modules.std", false)
 set_encodings("utf-8")
 add_moduledirs("script/toolchains/xmake")
 includes("script/toolchains/xmake/*.lua")
@@ -20,8 +21,7 @@ if build_mode then
 end
 add_defines("STM32F407xx", "USE_FULL_LL_DRIVER", "HSE_VALUE=8000000u")
 add_options("assert")
-add_cxflags("-mtune=cortex-m4", "-mfloat-abi=hard", "-mfpu=fpv4-sp-d16", "-ffunction-sections", "-fdata-sections",
-            "-Wno-c23-extensions", "-Wimplicit-fallthrough", "-Wno-unknown-pragmas")
+add_cxflags("-mtune=cortex-m4", "-ffunction-sections", "-fdata-sections", "-Wno-c23-extensions", "-Wimplicit-fallthrough", "-Wno-unknown-pragmas")
 add_cxxflags("-fno-rtti", "-Wno-psabi")
 add_ldflags("-Wl,--gc-sections", "-nostartfiles", { force = true })
 add_ldflags("gcc::-Wno-psabi")

@@ -197,13 +197,13 @@ SECTIONS
     _estack = .;
   } >RAM
 
-  .user_heap :
+  .ram_heap :
   {
    . = ALIGN(8);
-    _user_heap_start = .;
+    _ram_heap_start = .;
     . = . + _Min_Heap_Size;
   } >RAM
-  _user_heap_end = ORIGIN(RAM) + LENGTH(RAM);
+  _ram_heap_end = ORIGIN(RAM) + LENGTH(RAM);
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :

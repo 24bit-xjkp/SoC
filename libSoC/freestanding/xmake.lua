@@ -1,0 +1,7 @@
+includes("../std/xmake.lua")
+target("SoC.freestanding")
+    set_kind("static")
+    add_deps("SoC.std")
+    add_files("*.cppm", {public = true})
+    add_files("*.cpp")
+target_end()

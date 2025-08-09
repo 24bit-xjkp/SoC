@@ -1,13 +1,5 @@
-#include "../include/init.hpp"
-#include "../include/gpio.hpp"
-#include "../include/usart.hpp"
-#include "../include/tim.hpp"
-#include "../include/io.hpp"
-#include "../include/heap.hpp"
-#include "../include/adc.hpp"
-#include "../include/exti.hpp"
-#include "../include/pid.hpp"
-#include "../include/oled.hpp"
+import SoC;
+import SoC.std;
 
 using namespace ::SoC::literal;
 using namespace ::std::string_view_literals;
