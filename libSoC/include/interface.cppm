@@ -1,0 +1,19 @@
+/**
+ * @file interface.cppm
+ * @author 24bit-xjkp (2283572185@qq.com)
+ * @brief SoC模块接口文件
+ */
+
+export module SoC;
+export import :adc;
+export import :dma;
+export import :gpio;
+export import :heap;
+export import :i2c;
+export import :init;
+export import :nvic;
+export import :oled;
+export import :syscfg;
+export import :tim;
+export import :usart;
+export import :utils;

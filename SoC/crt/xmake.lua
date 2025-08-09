@@ -1,6 +1,0 @@
-target("SoC.crt")
-    set_kind("static")
-    add_files("*.cppm|interface.cppm")
-    add_files("interface.cppm", {public = true})
-    add_files("*.cpp")
-target_end()
