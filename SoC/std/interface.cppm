@@ -1,0 +1,27 @@
+export module SoC.std;
+
+export import <atomic>;
+export import <cstdint>;
+export import <cstddef>;
+export import <utility>;
+export import <charconv>;
+export import <cmath>;
+export import <numbers>;
+export import <concepts>;
+export import <ratio>;
+export import <memory>;
+export import <source_location>;
+export import <bit>;
+export import <span>;
+export import <ranges>;
+export import <string_view>;
+export import <cstring>;
+export import <compare>;
+export import <array>;
+export import <functional>;
+export import <vector>;
+export import <optional>;
+export import <initializer_list>;
+export import <coroutine>;
+export import <system_error>;
+export import <algorithm>;

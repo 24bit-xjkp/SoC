@@ -5,7 +5,7 @@
  */
 
 export module SoC.freestanding:pid;
-import std;
+import SoC.std;
 
 export namespace SoC
 {

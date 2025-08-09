@@ -4,3 +4,4 @@ build
 .VSCodeCounter
 __pycache__
 doc
+gcm.cache

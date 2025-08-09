@@ -5,7 +5,7 @@
  */
 
 export module SoC.freestanding:priority_queue;
-import std;
+import SoC.std;
 import :utils;
 
 namespace SoC

@@ -5,7 +5,7 @@
  */
 
 export module SoC.freestanding:io;
-import std;
+import SoC.std;
 import :allocator;
 import :fmt;
 

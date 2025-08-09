@@ -5,7 +5,7 @@
  */
 
 export module SoC.freestanding:ring_buffer;
-import std;
+import SoC.std;
 import :utils;
 
 export namespace SoC

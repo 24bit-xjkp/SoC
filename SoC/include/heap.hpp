@@ -305,11 +305,11 @@ namespace SoC
      * @brief 适配主内存堆的全局分配器
      *
      */
-    struct user_heap_allocator_t : ::SoC::detail::heap_allocator_impl<::SoC::user_heap_allocator_t>
+    struct ram_heap_allocator_t : ::SoC::detail::heap_allocator_impl<::SoC::ram_heap_allocator_t>
     {
     private:
         constinit inline static ::SoC::heap* heap{};
-        friend struct ::SoC::detail::heap_allocator_impl<::SoC::user_heap_allocator_t>;
+        friend struct ::SoC::detail::heap_allocator_impl<::SoC::ram_heap_allocator_t>;
     } inline constexpr ram_allocator{};
 
     /**
@@ -332,7 +332,7 @@ namespace SoC
      * @tparam type 指向的类型
      * @tparam allocator_t 分配器类型
      */
-    template <typename type, typename allocator_t = ::SoC::user_heap_allocator_t>
+    template <typename type, typename allocator_t = ::SoC::ram_heap_allocator_t>
     struct unique_ptr
     {
         using value_type = type;

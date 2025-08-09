@@ -5,7 +5,7 @@
  */
 
 export module SoC.freestanding:utils;
-import std;
+import SoC.std;
 
 export namespace SoC
 {
