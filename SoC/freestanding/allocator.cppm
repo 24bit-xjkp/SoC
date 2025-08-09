@@ -4,9 +4,10 @@
  * @brief 独立的分配器接口实现
  */
 
+module;
+#include <version>
 export module SoC.freestanding:allocator;
 import std;
-import <version>;
 export import :utils;
 
 namespace SoC::detail

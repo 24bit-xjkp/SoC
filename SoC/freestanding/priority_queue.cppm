@@ -12,7 +12,7 @@ namespace SoC
 {
     template <typename type, ::std::size_t buffer_size, typename compare = std::less<type>>
         requires (::std::is_empty_v<compare>)
-    struct priority_queue : private ::SoC::container_asserter
+    struct priority_queue
     {
         using value_type = type;
         using pointer = type*;
@@ -147,7 +147,8 @@ namespace SoC
          */
         constexpr inline void emplace_back(::std::constructible_from<type> auto&&... args) noexcept
         {
-            assert_not_full();
+            using namespace ::std::string_view_literals;
+            ::SoC::always_check(!full(), "优先队列已满"sv);
             ::new(&buffer[tail++].value) type(::std::forward<decltype(args)>(args)...);
             ::std::ranges::push_heap(begin(), end(), comp);
         }
@@ -158,7 +159,8 @@ namespace SoC
          */
         constexpr inline void pop_front() noexcept
         {
-            assert_not_empty();
+            using namespace ::std::string_view_literals;
+            ::SoC::always_check(!full(), "优先队列已空"sv);
             ::std::ranges::pop_heap(begin(), end(), comp);
             buffer[--tail].value.~type();
         }

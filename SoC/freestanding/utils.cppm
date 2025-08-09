@@ -330,6 +330,33 @@ export namespace SoC
     }
 
     /**
+     * @brief 快速终止程序
+     *
+     */
+    [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept { __builtin_trap(); }
+
+    /**
+     * @brief 基于C++的检查函数，启用断言时使用断言，反之使用快速终止
+     *
+     * @param expression 断言表达式
+     * @param message 要输出的消息
+     * @param location 源代码位置
+     */
+    constexpr inline void always_check(bool expression,
+                                       ::std::string_view message = ::SoC::detail::default_assert_message,
+                                       ::std::source_location location = ::std::source_location::current()) noexcept
+    {
+        if constexpr(::SoC::use_full_assert)
+        {
+            if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
+        }
+        else
+        {
+            if(!expression) [[unlikely]] { ::SoC::fast_fail(); }
+        }
+    }
+
+    /**
      * @brief 日志设备类
      *
      */
@@ -428,12 +455,6 @@ namespace SoC
                                }()};
         return ::std::round(value * scaler) / scaler;
     }
-
-    /**
-     * @brief 快速终止程序
-     *
-     */
-    [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept { __builtin_trap(); }
 }  // namespace SoC
 
 export namespace SoC::detail
@@ -611,69 +632,6 @@ export namespace SoC
             { container.empty() } noexcept -> ::std::same_as<bool>;
         };
     }  // namespace detail
-
-    /**
-     * @brief 容器断言器
-     *
-     */
-    struct container_asserter
-    {
-        /**
-         * @brief 断言容器不为空
-         *
-         * @param self 容器对象
-         * @param location 源代码位置信息
-         * @note 此函数用于断言模式，当容器已满时会调用SoC::assert打印信息
-         */
-        constexpr inline void assert_not_empty(this ::SoC::detail::container_with_empty auto&& self,
-                                               ::std::source_location location = ::std::source_location::current()) noexcept
-            requires (::SoC::use_full_assert)
-        {
-            using namespace ::std::string_view_literals;
-            ::SoC::assert(!self.empty(), "容器为空"sv, location);
-        }
-
-        /**
-         * @brief 断言容器不为空
-         *
-         * @param self 容器对象
-         * @param location 源代码位置信息
-         * @note 此函数用于非断言模式，当容器已满时会调用SoC::fast_fail
-         */
-        constexpr inline void assert_not_empty(this ::SoC::detail::container_with_empty auto&& self) noexcept
-            requires (!::SoC::use_full_assert)
-        {
-            if(self.empty()) [[unlikely]] { ::SoC::fast_fail(); }
-        }
-
-        /**
-         * @brief 断言容器不为满
-         *
-         * @param self 容器对象
-         * @param location 源代码位置信息
-         * @note 此函数用于断言模式，当容器已满时会调用SoC::assert打印信息
-         */
-        constexpr inline void assert_not_full(this ::SoC::detail::container_with_full auto&& self,
-                                              ::std::source_location location = ::std::source_location::current()) noexcept
-            requires (::SoC::use_full_assert)
-        {
-            using namespace ::std::string_view_literals;
-            ::SoC::assert(!self.full(), "容器已满"sv, location);
-        }
-
-        /**
-         * @brief 断言容器不为满
-         *
-         * @param self 容器对象
-         * @param location 源代码位置信息
-         * @note 此函数用于非断言模式，当容器已满时会调用SoC::fast_fail
-         */
-        constexpr inline void assert_not_full(this ::SoC::detail::container_with_full auto&& self) noexcept
-            requires (!::SoC::use_full_assert)
-        {
-            if(self.full()) [[unlikely]] { ::SoC::fast_fail(); }
-        }
-    };
 }  // namespace SoC
 
 export namespace SoC
