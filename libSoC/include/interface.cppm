@@ -5,10 +5,10 @@
  */
 
 export module SoC;
+export import SoC.crt;
 export import :adc;
 export import :dma;
 export import :gpio;
-export import :heap;
 export import :i2c;
 export import :init;
 export import :nvic;

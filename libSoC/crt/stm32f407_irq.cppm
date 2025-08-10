@@ -7,9 +7,9 @@
 export module SoC.crt:stm32f407_irq;
 import :common;
 
-namespace SoC
+export namespace SoC
 {
-    export extern "C"
+    extern "C"
     {
         [[gnu::weak]] void Default_Handler() noexcept;
         [[gnu::weak]] void NMI_Handler() noexcept;
@@ -104,7 +104,7 @@ namespace SoC
         [[gnu::weak]] void FPU_IRQHandler() noexcept;
     }
 
-    [[using gnu: section(".isr_vector"), used]] const ::SoC::isr_t isr_table[]{
+    [[using gnu: section(".isr_vector"), used]] const inline ::SoC::isr_t isr_table[]{
         reinterpret_cast<::SoC::isr_t>(::SoC::_estack),
         ::SoC::Reset_Handler,
         ::SoC::NMI_Handler,

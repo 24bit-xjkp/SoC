@@ -1,7 +1,7 @@
 includes("*/xmake.lua")
 target("SoC.stm32")
     set_kind("static")
-    add_deps("stm32f4_hal_ll", "SoC.std", "SoC.freestanding", "SoC.crt")
+    add_deps("stm32f4_hal_ll", "SoC.freestanding", "SoC.crt")
     add_files("include/*.cppm", {public = true})
     add_files("src/*.cppm")
     add_extrafiles("assets/*")
