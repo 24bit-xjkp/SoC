@@ -6,7 +6,7 @@
 
 module;
 #include <cstddef>
-module SoC.crt:common;
+export module SoC.crt:common;
 
 namespace SoC
 {
@@ -24,7 +24,7 @@ namespace SoC
     extern ::SoC::cxa_atexit_callback_arg_t cxa_at_exit_callback_arg_array[::SoC::max_cxa_at_exit_callback];
     extern ::std::size_t cxa_at_exit_callback_index;
 
-    using isr_t = void (*)();
+    using isr_t = void (*)() noexcept;
 
     extern "C"
     {
@@ -38,3 +38,5 @@ namespace std
 {
     using ::std::size_t;
 }
+
+extern "C++" int main();

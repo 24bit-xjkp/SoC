@@ -7,8 +7,6 @@
 module SoC.crt;
 import :common;
 
-extern "C++" int main();
-
 namespace SoC
 {
     using cursor = ::SoC::cursor_t<::std::size_t>;

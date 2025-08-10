@@ -6,3 +6,4 @@
 
 export module SoC.crt;
 export import :stm32f407_irq;
+export import :common;
