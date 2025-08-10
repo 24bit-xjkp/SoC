@@ -4,9 +4,10 @@
  * @brief stm32 usart外设
  */
 
+module;
+#include <pch.hpp>
 export module SoC:usart;
 import :dma;
-import "pch.hpp";
 
 namespace SoC::detail
 {

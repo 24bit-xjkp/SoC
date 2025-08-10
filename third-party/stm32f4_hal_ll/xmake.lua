@@ -1,3 +1,6 @@
+if is_mode("debug") then
+    add_rules("releasedbg")
+end
 target("stm32f4_hal_ll")
     set_kind("static")
     add_deps("cmsis")

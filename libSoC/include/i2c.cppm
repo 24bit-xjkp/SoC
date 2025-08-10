@@ -4,9 +4,10 @@
  * @brief stm32 i2c外设
  */
 
+module;
+#include <pch.hpp>
 export module SoC:i2c;
 import :dma;
-import "pch.hpp";
 
 namespace SoC::detail
 {

@@ -4,9 +4,10 @@
  * @brief stm32系统配置控制接口
  */
 
+module;
+#include <pch.hpp>
 export module SoC:syscfg;
 import :utils;
-import "pch.hpp";
 
 namespace SoC
 {

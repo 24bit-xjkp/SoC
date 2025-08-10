@@ -4,10 +4,11 @@
  * @brief stm32 dma外设
  */
 
+module;
+#include <pch.hpp>
 export module SoC:exti;
 import :syscfg;
 import :gpio;
-import "pch.hpp";
 
 namespace SoC::detail
 {

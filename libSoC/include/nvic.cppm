@@ -4,6 +4,8 @@
  * @brief stm32 nvic中断控制器
  */
 
+module;
+#include <pch.hpp>
 export module SoC:nvic;
 import :utils;
 

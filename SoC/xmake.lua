@@ -1,4 +1,3 @@
-includes("../libSoC/xmake.lua")
 target("SoC")
     set_kind("binary")
     add_deps("SoC.stm32")

@@ -4,9 +4,10 @@
  * @brief stm32 tim外设
  */
 
+module;
+#include <pch.hpp>
 export module SoC:tim;
 import :utils;
-import "pch.hpp";
 
 namespace SoC::detail
 {

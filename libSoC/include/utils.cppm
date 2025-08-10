@@ -4,11 +4,12 @@
  * @brief stm32的实用工具实现
  */
 
+module;
+#include <pch.hpp>
 export module SoC:utils;
 export import SoC.freestanding;
 export import SoC.crt;
 import SoC.std;
-import "pch.hpp";
 
 namespace SoC::detail
 {
@@ -74,8 +75,8 @@ export namespace SoC
     private:
         ::std::atomic_uint32_t index{};
         ::std::uint64_t systick[2]{0, 1};
-        friend void SysTick_Handler() noexcept;
 
+    public:
         /**
          * @brief 递增系统时刻
          *
@@ -83,7 +84,6 @@ export namespace SoC
          */
         ::std::uint64_t operator++ () noexcept;
 
-    public:
         /**
          * @brief 读取系统时刻
          *

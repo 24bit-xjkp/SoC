@@ -4,9 +4,10 @@
  * @brief stm32 dma外设
  */
 
+module;
+#include <pch.hpp>
 export module SoC:dma;
 import :utils;
-import "pch.hpp";
 
 namespace SoC::detail
 {

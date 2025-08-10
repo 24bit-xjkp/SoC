@@ -44,10 +44,18 @@
     #define __INLINE inline
 #endif
 #ifndef __STATIC_INLINE
-    #define __STATIC_INLINE static inline
+    #ifndef __cplusplus
+        #define __STATIC_INLINE static inline
+    #else
+        #define __STATIC_INLINE inline
+    #endif
 #endif
 #ifndef __STATIC_FORCEINLINE
-    #define __STATIC_FORCEINLINE __attribute__((always_inline)) static inline
+    #ifndef __cplusplus
+        #define __STATIC_FORCEINLINE __attribute__((always_inline)) static inline
+    #else
+        #define __STATIC_FORCEINLINE [[gnu::always_inline]] inline
+    #endif
 #endif
 #ifndef __NO_RETURN
     #define __NO_RETURN __attribute__((__noreturn__))

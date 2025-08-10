@@ -12,13 +12,13 @@ namespace SoC
     extern "C"
     {
         /// 主内存堆起始地址
-        extern ::std::uintptr_t _ram_heap_start[];
+        extern unsigned int _ram_heap_start[];
         /// 主内存堆终止地址
-        extern ::std::uintptr_t _ram_heap_end[];
+        extern unsigned int _ram_heap_end[];
         /// ccmram堆起始地址
-        extern ::std::uintptr_t _ccmram_heap_start[];
+        extern unsigned int _ccmram_heap_start[];
         /// ccmram堆终止地址
-        extern ::std::uintptr_t _ccmram_heap_end[];
+        extern unsigned int _ccmram_heap_end[];
     }
 
     /**

@@ -1,4 +1,3 @@
-includes("../std/xmake.lua")
 target("SoC.freestanding")
     set_kind("static")
     add_deps("SoC.std")
