@@ -257,11 +257,6 @@ namespace SoC
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(dma.get_dma_enum() == dma_enum, "该dma外设不能操作该串口"sv); }
     }
 
-    /// 选择的dma数据流无效时报错信息
-    constexpr auto selected_stream_error_msg{"该串口不能使用指定的dma数据流"sv};
-    /// 配置前dma已经处于使能状态时报错信息
-    constexpr auto dma_enabled_error_msg{"在配置前该串口的dma不应处于使能状态"sv};
-
     ::SoC::dma_stream(::SoC::usart::enable_dma_write)(::SoC::dma& dma,
                                                       ::SoC::dma_fifo_threshold fifo_threshold,
                                                       ::SoC::dma_memory_burst default_burst,
@@ -270,7 +265,7 @@ namespace SoC
                                                       ::SoC::dma_mode mode,
                                                       ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
     {
-        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_dma_write_enabled(), ::SoC::dma_enabled_error_msg); }
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_dma_write_enabled(), "在配置前该串口的dma不应处于使能状态"sv); }
         using enum ::SoC::dma::dma_enum;
         using enum ::SoC::dma_stream::dma_stream_enum;
         using enum ::SoC::dma_channel;
@@ -311,12 +306,14 @@ namespace SoC
                 {
                     if constexpr(::SoC::use_full_assert)
                     {
-                        ::SoC::assert(selected_stream == st6 || selected_stream == st7, ::SoC::selected_stream_error_msg);
+                        ::SoC::assert(selected_stream == st6 || selected_stream == st7, "该串口不能使用指定的dma数据流"sv);
                     }
                     stream = selected_stream;
                 }
                 channel = ch5;
                 break;
+            default:
+                ::std::unreachable();
         }
         if constexpr(::SoC::use_full_assert) { assert_dma(dma, dma_enum); }
         ::LL_USART_EnableDMAReq_TX(usart_ptr);

@@ -409,6 +409,23 @@ namespace SoC
         enable();
     }
 
+    ::SoC::analog_watchdog::analog_watchdog(::SoC::analog_watchdog&& other) noexcept
+    {
+        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(other));
+        other.adc_ptr = nullptr;
+    }
+
+    ::SoC::analog_watchdog::~analog_watchdog() noexcept
+    {
+        if(adc_ptr) [[likely]]
+        {
+            clear_flag_awd();
+            disable_irq();
+            disable();
+            adc_ptr = nullptr;
+        }
+    }
+
     bool ::SoC::analog_watchdog::is_enabled() const noexcept
     {
         return ::LL_ADC_GetAnalogWDMonitChannels(adc_ptr) != LL_ADC_AWD_DISABLE;
