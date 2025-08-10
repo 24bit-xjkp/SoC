@@ -43,6 +43,10 @@ namespace SoC
         else if(line & line4) { irqn = ::IRQn_Type::EXTI4_IRQn; }
         else if(line & line5_9) { irqn = ::IRQn_Type::EXTI9_5_IRQn; }
         else if(line & line10_15) { irqn = ::IRQn_Type::EXTI15_10_IRQn; }
+        else
+        {
+            ::std::unreachable();
+        }
     }
 
     ::SoC::exti_line::~exti_line() noexcept

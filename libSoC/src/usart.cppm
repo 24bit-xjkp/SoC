@@ -65,6 +65,7 @@ namespace SoC
                 clk = ::SoC::rcc::apb2_freq;
                 irqn = ::USART6_IRQn;
                 break;
+            default: ::std::unreachable();
         }
 
         ::LL_USART_ConfigCharacter(usart_ptr,
@@ -312,8 +313,7 @@ namespace SoC
                 }
                 channel = ch5;
                 break;
-            default:
-                ::std::unreachable();
+            default: ::std::unreachable();
         }
         if constexpr(::SoC::use_full_assert) { assert_dma(dma, dma_enum); }
         ::LL_USART_EnableDMAReq_TX(usart_ptr);

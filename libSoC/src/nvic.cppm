@@ -64,6 +64,8 @@ namespace SoC
         ::SoC::set_priority(irqn, ::SoC::encode_priority(preempt_priority, sub_priority));
     }
 
+    ::std::size_t get_priority(::IRQn_Type irqn) noexcept { return ::NVIC_GetPriority(irqn); }
+
     ::std::pair<::std::size_t, ::std::size_t> get_priority_decoded(::IRQn_Type irqn) noexcept
     {
         return ::SoC::decode_priority(::SoC::get_priority(irqn));

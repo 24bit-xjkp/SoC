@@ -344,6 +344,7 @@ namespace SoC
                         default: irqn = static_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::std::to_underlying(stream)); break;
                     }
                     break;
+                default: ::std::unreachable();
             }
             return irqn;
         }

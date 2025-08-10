@@ -197,6 +197,7 @@ namespace SoC
                     check_upcnt_only();
                 }
                 break;
+            default: ::std::unreachable();
         }
         ::LL_TIM_SetCounterMode(tim_ptr, ::std::to_underlying(mode));
         ::LL_TIM_SetClockDivision(tim_ptr, ::std::to_underlying(clock_div));
@@ -279,6 +280,7 @@ namespace SoC
                 case tim14: check(::SoC::tim_trigger_output::oc1ref); break;
                 case tim6:
                 case tim7: check(::SoC::tim_trigger_output::update); break;
+                default: ::std::unreachable();
             }
         }
         ::LL_TIM_SetTriggerOutput(tim_ptr, ::std::to_underlying(trigger));
@@ -556,6 +558,7 @@ namespace SoC
             case ch2: ::LL_TIM_OC_SetCompareCH2(tim_ptr, compare_value); break;
             case ch3: ::LL_TIM_OC_SetCompareCH3(tim_ptr, compare_value); break;
             case ch4: ::LL_TIM_OC_SetCompareCH4(tim_ptr, compare_value); break;
+            default: ::std::unreachable();
         }
         if(force_update) { ::LL_TIM_GenerateEvent_UPDATE(tim_ptr); }
     }

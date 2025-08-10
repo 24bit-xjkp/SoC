@@ -23,6 +23,7 @@ namespace SoC
             case adc1: ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC1); break;
             case adc2: ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC2); break;
             case adc3: ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC3); break;
+            default: ::std::unreachable();
         }
         set_scan_mode(scan_mode);
         set_resolution(resolution);
@@ -39,6 +40,7 @@ namespace SoC
                 case adc1: ::LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC1); break;
                 case adc2: ::LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC2); break;
                 case adc3: ::LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC3); break;
+                default: ::std::unreachable();
             }
         }
     }
@@ -220,6 +222,7 @@ namespace SoC
                     stream = selected_stream;
                 }
                 break;
+            default: ::std::unreachable();
         }
 
         return ::SoC::dma_stream{dma,

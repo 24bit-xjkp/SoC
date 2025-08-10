@@ -32,6 +32,7 @@ namespace SoC
             case i2c1: periph = LL_APB1_GRP1_PERIPH_I2C1; break;
             case i2c2: periph = LL_APB1_GRP1_PERIPH_I2C2; break;
             case i2c3: periph = LL_APB1_GRP1_PERIPH_I2C3; break;
+            default: ::std::unreachable();
         }
         ::LL_APB1_GRP1_EnableClock(periph);
         ::LL_I2C_ConfigSpeed(i2c_ptr, ::SoC::rcc::apb1_freq, clock_speed, ::std::to_underlying(duty));
@@ -176,6 +177,7 @@ namespace SoC
                 channel = ch3;
                 stream = st4;
                 break;
+            default: ::std::unreachable();
         }
         if constexpr(::SoC::use_full_assert) { assert_dma(dma); }
         ::LL_I2C_EnableDMAReq_TX(i2c_ptr);
