@@ -234,7 +234,7 @@ export namespace SoC
          *
          * @return tim外设枚举
          */
-        constexpr inline tim_enum get_tim_enum() const noexcept { return ::std::bit_cast<tim_enum>(tim_ptr); }
+        constexpr inline tim_enum get_tim_enum() const noexcept { return ::SoC::bit_cast<tim_enum>(tim_ptr); }
 
         /**
          * @brief 使能tim外设，包括计数和高级定时器的输出

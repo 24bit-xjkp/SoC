@@ -586,7 +586,7 @@ export namespace SoC
         auto ptr{::SoC::detail::write_integer_base_prefix<base>(buffer.begin())};
         ::SoC::write_to_device(device,
                                buffer.begin(),
-                               ::std::to_chars(ptr, buffer.end(), format_wrapper.value, ::std::to_underlying(base)).ptr);
+                               ::std::to_chars(ptr, buffer.end(), format_wrapper.value, ::SoC::to_underlying(base)).ptr);
     }
 
     /**
@@ -873,12 +873,12 @@ export namespace SoC
         {
             auto&& current{buffer.current};
             current = ::SoC::detail::write_integer_base_prefix<base>(current);
-            current = ::std::to_chars(current, buffer.get_buffer_end(), num, ::std::to_underlying(base)).ptr;
+            current = ::std::to_chars(current, buffer.get_buffer_end(), num, ::SoC::to_underlying(base)).ptr;
         }
         else
         {
             auto ptr{::SoC::detail::write_integer_base_prefix<base>(tmp_buffer.begin())};
-            ptr = ::std::to_chars(ptr, tmp_buffer.end(), num, ::std::to_underlying(base)).ptr;
+            ptr = ::std::to_chars(ptr, tmp_buffer.end(), num, ::SoC::to_underlying(base)).ptr;
             auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
             buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
             if(output_size >= buffer_size_left) { file.template flush<true>(); }

@@ -84,7 +84,7 @@ export namespace SoC
          *
          * @return dma外设枚举
          */
-        inline dma_enum get_dma_enum() const noexcept { return ::std::bit_cast<dma_enum>(dma_ptr); }
+        inline dma_enum get_dma_enum() const noexcept { return ::SoC::bit_cast<dma_enum>(dma_ptr); }
 
         /**
          * @brief 获取dma外设指针

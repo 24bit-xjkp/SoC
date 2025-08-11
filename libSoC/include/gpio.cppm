@@ -62,7 +62,7 @@ namespace SoC::detail
      */
     export constexpr inline ::SoC::detail::gpio_pin operator| (::SoC::detail::gpio_pin lhs, ::SoC::detail::gpio_pin rhs) noexcept
     {
-        return static_cast<::SoC::detail::gpio_pin>(::std::to_underlying(lhs) | ::std::to_underlying(rhs));
+        return static_cast<::SoC::detail::gpio_pin>(::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs));
     }
 
     /**
@@ -74,7 +74,7 @@ namespace SoC::detail
      */
     constexpr inline ::std::size_t operator& (::SoC::detail::gpio_pin lhs, ::SoC::detail::gpio_pin rhs) noexcept
     {
-        return ::std::to_underlying(lhs) & ::std::to_underlying(rhs);
+        return ::SoC::to_underlying(lhs) & ::SoC::to_underlying(rhs);
     }
 }  // namespace SoC::detail
 
@@ -133,7 +133,7 @@ export namespace SoC
          */
         inline ::GPIO_TypeDef* get_port() const noexcept
         {
-            return reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400zu * ::std::to_underlying(port));
+            return reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400zu * ::SoC::to_underlying(port));
         }
 
         /**

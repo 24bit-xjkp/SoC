@@ -36,7 +36,7 @@ namespace SoC
     {
     }
 
-    ::std::size_t(::SoC::gpio_port::get_periph)() const noexcept { return 1 << ::std::to_underlying(port); }
+    ::std::size_t(::SoC::gpio_port::get_periph)() const noexcept { return 1 << ::SoC::to_underlying(port); }
 
     void ::SoC::gpio_port::enable() const noexcept { ::LL_AHB1_GRP1_EnableClock(get_periph()); }
 
@@ -84,29 +84,29 @@ namespace SoC
                 break;
         }
 
-        auto pin_mask{::std::to_underlying(pin)};
+        auto pin_mask{::SoC::to_underlying(pin)};
         while(pin_mask != 0)
         {
             auto pin_pos{::std::countr_zero(pin_mask)};
             auto current_pin{pin_mask & 1 << pin_pos};
             if(mode == ::SoC::gpio_mode::output || mode == ::SoC::gpio_mode::alternate)
             {
-                ::LL_GPIO_SetPinSpeed(gpio, current_pin, ::std::to_underlying(speed));
-                ::LL_GPIO_SetPinOutputType(gpio, current_pin, ::std::to_underlying(output_type));
+                ::LL_GPIO_SetPinSpeed(gpio, current_pin, ::SoC::to_underlying(speed));
+                ::LL_GPIO_SetPinOutputType(gpio, current_pin, ::SoC::to_underlying(output_type));
             }
 
-            ::LL_GPIO_SetPinPull(gpio, current_pin, ::std::to_underlying(pull));
+            ::LL_GPIO_SetPinPull(gpio, current_pin, ::SoC::to_underlying(pull));
 
             if(mode == ::SoC::gpio_mode::alternate)
             {
-                if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::std::to_underlying(af)); }
+                if(pin_pos < 8) { ::LL_GPIO_SetAFPin_0_7(gpio, current_pin, ::SoC::to_underlying(af)); }
                 else
                 {
-                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::std::to_underlying(af));
+                    ::LL_GPIO_SetAFPin_8_15(gpio, current_pin, ::SoC::to_underlying(af));
                 }
             }
 
-            ::LL_GPIO_SetPinMode(gpio, current_pin, ::std::to_underlying(mode));
+            ::LL_GPIO_SetPinMode(gpio, current_pin, ::SoC::to_underlying(mode));
 
             pin_mask ^= current_pin;
         }
@@ -119,7 +119,7 @@ namespace SoC
         {
             if constexpr(::SoC::use_full_assert)
             {
-                ::SoC::assert((pin_in & pin) == ::std::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv, location);
+                ::SoC::assert((pin_in & pin) == ::SoC::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv, location);
             }
             return pin_in;
         }
@@ -137,21 +137,21 @@ namespace SoC
     {
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
-        ::LL_GPIO_TogglePin(gpio, ::std::to_underlying(pin_in));
+        ::LL_GPIO_TogglePin(gpio, ::SoC::to_underlying(pin_in));
     }
 
     void ::SoC::gpio_pin::set(pin_enum pin_in) const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
-        ::LL_GPIO_SetOutputPin(gpio, ::std::to_underlying(pin_in));
+        ::LL_GPIO_SetOutputPin(gpio, ::SoC::to_underlying(pin_in));
     }
 
     void ::SoC::gpio_pin::reset(pin_enum pin_in) const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
-        ::LL_GPIO_ResetOutputPin(gpio, ::std::to_underlying(pin_in));
+        ::LL_GPIO_ResetOutputPin(gpio, ::SoC::to_underlying(pin_in));
     }
 
     void ::SoC::gpio_pin::write(bool level, pin_enum pin_in) const noexcept
@@ -159,7 +159,7 @@ namespace SoC
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
         // 低16位置1，高16位清零
-        gpio->BSRR = ::std::to_underlying(pin) << !level * 16;
+        gpio->BSRR = ::SoC::to_underlying(pin) << !level * 16;
     }
 
     bool ::SoC::gpio_pin::read(pin_enum pin_in) const noexcept
@@ -169,10 +169,10 @@ namespace SoC
             ::SoC::assert(mode != ::SoC::gpio_mode::analog, "模拟模式下不支持读取数据寄存器"sv);
         }
         pin_in = check_pin(pin_in);
-        if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::std::to_underlying(pin_in)); }
+        if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::SoC::to_underlying(pin_in)); }
         else
         {
-            return ::LL_GPIO_IsInputPinSet(gpio, ::std::to_underlying(pin_in));
+            return ::LL_GPIO_IsInputPinSet(gpio, ::SoC::to_underlying(pin_in));
         }
     }
 }  // namespace SoC

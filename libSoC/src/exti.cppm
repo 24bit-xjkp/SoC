@@ -43,7 +43,7 @@ namespace SoC
      */
     constexpr inline bool operator& (::SoC::exti_trigger_source value, ::SoC::exti_trigger_source mask) noexcept
     {
-        return ::std::to_underlying(value) & ::std::to_underlying(mask);
+        return ::SoC::to_underlying(value) & ::SoC::to_underlying(mask);
     }
 
     ::SoC::exti_line::exti_line(::SoC::syscfg& syscfg,
@@ -54,7 +54,7 @@ namespace SoC
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(syscfg.is_enabled(), "使用外部线中断必须使能系统控制器"sv); }
 
-        ::LL_SYSCFG_SetEXTISource(::std::to_underlying(gpio_port), ::std::to_underlying(line));
+        ::LL_SYSCFG_SetEXTISource(::SoC::to_underlying(gpio_port), ::SoC::to_underlying(line));
         set_trigger_source(trigger_source);
         if(line & line0) { irqn = ::IRQn_Type::EXTI0_IRQn; }
         else if(line & line1) { irqn = ::IRQn_Type::EXTI1_IRQn; }
@@ -86,14 +86,14 @@ namespace SoC
 
     void ::SoC::exti_line::set_trigger_source(::SoC::exti_trigger_source trigger_source) const noexcept
     {
-        if(trigger_source & ::SoC::exti_trigger_source::rising) { ::LL_EXTI_EnableRisingTrig_0_31(::std::to_underlying(line)); }
-        if(trigger_source & ::SoC::exti_trigger_source::falling) { ::LL_EXTI_EnableFallingTrig_0_31(::std::to_underlying(line)); }
+        if(trigger_source & ::SoC::exti_trigger_source::rising) { ::LL_EXTI_EnableRisingTrig_0_31(::SoC::to_underlying(line)); }
+        if(trigger_source & ::SoC::exti_trigger_source::falling) { ::LL_EXTI_EnableFallingTrig_0_31(::SoC::to_underlying(line)); }
     }
 
     void ::SoC::exti_line::clear_trigger_source() const noexcept
     {
-        ::LL_EXTI_DisableRisingTrig_0_31(::std::to_underlying(line));
-        ::LL_EXTI_DisableFallingTrig_0_31(::std::to_underlying(line));
+        ::LL_EXTI_DisableRisingTrig_0_31(::SoC::to_underlying(line));
+        ::LL_EXTI_DisableFallingTrig_0_31(::SoC::to_underlying(line));
     }
 
     void ::SoC::exti_line::enable_irq(::std::size_t encoded_priority) const noexcept
@@ -116,8 +116,8 @@ namespace SoC
         if(lines == default_lines) { return line; }
         else
         {
-            auto value{::std::to_underlying(lines)};
-            auto mask{::std::to_underlying(line)};
+            auto value{::SoC::to_underlying(lines)};
+            auto mask{::SoC::to_underlying(line)};
             if constexpr(::SoC::use_full_assert)
             {
                 ::SoC::assert((value & mask) == value, "访问未绑定到当前对象的中断线"sv, location);
@@ -129,28 +129,28 @@ namespace SoC
     void ::SoC::exti_line::set_it(bool enable, exti_line_enum lines) const noexcept
     {
         lines = check_lines(lines);
-        if(enable) { ::LL_EXTI_EnableIT_0_31(::std::to_underlying(lines)); }
+        if(enable) { ::LL_EXTI_EnableIT_0_31(::SoC::to_underlying(lines)); }
         else
         {
-            ::LL_EXTI_DisableIT_0_31(::std::to_underlying(lines));
+            ::LL_EXTI_DisableIT_0_31(::SoC::to_underlying(lines));
         }
     }
 
     bool ::SoC::exti_line::get_it(exti_line_enum lines) const noexcept
     {
         lines = check_lines(lines);
-        return ::LL_EXTI_IsEnabledIT_0_31(::std::to_underlying(lines));
+        return ::LL_EXTI_IsEnabledIT_0_31(::SoC::to_underlying(lines));
     }
 
     bool ::SoC::exti_line::get_flag_it(exti_line_enum lines) const noexcept
     {
         lines = check_lines(lines);
-        return ::LL_EXTI_IsActiveFlag_0_31(::std::to_underlying(lines));
+        return ::LL_EXTI_IsActiveFlag_0_31(::SoC::to_underlying(lines));
     }
 
     void ::SoC::exti_line::clear_flag_it(exti_line_enum lines) const noexcept
     {
         lines = check_lines(lines);
-        ::LL_EXTI_ClearFlag_0_31(::std::to_underlying(lines));
+        ::LL_EXTI_ClearFlag_0_31(::SoC::to_underlying(lines));
     }
 }  // namespace SoC

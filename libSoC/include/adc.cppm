@@ -47,7 +47,7 @@ namespace SoC::detail
      */
     export constexpr inline adc_internal_channel operator| (adc_internal_channel lhs, adc_internal_channel rhs) noexcept
     {
-        return static_cast<adc_internal_channel>(::std::to_underlying(lhs) | ::std::to_underlying(rhs));
+        return static_cast<adc_internal_channel>(::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs));
     }
 
     /**
@@ -137,7 +137,7 @@ namespace SoC::detail
     export constexpr inline ::SoC::detail::analog_watchdog operator| (::SoC::detail::analog_watchdog lhs,
                                                                       ::SoC::detail::analog_watchdog rhs) noexcept
     {
-        return ::SoC::detail::analog_watchdog{::std::to_underlying(lhs) | ::std::to_underlying(rhs)};
+        return ::SoC::detail::analog_watchdog{::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)};
     }
 }  // namespace SoC::detail
 
@@ -225,7 +225,7 @@ export namespace SoC
          *
          * @return adc外设枚举
          */
-        inline adc_enum get_adc_enum() const noexcept { return ::std::bit_cast<adc_enum>(adc_ptr); }
+        inline adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<adc_enum>(adc_ptr); }
 
         /**
          * @brief 获取adc分辨率
@@ -546,7 +546,7 @@ export namespace SoC
          *
          * @return adc外设枚举
          */
-        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::std::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
+        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
 
         /**
          * @brief 获取adc规则组中通道数量
@@ -726,14 +726,14 @@ export namespace SoC
          */
         inline adc_internal_channel(internal_channel_enum internal_channel) noexcept
         {
-            ::LL_ADC_SetCommonPathInternalCh(ADC, ::std::to_underlying(internal_channel));
+            ::LL_ADC_SetCommonPathInternalCh(ADC, ::SoC::to_underlying(internal_channel));
         }
 
         /**
          * @brief 失能所有adc内部通道
          *
          */
-        ~adc_internal_channel() noexcept { ::LL_ADC_SetCommonPathInternalCh(ADC, ::std::to_underlying(none)); }
+        ~adc_internal_channel() noexcept { ::LL_ADC_SetCommonPathInternalCh(ADC, ::SoC::to_underlying(none)); }
 
         inline adc_internal_channel(const adc_internal_channel&) noexcept = delete;
         inline adc_internal_channel& operator= (const adc_internal_channel&) noexcept = delete;
@@ -850,7 +850,7 @@ export namespace SoC
          *
          * @return adc外设枚举
          */
-        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::std::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
+        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
 
         /**
          * @brief 获取模拟看门狗监视的通道

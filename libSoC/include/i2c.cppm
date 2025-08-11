@@ -170,7 +170,7 @@ export namespace SoC
          *
          * @return i2c外设枚举
          */
-        inline i2c_enum get_i2c_enum() const noexcept { return ::std::bit_cast<i2c_enum>(i2c_ptr); }
+        inline i2c_enum get_i2c_enum() const noexcept { return ::SoC::bit_cast<i2c_enum>(i2c_ptr); }
 
         /**
          * @brief 使能i2c外设

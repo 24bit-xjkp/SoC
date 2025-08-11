@@ -416,6 +416,23 @@ export namespace SoC
 export namespace SoC
 {
     /**
+     * @brief 位转换，要求满足：
+     * - 目标类型和源类型大小相等，且
+     * - 目标类型和源类型均为平凡复制类型
+     * @tparam to_type 目标类型
+     * @tparam from_type 源类型
+     * @param value 源值
+     * @return 目标类型值
+     */
+    template <typename to_type, typename from_type>
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline to_type bit_cast(const from_type& value) noexcept
+        requires (::std::is_trivially_copyable_v<to_type> && ::std::is_trivially_copyable_v<from_type> &&
+                  sizeof(to_type) == sizeof(from_type))
+    {
+        return __builtin_bit_cast(to_type, value);
+    }
+
+    /**
      * @brief 将字节数组转化为target_type类型对象数组，配合#embed使用，要求满足：
      * - target_type可平凡复制，且
      * - 字节数组大小可以被对象大小整除
@@ -427,7 +444,7 @@ export namespace SoC
         requires (::std::is_trivially_copyable_v<target_type> && bytes % sizeof(target_type) == 0)
     constexpr inline auto array_cast(const ::std::uint8_t (&array)[bytes]) noexcept
     {
-        return ::std::bit_cast<::std::array<target_type, bytes / sizeof(target_type)>>(array);
+        return ::SoC::bit_cast<::std::array<target_type, bytes / sizeof(target_type)>>(array);
     }
 
     /**
@@ -454,6 +471,21 @@ export namespace SoC
                                    return result;
                                }()};
         return ::std::round(value * scaler) / scaler;
+    }
+
+    /**
+     * @brief 将枚举类型转换为其底层类型
+     *
+     * @tparam enum_type 枚举类型
+     * @param value 枚举值
+     * @return 枚举值的底层类型对应的值
+     */
+    template <typename enum_type>
+        requires ::std::is_enum_v<enum_type>
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::std::underlying_type_t<enum_type>
+        to_underlying(enum_type value) noexcept
+    {
+        return static_cast<::std::underlying_type_t<enum_type>>(value);
     }
 }  // namespace SoC
 

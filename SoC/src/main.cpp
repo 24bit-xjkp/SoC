@@ -130,7 +130,7 @@ namespace key_check_tim
                 {
                     if constexpr(::SoC::use_full_assert)
                     {
-                        ::SoC::println(::file.get(), "按键{}被按下"_fmt, ::std::countr_zero(::std::to_underlying(pin)) - 1);
+                        ::SoC::println(::file.get(), "按键{}被按下"_fmt, ::std::countr_zero(::SoC::to_underlying(pin)) - 1);
                     }
                     auto delta{pin == ::SoC::gpio_pin::p2 ? 0.1f : -0.1f};
                     ::pid_controller::pid->step(delta);

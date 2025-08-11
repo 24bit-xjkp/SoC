@@ -71,7 +71,7 @@ namespace SoC::detail
     export constexpr inline ::SoC::detail::exti_line operator| (::SoC::detail::exti_line lhs,
                                                                 ::SoC::detail::exti_line rhs) noexcept
     {
-        return ::SoC::detail::exti_line{::std::to_underlying(lhs) | ::std::to_underlying(rhs)};
+        return ::SoC::detail::exti_line{::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)};
     }
 
     /**
@@ -83,7 +83,7 @@ namespace SoC::detail
      */
     constexpr inline bool operator& (::SoC::detail::exti_line value, ::SoC::detail::exti_line mask) noexcept
     {
-        return ::std::to_underlying(value) & ::std::to_underlying(mask);
+        return ::SoC::to_underlying(value) & ::SoC::to_underlying(mask);
     }
 }  // namespace SoC::detail
 

@@ -14,7 +14,7 @@ namespace SoC
 
     void set_priority_group(::SoC::nvic_priority_group group) noexcept
     {
-        ::NVIC_SetPriorityGrouping(::std::to_underlying(group));
+        ::NVIC_SetPriorityGrouping(::SoC::to_underlying(group));
     }
 
     ::SoC::nvic_priority_group get_priority_group() noexcept
@@ -29,7 +29,7 @@ namespace SoC
      */
     auto get_priority_bit() noexcept
     {
-        auto preempt_bit{7zu - ::std::to_underlying(::SoC::get_priority_group())};
+        auto preempt_bit{7zu - ::SoC::to_underlying(::SoC::get_priority_group())};
         auto sub_bit{4 - preempt_bit};
         return ::std::pair{preempt_bit, sub_bit};
     }

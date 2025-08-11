@@ -25,7 +25,7 @@ namespace SoC
     {
         if constexpr(::SoC::use_full_assert)
         {
-            if(auto tim_enum{::std::bit_cast<::SoC::detail::tim>(tim_ptr)};
+            if(auto tim_enum{::SoC::bit_cast<::SoC::detail::tim>(tim_ptr)};
                tim_enum != ::SoC::tim::tim2 && tim_enum != ::SoC::tim::tim5)
             {
                 ::SoC::assert(::std::in_range<::std::uint16_t>(val), "此计数器为16位计数器."sv, location);
@@ -41,7 +41,7 @@ namespace SoC
      */
     inline ::SoC::detail::tim_channel get_max_channel(::TIM_TypeDef* tim_ptr) noexcept
     {
-        switch(::std::bit_cast<::SoC::detail::tim>(tim_ptr))
+        switch(::SoC::bit_cast<::SoC::detail::tim>(tim_ptr))
         {
             case ::SoC::tim::tim1:
             case ::SoC::tim::tim2:
@@ -57,7 +57,7 @@ namespace SoC
 
     constexpr inline ::std::strong_ordering operator<=> (::SoC::detail::tim_channel lhs, ::SoC::detail::tim_channel rhs) noexcept
     {
-        return ::std::to_underlying(lhs) <=> ::std::to_underlying(rhs);
+        return ::SoC::to_underlying(lhs) <=> ::SoC::to_underlying(rhs);
     }
 
     ::SoC::tim::tim(tim_enum tim,
@@ -65,7 +65,7 @@ namespace SoC
                     ::std::size_t auto_reload,
                     ::SoC::tim_mode mode,
                     ::SoC::tim_clock_div clock_div,
-                    ::std::uint16_t rep_cnt) noexcept : tim_ptr{::std::bit_cast<::TIM_TypeDef*>(tim)}
+                    ::std::uint16_t rep_cnt) noexcept : tim_ptr{::SoC::bit_cast<::TIM_TypeDef*>(tim)}
     {
         const auto check_rep_u8{[rep_cnt] noexcept -> void
                                 {
@@ -197,8 +197,8 @@ namespace SoC
                 break;
             default: ::std::unreachable();
         }
-        ::LL_TIM_SetCounterMode(tim_ptr, ::std::to_underlying(mode));
-        ::LL_TIM_SetClockDivision(tim_ptr, ::std::to_underlying(clock_div));
+        ::LL_TIM_SetCounterMode(tim_ptr, ::SoC::to_underlying(mode));
+        ::LL_TIM_SetClockDivision(tim_ptr, ::SoC::to_underlying(clock_div));
         set_auto_reload(auto_reload);
         ::LL_TIM_SetPrescaler(tim_ptr, prescaler);
         ::LL_TIM_SetRepetitionCounter(tim_ptr, rep_cnt);
@@ -281,7 +281,7 @@ namespace SoC
                 default: ::std::unreachable();
             }
         }
-        ::LL_TIM_SetTriggerOutput(tim_ptr, ::std::to_underlying(trigger));
+        ::LL_TIM_SetTriggerOutput(tim_ptr, ::SoC::to_underlying(trigger));
     }
 
     bool ::SoC::tim::is_advanced_tim() const noexcept
@@ -360,7 +360,7 @@ namespace SoC
             constexpr auto tim1_irqn_base{::IRQn_Type::TIM1_BRK_TIM9_IRQn};
             constexpr auto tim8_irqn_base{::IRQn_Type::TIM8_BRK_TIM12_IRQn};
             auto irqn_base{get_tim_enum() == tim1 ? tim1_irqn_base : tim8_irqn_base};
-            return static_cast<::IRQn_Type>(irqn_base + ::std::to_underlying(irq));
+            return static_cast<::IRQn_Type>(irqn_base + ::SoC::to_underlying(irq));
         }
         else
         {
@@ -462,10 +462,10 @@ namespace SoC
             ::SoC::assert(channel <= ::SoC::get_max_channel(tim_ptr), "此定时器不具有指定的通道"sv);
         }
 
-        ::LL_TIM_OC_SetMode(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(mode));
+        ::LL_TIM_OC_SetMode(tim_ptr, ::SoC::to_underlying(channel), ::SoC::to_underlying(mode));
         set_compare_value(compare_value);
 
-        ::LL_TIM_OC_SetPolarity(tim_ptr, ::std::to_underlying(channel), ::std::to_underlying(polarity));
+        ::LL_TIM_OC_SetPolarity(tim_ptr, ::SoC::to_underlying(channel), ::SoC::to_underlying(polarity));
         if(init_state) [[likely]] { enable(); }
     }
 
@@ -482,24 +482,24 @@ namespace SoC
 
     void ::SoC::tim_channel::enable() const noexcept
     {
-        ::LL_TIM_CC_EnableChannel(tim_ptr, ::std::to_underlying(channel));
-        if(has_compl_channel()) { ::LL_TIM_CC_EnableChannel(tim_ptr, ::std::to_underlying(compl_channel)); }
+        ::LL_TIM_CC_EnableChannel(tim_ptr, ::SoC::to_underlying(channel));
+        if(has_compl_channel()) { ::LL_TIM_CC_EnableChannel(tim_ptr, ::SoC::to_underlying(compl_channel)); }
     }
 
     void ::SoC::tim_channel::disable() const noexcept
     {
-        ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(channel));
-        if(has_compl_channel()) { ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(compl_channel)); }
+        ::LL_TIM_CC_DisableChannel(tim_ptr, ::SoC::to_underlying(channel));
+        if(has_compl_channel()) { ::LL_TIM_CC_DisableChannel(tim_ptr, ::SoC::to_underlying(compl_channel)); }
     }
 
     bool ::SoC::tim_channel::is_enabled() const noexcept
     {
-        return ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::std::to_underlying(channel));
+        return ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::SoC::to_underlying(channel));
     }
 
     bool ::SoC::tim_channel::is_compl_enabled() const noexcept
     {
-        return has_compl_channel() && ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::std::to_underlying(compl_channel));
+        return has_compl_channel() && ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::SoC::to_underlying(compl_channel));
     }
 
     void ::SoC::tim_channel::check_mode_oc(::std::source_location location) const noexcept
@@ -518,15 +518,15 @@ namespace SoC
             check_mode_oc();
             ::SoC::assert(channel != ::SoC::tim_channel::ch4, "定时器的通道4不具有互补通道"sv);
         }
-        compl_channel = static_cast<::SoC::detail::tim_channel>(::std::to_underlying(channel) << 2);
-        ::LL_TIM_OC_SetPolarity(tim_ptr, ::std::to_underlying(compl_channel), ::std::to_underlying(polarity));
+        compl_channel = static_cast<::SoC::detail::tim_channel>(::SoC::to_underlying(channel) << 2);
+        ::LL_TIM_OC_SetPolarity(tim_ptr, ::SoC::to_underlying(compl_channel), ::SoC::to_underlying(polarity));
     }
 
     void ::SoC::tim_channel::remove_compl_channel() noexcept
     {
         if(has_compl_channel()) [[likely]]
         {
-            ::LL_TIM_CC_DisableChannel(tim_ptr, ::std::to_underlying(compl_channel));
+            ::LL_TIM_CC_DisableChannel(tim_ptr, ::SoC::to_underlying(compl_channel));
             compl_channel = ::SoC::tim_channel::tim_channel_enum{};
         }
     }
@@ -534,13 +534,13 @@ namespace SoC
     void ::SoC::tim_channel::enable_oc_preload() const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_mode_oc(); }
-        ::LL_TIM_OC_EnablePreload(tim_ptr, ::std::to_underlying(channel));
+        ::LL_TIM_OC_EnablePreload(tim_ptr, ::SoC::to_underlying(channel));
     }
 
     void ::SoC::tim_channel::disable_oc_preload() const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_mode_oc(); }
-        ::LL_TIM_OC_DisablePreload(tim_ptr, ::std::to_underlying(channel));
+        ::LL_TIM_OC_DisablePreload(tim_ptr, ::SoC::to_underlying(channel));
     }
 
     void ::SoC::tim_channel::set_compare_value(::std::uint32_t compare_value, bool force_update) const noexcept
@@ -563,7 +563,7 @@ namespace SoC
 
     ::std::size_t(::SoC::tim_channel::get_it_flag_mask)() const noexcept
     {
-        auto shift{::std::countr_zero(::std::to_underlying(channel))};
+        auto shift{::std::countr_zero(::SoC::to_underlying(channel))};
         [[assume(shift <= 12)]];
         shift /= 3;
         return 1zu << shift;

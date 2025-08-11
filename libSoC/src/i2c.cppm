@@ -34,9 +34,9 @@ namespace SoC
             default: ::std::unreachable();
         }
         ::LL_APB1_GRP1_EnableClock(periph);
-        ::LL_I2C_ConfigSpeed(i2c_ptr, ::SoC::rcc::apb1_freq, clock_speed, ::std::to_underlying(duty));
-        ::LL_I2C_SetOwnAddress1(i2c_ptr, address, ::std::to_underlying(address_size));
-        ::LL_I2C_SetMode(i2c_ptr, ::std::to_underlying(mode));
+        ::LL_I2C_ConfigSpeed(i2c_ptr, ::SoC::rcc::apb1_freq, clock_speed, ::SoC::to_underlying(duty));
+        ::LL_I2C_SetOwnAddress1(i2c_ptr, address, ::SoC::to_underlying(address_size));
+        ::LL_I2C_SetMode(i2c_ptr, ::SoC::to_underlying(mode));
         enable();
         set_ack(ack);
     }
@@ -64,7 +64,7 @@ namespace SoC
 
     void ::SoC::i2c::set_ack(::SoC::i2c_type_ack ack) const noexcept
     {
-        ::LL_I2C_AcknowledgeNextData(i2c_ptr, ::std::to_underlying(ack));
+        ::LL_I2C_AcknowledgeNextData(i2c_ptr, ::SoC::to_underlying(ack));
     }
 
     bool ::SoC::i2c::get_flag_busy() const noexcept { return ::LL_I2C_IsActiveFlag_BUSY(i2c_ptr); }

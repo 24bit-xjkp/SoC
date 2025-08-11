@@ -13,7 +13,7 @@ namespace SoC
     using namespace ::std::string_view_literals;
 
     ::SoC::adc::adc(adc_enum adc, bool scan_mode, ::SoC::adc_resolution resolution, ::SoC::adc_data_alignment alignment) noexcept
-        : adc_ptr{::std::bit_cast<::ADC_TypeDef*>(adc)}
+        : adc_ptr{::SoC::bit_cast<::ADC_TypeDef*>(adc)}
     {
         ::SoC::assert(!is_enabled(), "初始化前此adc不应处于使能状态"sv);
         switch(adc)
@@ -52,13 +52,13 @@ namespace SoC
     void ::SoC::adc::set_resolution(::SoC::adc_resolution resolution) noexcept
     {
         this->resolution = resolution;
-        ::LL_ADC_SetResolution(adc_ptr, ::std::to_underlying(resolution));
+        ::LL_ADC_SetResolution(adc_ptr, ::SoC::to_underlying(resolution));
     }
 
     void ::SoC::adc::set_alignment(::SoC::adc_data_alignment alignment) noexcept
     {
         this->alignment = alignment;
-        ::LL_ADC_SetDataAlignment(adc_ptr, ::std::to_underlying(alignment));
+        ::LL_ADC_SetDataAlignment(adc_ptr, ::SoC::to_underlying(alignment));
     }
 
     void ::SoC::adc::set_scan_mode(bool scan_mode) noexcept
@@ -96,8 +96,8 @@ namespace SoC
 
         for(auto i{0zu}; auto&& [channel, sampling_time]: channel_list)
         {
-            ::LL_ADC_REG_SetSequencerRanks(adc_ptr, rank_table[i++], ::std::to_underlying(channel));
-            ::LL_ADC_SetChannelSamplingTime(adc_ptr, ::std::to_underlying(channel), ::std::to_underlying(sampling_time));
+            ::LL_ADC_REG_SetSequencerRanks(adc_ptr, rank_table[i++], ::SoC::to_underlying(channel));
+            ::LL_ADC_SetChannelSamplingTime(adc_ptr, ::SoC::to_underlying(channel), ::SoC::to_underlying(sampling_time));
         }
     }
 
@@ -121,7 +121,7 @@ namespace SoC
     void ::SoC::adc_regular_group::set_trigger_source(::SoC::adc_regular_trigger_source trigger_source) noexcept
     {
         this->trigger_source = trigger_source;
-        ::LL_ADC_REG_SetTriggerSource(adc_ptr, ::std::to_underlying(trigger_source));
+        ::LL_ADC_REG_SetTriggerSource(adc_ptr, ::SoC::to_underlying(trigger_source));
     }
 
     void ::SoC::adc_regular_group::set_continuous_mode(bool continuous_mode) const noexcept
@@ -155,7 +155,7 @@ namespace SoC
             }
             ::SoC::assert(need_ranks <= ranks, "不连续转化的通道数不能超过已经配置的通道数"sv);
         }
-        ::LL_ADC_REG_SetSequencerDiscont(adc_ptr, ::std::to_underlying(seq_discont));
+        ::LL_ADC_REG_SetSequencerDiscont(adc_ptr, ::SoC::to_underlying(seq_discont));
     }
 
     ::SoC::dma_stream(::SoC::adc_regular_group::enable_dma)(::SoC::dma& dma,
@@ -255,7 +255,7 @@ namespace SoC
         }
         if(trig_edge != ::SoC::adc_trig_edge::software)
         {
-            ::LL_ADC_REG_StartConversionExtTrig(adc_ptr, ::std::to_underlying(trig_edge));
+            ::LL_ADC_REG_StartConversionExtTrig(adc_ptr, ::SoC::to_underlying(trig_edge));
         }
         else
         {
@@ -277,12 +277,12 @@ namespace SoC
 
     void ::SoC::adc_regular_group::disable_dma() const noexcept
     {
-        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::std::to_underlying(::SoC::adc_regular_dma_mode::none));
+        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::SoC::to_underlying(::SoC::adc_regular_dma_mode::none));
     }
 
     void ::SoC::adc_regular_group::set_dma() const noexcept
     {
-        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::std::to_underlying(dma_mode));
+        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::SoC::to_underlying(dma_mode));
     }
 
     void ::SoC::adc_regular_group::reset_dma() const noexcept
@@ -434,7 +434,7 @@ namespace SoC
 
     void ::SoC::analog_watchdog::enable() const noexcept
     {
-        ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::std::to_underlying(awd_channel));
+        ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::SoC::to_underlying(awd_channel));
     }
 
     void ::SoC::analog_watchdog::disable() const noexcept { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, LL_ADC_AWD_DISABLE); }

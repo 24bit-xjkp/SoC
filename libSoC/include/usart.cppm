@@ -186,7 +186,7 @@ export namespace SoC
          *
          * @return usart外设枚举
          */
-        inline usart_enum get_usart_enum() const noexcept { return ::std::bit_cast<usart_enum>(usart_ptr); }
+        inline usart_enum get_usart_enum() const noexcept { return ::SoC::bit_cast<usart_enum>(usart_ptr); }
 
         /**
          * @brief 获取中断枚举

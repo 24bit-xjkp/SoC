@@ -21,7 +21,7 @@ namespace SoC
                         ::SoC::usart_direction direction,
                         ::SoC::usart_hardware_flow_control control,
                         ::SoC::usart_oversampling oversampling) noexcept :
-        usart_ptr{::std::bit_cast<::USART_TypeDef*>(usart)}, data_width{data_width}
+        usart_ptr{::SoC::bit_cast<::USART_TypeDef*>(usart)}, data_width{data_width}
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此串口不应处于使能状态"sv); }
         ::std::uint32_t clk{};
@@ -67,13 +67,13 @@ namespace SoC
         }
 
         ::LL_USART_ConfigCharacter(usart_ptr,
-                                   ::std::to_underlying(data_width),
-                                   ::std::to_underlying(parity),
-                                   ::std::to_underlying(stop_bit));
-        ::LL_USART_SetTransferDirection(usart_ptr, ::std::to_underlying(direction));
-        ::LL_USART_SetHWFlowCtrl(usart_ptr, ::std::to_underlying(control));
+                                   ::SoC::to_underlying(data_width),
+                                   ::SoC::to_underlying(parity),
+                                   ::SoC::to_underlying(stop_bit));
+        ::LL_USART_SetTransferDirection(usart_ptr, ::SoC::to_underlying(direction));
+        ::LL_USART_SetHWFlowCtrl(usart_ptr, ::SoC::to_underlying(control));
 
-        usart_ptr->BRR = static_cast<::std::uint16_t>(clk / (baud_rate << ::std::to_underlying(oversampling) >> 4));
+        usart_ptr->BRR = static_cast<::std::uint16_t>(clk / (baud_rate << ::SoC::to_underlying(oversampling) >> 4));
 
         switch(mode)
         {
@@ -139,7 +139,7 @@ namespace SoC
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(data_width == ::SoC::usart_data_width::bit9 &&
-                              ::LL_USART_GetParity(usart_ptr) == ::std::to_underlying(::SoC::usart_parity::none),
+                              ::LL_USART_GetParity(usart_ptr) == ::SoC::to_underlying(::SoC::usart_parity::none),
                           "只有数据宽度为8位且未启用校验时支持9位输出"sv);
         }
 #pragma GCC unroll 0
