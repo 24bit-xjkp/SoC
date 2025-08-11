@@ -1,5 +1,5 @@
 target("SoC.freestanding")
-    set_kind("static")
+    set_kind("object")
     add_deps("SoC.std")
     add_files("*.cppm", {public = true})
     add_files("*.cpp")

@@ -1,5 +1,5 @@
 target("SoC.std")
-    set_kind("static")
+    set_kind("object")
     if string.find(get_config("toolchain") or "", "gcc") then
         add_files("gcc.cppm", { public = true })
     else

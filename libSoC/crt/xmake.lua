@@ -1,5 +1,5 @@
 target("SoC.crt")
-    set_kind("static")
+    set_kind("object")
     add_files("*.cppm", {public = true})
     add_files("*.cpp")
 
