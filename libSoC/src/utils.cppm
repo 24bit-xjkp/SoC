@@ -1,6 +1,7 @@
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:utils_impl;
+import :utils;
 
 namespace SoC
 {

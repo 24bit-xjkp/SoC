@@ -6,7 +6,9 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:adc_impl;
+import :adc;
+import :nvic;
 
 namespace SoC
 {

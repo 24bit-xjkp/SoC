@@ -6,7 +6,9 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:exti_impl;
+import :exti;
+import :nvic;
 
 namespace SoC
 {

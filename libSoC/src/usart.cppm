@@ -6,7 +6,10 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:usart_impl;
+import :usart;
+import :init;
+import :nvic;
 
 namespace SoC
 {

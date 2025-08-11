@@ -6,7 +6,8 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:init_impl;
+import :init;
 
 namespace SoC
 {

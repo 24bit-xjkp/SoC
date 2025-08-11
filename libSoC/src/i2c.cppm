@@ -6,7 +6,9 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:i2c_impl;
+import :i2c;
+import :init;
 
 namespace SoC
 {

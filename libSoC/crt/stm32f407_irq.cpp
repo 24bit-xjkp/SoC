@@ -1,10 +1,11 @@
 /**
- * @file stm32f407_startup.cpp
+ * @file stm32f407_irq.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief STM32F407启动代码和中断向量表
  */
 
-module SoC.crt;
+module SoC.crt:stm32f407_irq_impl;
+import :common;
 
 namespace SoC
 {

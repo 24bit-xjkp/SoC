@@ -6,7 +6,8 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:gpio_impl;
+import :gpio;
 
 namespace SoC
 {

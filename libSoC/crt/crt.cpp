@@ -4,7 +4,8 @@
  * @brief crt实现
  */
 
-module SoC.crt;
+module SoC.crt:crt_impl;
+import :common;
 
 namespace SoC
 {

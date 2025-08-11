@@ -4,7 +4,8 @@
  * @brief stm32 oled外设
  */
 
-module SoC;
+module SoC:oled_impl;
+import :oled;
 
 namespace SoC
 {

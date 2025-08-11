@@ -6,7 +6,9 @@
 
 module;
 #include <pch.hpp>
-module SoC;
+module SoC:tim_impl;
+import :tim;
+import :nvic;
 
 namespace SoC
 {

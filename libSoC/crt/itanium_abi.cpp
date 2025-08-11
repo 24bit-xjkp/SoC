@@ -4,7 +4,8 @@
  * @brief itanium abi实现
  */
 
-module SoC.crt;
+module SoC.crt:itanium_abi_impl;
+import :common;
 
 extern "C"
 {

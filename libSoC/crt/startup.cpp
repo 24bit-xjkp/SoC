@@ -4,7 +4,8 @@
  * @brief 平台无关的启动模块
  */
 
-module SoC.crt;
+module SoC.crt:startup_impl;
+import :common;
 
 namespace SoC
 {
