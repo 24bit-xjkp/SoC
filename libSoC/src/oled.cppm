@@ -5,7 +5,6 @@
  */
 
 module SoC;
-import :oled;
 
 namespace SoC
 {

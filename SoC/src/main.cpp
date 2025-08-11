@@ -20,7 +20,7 @@ namespace pid_controller
     inline float duty;
     inline float i_sample_value{};
     inline float i_sample_sum{};
-    inline ::std::size_t i_sample_cnt{};
+    inline ::std::uint32_t i_sample_cnt{};
     constexpr inline auto float_atomic_exchange_flag{::std::numeric_limits<float>::quiet_NaN()};
 
     void calculate_i_sample_value(float i) noexcept
@@ -251,7 +251,7 @@ int main()
     ::shutdown_awd::awd_sample = awd_sample;
     adc2.enable();
     awd_sample.enable(::SoC::adc_trig_edge::software);
-    ::SoC::analog_watchdog awd{adc2, ::SoC::analog_watchdog::ch11_reg, 0, static_cast<::std::size_t>(2.13f / coefficient)};
+    ::SoC::analog_watchdog awd{adc2, ::SoC::analog_watchdog::ch11_reg, 0, static_cast<::std::uint32_t>(2.13f / coefficient)};
     ::shutdown_awd::awd = awd;
     awd.enable_irq(0);
     awd.set_it_awd(true);

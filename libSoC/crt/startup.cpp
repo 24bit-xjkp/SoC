@@ -5,7 +5,6 @@
  */
 
 module SoC.crt;
-import :common;
 
 namespace SoC
 {

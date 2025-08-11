@@ -8,6 +8,7 @@ export module SoC;
 export import SoC.crt;
 export import :adc;
 export import :dma;
+export import :exti;
 export import :gpio;
 export import :i2c;
 export import :init;

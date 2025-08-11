@@ -7,8 +7,6 @@
 module;
 #include <pch.hpp>
 module SoC;
-import :usart;
-import :nvic;
 
 namespace SoC
 {
