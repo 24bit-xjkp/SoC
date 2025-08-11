@@ -28,7 +28,8 @@ namespace SoC
 
     extern "C"
     {
-        extern ::SoC::cursor_t<::std::size_t> _estack;
+        // 定义为函数形式以便放入constexpr的isr_table中
+        void _estack() noexcept;
         void SystemInit();
         [[gnu::naked, noreturn]] void Reset_Handler() noexcept;
     }
