@@ -14,17 +14,28 @@ namespace SoC
 {
     using namespace ::std::string_view_literals;
 
+    /**
+     * @brief 将adc枚举转换为apb2 grp1外设时钟使能位
+     *
+     * @param adc adc枚举
+     * @return apb2 grp1外设时钟使能位
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
+        adc_enum2grp1_periph(::SoC::detail::adc adc) noexcept
+    {
+        auto shift{(::SoC::to_underlying(adc) - ::SoC::to_underlying(::SoC::detail::adc::adc1)) >> 8};
+        return 1zu << (shift + 8);
+    }
+
+    static_assert(adc_enum2grp1_periph(::SoC::adc::adc1) == LL_APB2_GRP1_PERIPH_ADC1);
+    static_assert(adc_enum2grp1_periph(::SoC::adc::adc2) == LL_APB2_GRP1_PERIPH_ADC2);
+    static_assert(adc_enum2grp1_periph(::SoC::adc::adc3) == LL_APB2_GRP1_PERIPH_ADC3);
+
     ::SoC::adc::adc(adc_enum adc, bool scan_mode, ::SoC::adc_resolution resolution, ::SoC::adc_data_alignment alignment) noexcept
         : adc_ptr{::SoC::bit_cast<::ADC_TypeDef*>(adc)}
     {
         ::SoC::assert(!is_enabled(), "初始化前此adc不应处于使能状态"sv);
-        switch(adc)
-        {
-            case adc1: ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC1); break;
-            case adc2: ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC2); break;
-            case adc3: ::LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC3); break;
-            default: ::std::unreachable();
-        }
+        ::LL_APB2_GRP1_EnableClock(::SoC::adc_enum2grp1_periph(adc));
         set_scan_mode(scan_mode);
         set_resolution(resolution);
         set_alignment(alignment);
@@ -35,13 +46,7 @@ namespace SoC
         if(adc_ptr != nullptr)
         {
             disable();
-            switch(get_adc_enum())
-            {
-                case adc1: ::LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC1); break;
-                case adc2: ::LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC2); break;
-                case adc3: ::LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_ADC3); break;
-                default: ::std::unreachable();
-            }
+            ::LL_APB2_GRP1_DisableClock(::SoC::adc_enum2grp1_periph(get_adc_enum()));
         }
     }
 
@@ -137,24 +142,37 @@ namespace SoC
         reset_dma();
     }
 
+    /**
+     * @brief 计算不连续转换需要的通道数
+     *
+     * @param seq_discont 不连续转换模式
+     * @return 不连续转换需要的通道数
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::std::size_t
+        seq_discont2need_ranks(::SoC::adc_regular_seq_discont seq_discont) noexcept
+    {
+        if(seq_discont == ::SoC::adc_regular_seq_discont::disable) [[likely]] { return 0; }
+        else
+        {
+            return (::SoC::to_underlying(seq_discont) >> 13) + 1;
+        }
+    }
+
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::disable) == 0);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank1) == 1);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank2) == 2);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank3) == 3);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank4) == 4);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank5) == 5);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank6) == 6);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank7) == 7);
+    static_assert(::SoC::seq_discont2need_ranks(::SoC::adc_regular_seq_discont::rank8) == 8);
+
     void ::SoC::adc_regular_group::set_seq_discont(::SoC::adc_regular_seq_discont seq_discont) const noexcept
     {
         if constexpr(::SoC::use_full_assert)
         {
-            auto need_ranks{0zu};
-            using enum ::SoC::adc_regular_seq_discont;
-            switch(seq_discont)
-            {
-                case disable: need_ranks = 0; break;
-                case rank1: need_ranks = 1; break;
-                case rank2: need_ranks = 2; break;
-                case rank3: need_ranks = 3; break;
-                case rank4: need_ranks = 4; break;
-                case rank5: need_ranks = 5; break;
-                case rank6: need_ranks = 6; break;
-                case rank7: need_ranks = 7; break;
-                case rank8: need_ranks = 8; break;
-            }
+            auto need_ranks{::SoC::seq_discont2need_ranks(seq_discont)};
             ::SoC::assert(need_ranks <= ranks, "不连续转化的通道数不能超过已经配置的通道数"sv);
         }
         ::LL_ADC_REG_SetSequencerDiscont(adc_ptr, ::SoC::to_underlying(seq_discont));
