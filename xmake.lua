@@ -4,6 +4,8 @@ set_xmakever("2.9.0")
 set_policy("check.auto_ignore_flags", false)
 set_policy("build.c++.modules.std", false)
 set_policy("build.c++.modules.reuse.nocheck", true)
+-- 在当前并行度和依赖复杂度下，一阶段编译模型速度更快
+set_policy("build.c++.modules.two_phases", false)
 set_encodings("utf-8")
 add_moduledirs("script/toolchains/xmake")
 includes("script/toolchains/xmake/*.lua")
