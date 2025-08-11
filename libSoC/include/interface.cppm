@@ -14,7 +14,6 @@ export import :i2c;
 export import :init;
 export import :nvic;
 export import :oled;
-export import :syscfg;
 export import :tim;
 export import :usart;
 export import :utils;

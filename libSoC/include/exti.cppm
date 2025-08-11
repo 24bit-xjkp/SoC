@@ -1,13 +1,12 @@
 /**
- * @file dma.cppm
+ * @file exti.cppm
  * @author 24bit-xjkp (2283572185@qq.com)
- * @brief stm32 dma外设
+ * @brief stm32 exti外设
  */
 
 module;
 #include <pch.hpp>
 export module SoC:exti;
-import :syscfg;
 import :gpio;
 
 namespace SoC::detail
@@ -90,6 +89,56 @@ namespace SoC::detail
 
 export namespace SoC
 {
+    /**
+     * @brief 系统配置控制
+     *
+     */
+    struct syscfg
+    {
+    private:
+        /// 析构时是否需要关闭时钟
+        bool need_stop_clock{true};
+        /// 外设时钟号
+        constexpr inline static auto periph{LL_APB2_GRP1_PERIPH_SYSCFG};
+
+    public:
+        /**
+         * @brief 开启系统配置控制器时钟
+         *
+         */
+        explicit syscfg() noexcept;
+
+        /**
+         * @brief 关闭系统配置控制器时钟
+         *
+         */
+        ~syscfg() noexcept;
+
+        inline syscfg(const syscfg&) noexcept = delete;
+        inline syscfg& operator= (const syscfg&) = delete;
+        syscfg(syscfg&&) noexcept;
+        inline syscfg& operator= (syscfg&&) = delete;
+
+        /**
+         * @brief 使能系统控制器时钟
+         *
+         */
+        void enable() const noexcept;
+
+        /**
+         * @brief 失能系统控制器时钟
+         *
+         */
+        void disable() const noexcept;
+
+        /**
+         * @brief 判断系统控制器时钟是否使能
+         *
+         * @return 系统控制器时钟是否使能
+         */
+        bool is_enabled() const noexcept;
+    };
+
     /**
      * @brief 外部线中断触发源
      *
