@@ -15,7 +15,7 @@ namespace SoC::detail
      * @brief adc外设枚举
      *
      */
-    enum class adc : ::std::size_t
+    enum class adc : ::std::uintptr_t
     {
         adc1 = ADC1_BASE,
         adc2 = ADC2_BASE,

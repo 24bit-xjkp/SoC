@@ -15,7 +15,7 @@ namespace SoC::detail
      * @brief i2c外设枚举
      *
      */
-    enum class i2c : ::std::size_t
+    enum class i2c : ::std::uintptr_t
     {
         i2c1 = I2C1_BASE,
         i2c2 = I2C2_BASE,
