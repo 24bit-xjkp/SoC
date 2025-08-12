@@ -5,9 +5,9 @@
  */
 
 export module SoC.freestanding:io;
-import SoC.std;
 import :allocator;
 import :fmt;
+import :utils;
 
 /**
  * @brief 基本概念和函数定义

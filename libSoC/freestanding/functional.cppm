@@ -5,8 +5,8 @@
  */
 
 export module SoC.freestanding:functional;
-import SoC.std;
 import :heap;
+import :utils;
 
 namespace SoC::detail
 {

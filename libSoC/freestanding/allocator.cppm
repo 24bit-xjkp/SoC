@@ -8,7 +8,6 @@ module;
 #include <version>
 export module SoC.freestanding:allocator;
 import SoC.std;
-export import :utils;
 
 namespace SoC::detail
 {

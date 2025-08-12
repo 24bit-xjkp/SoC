@@ -5,8 +5,7 @@
  */
 
 export module SoC.freestanding:heap;
-import SoC.std;
-export import :allocator;
+import :allocator;
 
 export namespace SoC
 {

@@ -6,6 +6,7 @@
 
 module SoC.freestanding;
 import :heap;
+import :utils;
 
 namespace SoC
 {
