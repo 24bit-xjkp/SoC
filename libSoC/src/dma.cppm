@@ -14,15 +14,22 @@ namespace SoC
 {
     using namespace ::std::string_view_literals;
 
-    ::std::size_t(::SoC::dma::get_periph)() const noexcept
+    /**
+     * @brief 将dma枚举转换为ahb1 grp1外设时钟使能位
+     *
+     * @param dma_enum dma枚举
+     * @return ahb1 grp1外设时钟使能位
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::std::size_t
+        dma_enum2grp1_periph(::SoC::dma::dma_enum dma_enum) noexcept
     {
-        switch(get_dma_enum())
-        {
-            case dma1: return LL_AHB1_GRP1_PERIPH_DMA1;
-            case dma2: return LL_AHB1_GRP1_PERIPH_DMA2;
-            default: ::std::unreachable();
-        }
+        auto value{::SoC::to_underlying(dma_enum)};
+        constexpr auto base{::SoC::to_underlying(::SoC::dma::dma_enum::dma1) - (1zu << 10)};
+        return (value - base) << 11;
     }
+
+    static_assert(dma_enum2grp1_periph(::SoC::dma::dma_enum::dma1) == LL_AHB1_GRP1_PERIPH_DMA1);
+    static_assert(dma_enum2grp1_periph(::SoC::dma::dma_enum::dma2) == LL_AHB1_GRP1_PERIPH_DMA2);
 
     ::SoC::dma::dma(dma_enum dma) noexcept : dma_ptr{::SoC::bit_cast<::DMA_TypeDef*>(dma)}
     {
@@ -37,11 +44,14 @@ namespace SoC
 
     ::SoC::dma::dma(dma&& other) noexcept : dma_ptr{::std::exchange(other.dma_ptr, nullptr)} {}
 
-    void ::SoC::dma::enable() const noexcept { ::LL_AHB1_GRP1_EnableClock(get_periph()); }
+    void ::SoC::dma::enable() const noexcept { ::LL_AHB1_GRP1_EnableClock(::SoC::dma_enum2grp1_periph(get_dma_enum())); }
 
-    void ::SoC::dma::disable() const noexcept { ::LL_AHB1_GRP1_DisableClock(get_periph()); }
+    void ::SoC::dma::disable() const noexcept { ::LL_AHB1_GRP1_DisableClock(::SoC::dma_enum2grp1_periph(get_dma_enum())); }
 
-    bool ::SoC::dma::is_enabled() const noexcept { return ::LL_AHB1_GRP1_IsEnabledClock(get_periph()); }
+    bool ::SoC::dma::is_enabled() const noexcept
+    {
+        return ::LL_AHB1_GRP1_IsEnabledClock(::SoC::dma_enum2grp1_periph(get_dma_enum()));
+    }
 }  // namespace SoC
 
 namespace SoC
@@ -320,32 +330,57 @@ namespace SoC
         }
     }
 
+    /**
+     * @brief 将dma和数据流枚举转换为中断号
+     *
+     * @param dma dma外设枚举
+     * @param stream dma数据流枚举
+     * @return 中断号
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::IRQn_Type
+        dma_stream2irqn(::SoC::dma::dma_enum dma, ::SoC::dma_stream::dma_stream_enum stream) noexcept
+    {
+        switch(dma)
+        {
+            case ::SoC::dma::dma1:
+                return stream == ::SoC::dma_stream::st7
+                           ? ::DMA1_Stream7_IRQn
+                           : static_cast<::IRQn_Type>(::DMA1_Stream0_IRQn + ::SoC::to_underlying(stream));
+            case ::SoC::dma::dma2:
+            {
+                constexpr ::std::size_t base_lt{::DMA2_Stream0_IRQn};
+                constexpr ::std::size_t base_ge{::DMA2_Stream5_IRQn - 5};
+                ::std::size_t base{stream < ::SoC::dma_stream::st5 ? base_lt : base_ge};
+                return static_cast<::IRQn_Type>(base + ::SoC::to_underlying(stream));
+            }
+            default: ::std::unreachable();
+        }
+    }
+
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st0) == ::DMA1_Stream0_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st1) == ::DMA1_Stream1_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st2) == ::DMA1_Stream2_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st3) == ::DMA1_Stream3_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st4) == ::DMA1_Stream4_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st5) == ::DMA1_Stream5_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st6) == ::DMA1_Stream6_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma1, ::SoC::dma_stream::st7) == ::DMA1_Stream7_IRQn);
+
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st0) == ::DMA2_Stream0_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st1) == ::DMA2_Stream1_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st2) == ::DMA2_Stream2_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st3) == ::DMA2_Stream3_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st4) == ::DMA2_Stream4_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st5) == ::DMA2_Stream5_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st6) == ::DMA2_Stream6_IRQn);
+    static_assert(::SoC::dma_stream2irqn(::SoC::dma::dma2, ::SoC::dma_stream::st7) == ::DMA2_Stream7_IRQn);
+
     ::IRQn_Type(::SoC::dma_stream::get_irqn)() noexcept
     {
         if(irqn != 0) [[likely]] { return irqn; }
         else
         {
-            // 由于irqn计算较为复杂，因此采用惰性计算
-            using enum ::SoC::dma::dma_enum;
-            switch(::SoC::bit_cast<::SoC::dma::dma_enum>(dma_ptr))
-            {
-                case dma1:
-                    irqn = stream == st7 ? ::DMA1_Stream7_IRQn
-                                         : static_cast<::IRQn_Type>(::DMA1_Stream0_IRQn + ::SoC::to_underlying(stream));
-                    break;
-                case dma2:
-                    switch(stream)
-                    {
-                        case st0:
-                        case st1:
-                        case st2:
-                        case st3:
-                        case st4: irqn = static_cast<::IRQn_Type>(::DMA2_Stream0_IRQn + ::SoC::to_underlying(stream)); break;
-                        default: irqn = static_cast<::IRQn_Type>(::DMA2_Stream5_IRQn - 5 + ::SoC::to_underlying(stream)); break;
-                    }
-                    break;
-                default: ::std::unreachable();
-            }
+            irqn = ::SoC::dma_stream2irqn(::SoC::bit_cast<::SoC::dma::dma_enum>(dma_ptr), stream);
             return irqn;
         }
     }

@@ -50,13 +50,6 @@ export namespace SoC
     private:
         ::DMA_TypeDef* dma_ptr;
 
-        /**
-         * @brief 获取dma在AHB1上的外设号
-         *
-         * @return 外设号
-         */
-        ::std::size_t get_periph() const noexcept;
-
     public:
         using dma_enum = ::SoC::detail::dma;
         using enum dma_enum;
@@ -76,6 +69,11 @@ export namespace SoC
 
         inline dma(const dma&) noexcept = delete;
         inline dma& operator= (const dma&) noexcept = delete;
+        /**
+         * @brief 移动构造函数
+         *
+         * @param other 其他dma外设
+         */
         dma(dma&& other) noexcept;
         inline dma& operator= (dma&&) noexcept = delete;
 
