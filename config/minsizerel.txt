@@ -7,7 +7,7 @@
     enable_lto = true,
     host = "linux",
     kind = "static",
-    march = "armv7-m",
+    march = "armv7e-m",
     mode = "minsizerel",
     ndk_stdcxx = true,
     plat = "cross",

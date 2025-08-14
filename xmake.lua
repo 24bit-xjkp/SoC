@@ -15,7 +15,7 @@ set_languages("clatest", "cxxlatest")
 set_exceptions("no-cxx")
 set_allowedmodes(support_rules_table)
 set_defaultmode("debug")
-set_config("march", "armv7-m")
+set_config("march", "armv7e-m")
 set_config("debug_info", "minsizerel")
 local build_mode = get_config("mode")
 if build_mode then
