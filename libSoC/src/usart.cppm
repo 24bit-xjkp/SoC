@@ -248,9 +248,30 @@ namespace SoC
 
     void ::SoC::usart::clear_flag_idle() const noexcept { ::LL_USART_ClearFlag_IDLE(usart_ptr); }
 
+    bool ::SoC::usart::get_flag_tc() const noexcept { return ::LL_USART_IsActiveFlag_TC(usart_ptr); }
+
+    void ::SoC::usart::clear_flag_tc() const noexcept { ::LL_USART_ClearFlag_TC(usart_ptr); }
+
+    void ::SoC::usart::set_it_tc(bool enable) const noexcept
+    {
+        if(enable) { ::LL_USART_EnableIT_TC(usart_ptr); }
+        else
+        {
+            ::LL_USART_DisableIT_TC(usart_ptr);
+        }
+    }
+
+    bool ::SoC::usart::get_it_tc() const noexcept { return ::LL_USART_IsEnabledIT_TC(usart_ptr); }
+
+    bool ::SoC::usart::is_it_tc() const noexcept { return get_flag_tc() && get_it_tc(); }
+
     void ::SoC::usart::enable() const noexcept { ::LL_USART_Enable(usart_ptr); }
 
-    void ::SoC::usart::disable() const noexcept { ::LL_USART_Disable(usart_ptr); }
+    void ::SoC::usart::disable() const noexcept
+    {
+        ::SoC::wait_until(&::SoC::usart::get_flag_tc, this);
+        ::LL_USART_Disable(usart_ptr);
+    }
 
     bool ::SoC::usart::is_enabled() const noexcept { return ::LL_USART_IsEnabled(usart_ptr); }
 

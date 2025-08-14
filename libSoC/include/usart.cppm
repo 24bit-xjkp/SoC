@@ -378,6 +378,40 @@ export namespace SoC
         void clear_flag_idle() const noexcept;
 
         /**
+         * @brief 获取发送完成标记
+         *
+         * @return 发送完成标记状态
+         */
+        bool get_flag_tc() const noexcept;
+
+        /**
+         * @brief 清除发送完成标记
+         *
+         */
+        void clear_flag_tc() const noexcept;
+
+        /**
+         * @brief 设置发送完成中断状态
+         *
+         * @param enable 中断是否使能
+         */
+        void set_it_tc(bool enable) const noexcept;
+
+        /**
+         * @brief 获取发送完成中断状态
+         *
+         * @return 中断是否使能
+         */
+        bool get_it_tc() const noexcept;
+
+        /**
+         * @brief 判断发生的串口中断是否为发送完成中断
+         *
+         * @return 发生的串口中断是否为发送完成中断
+         */
+        bool is_it_tc() const noexcept;
+
+        /**
          * @brief 使能usart外设
          *
          */
