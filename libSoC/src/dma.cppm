@@ -218,9 +218,8 @@ namespace SoC
 
     bool ::SoC::dma_stream::check_aligned(::std::uintptr_t num) const noexcept
     {
-        auto data_align{::std::countr_zero(get_memory_data_size_num())};
-        auto buffer_align{::std::countr_zero(num)};
-        return buffer_align >= data_align;
+        auto mask{get_memory_data_size_num() - 1};
+        return (num & mask) == 0;
     }
 
     void ::SoC::dma_stream::set_memory_address(const void* begin) const noexcept
