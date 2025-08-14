@@ -48,6 +48,133 @@ namespace SoC
         return ::SoC::to_underlying(value) & ::SoC::to_underlying(mask);
     }
 
+    /// 外部线中断触发源枚举到中断号枚举的映射表
+    constexpr inline ::IRQn_Type irqn_table_0_15[]{::IRQn_Type::EXTI0_IRQn,
+                                                   ::IRQn_Type::EXTI1_IRQn,
+                                                   ::IRQn_Type::EXTI2_IRQn,
+                                                   ::IRQn_Type::EXTI3_IRQn,
+                                                   ::IRQn_Type::EXTI4_IRQn,
+                                                   ::IRQn_Type::EXTI9_5_IRQn,
+                                                   ::IRQn_Type::EXTI9_5_IRQn,
+                                                   ::IRQn_Type::EXTI9_5_IRQn,
+                                                   ::IRQn_Type::EXTI9_5_IRQn,
+                                                   ::IRQn_Type::EXTI9_5_IRQn,
+                                                   ::IRQn_Type::EXTI15_10_IRQn,
+                                                   ::IRQn_Type::EXTI15_10_IRQn,
+                                                   ::IRQn_Type::EXTI15_10_IRQn,
+                                                   ::IRQn_Type::EXTI15_10_IRQn,
+                                                   ::IRQn_Type::EXTI15_10_IRQn,
+                                                   ::IRQn_Type::EXTI15_10_IRQn};
+
+    /**
+     * @brief 外部线中断触发源枚举到中断号枚举的映射
+     *
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::IRQn_Type
+        exti_line_enum2irqn(::SoC::exti_line::exti_line_enum line) noexcept
+    {
+        auto index{::std::countr_zero(::SoC::to_underlying(line))};
+        if(index > 15) { return ::IRQn_Type{}; }
+        else
+        {
+            return ::SoC::irqn_table_0_15[index];
+        }
+    }
+
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line0) == ::IRQn_Type::EXTI0_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line1) == ::IRQn_Type::EXTI1_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line2) == ::IRQn_Type::EXTI2_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line3) == ::IRQn_Type::EXTI3_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line4) == ::IRQn_Type::EXTI4_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line5) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line6) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line7) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line8) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line9) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line10) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line11) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line12) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line13) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line14) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line15) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line16) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line17) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line18) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line19) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line20) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line21) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum2irqn(::SoC::exti_line::exti_line_enum::line22) == ::IRQn_Type{});
+
+    /**
+     * @brief 检查外部线中断触发源枚举是否有效
+     *
+     * @note 若该函数和SoC::exti_line_enum2irqn的返回值不同且该函数返回值不为空，则枚举值非法
+     * @param line 外部线中断触发源枚举
+     * @return 最高位中断线对应的枚举
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::IRQn_Type
+        exti_line_enum_check(::SoC::exti_line::exti_line_enum line) noexcept
+    {
+        auto index{31 - ::std::countl_zero(::SoC::to_underlying(line))};
+        if(index > 15) { return ::IRQn_Type{}; }
+        else
+        {
+            return ::SoC::irqn_table_0_15[index];
+        }
+    }
+
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line0) == ::IRQn_Type::EXTI0_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line1) == ::IRQn_Type::EXTI1_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line2) == ::IRQn_Type::EXTI2_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line3) == ::IRQn_Type::EXTI3_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line4) == ::IRQn_Type::EXTI4_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line5) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line6) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line7) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line8) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line9) == ::IRQn_Type::EXTI9_5_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line10) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line11) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line12) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line13) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line14) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line15) == ::IRQn_Type::EXTI15_10_IRQn);
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line16) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line17) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line18) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line19) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line20) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line21) == ::IRQn_Type{});
+    static_assert(::SoC::exti_line_enum_check(::SoC::exti_line::exti_line_enum::line22) == ::IRQn_Type{});
+
+    namespace
+    {
+        /**
+         * @brief 外部线中断枚举单元测试
+         *
+         * @param line 外部线中断触发源枚举
+         * @return 外部线中断触发源枚举是否有效
+         */
+        consteval inline auto exti_line_enum_unit_test(::SoC::exti_line::exti_line_enum line) noexcept
+        {
+            auto irqn{::SoC::exti_line_enum2irqn(line)};
+            auto check{::SoC::exti_line_enum_check(line)};
+            return check == irqn || check == ::IRQn_Type{};
+        }
+
+        using enum ::SoC::exti_line::exti_line_enum;
+        static_assert(!::SoC::exti_line_enum_unit_test(line0 | line1));
+        static_assert(!::SoC::exti_line_enum_unit_test(line0 | line5));
+        static_assert(!::SoC::exti_line_enum_unit_test(line0 | line10));
+        static_assert(!::SoC::exti_line_enum_unit_test(line5 | line10));
+        static_assert(::SoC::exti_line_enum_unit_test(line5 | line6));
+        static_assert(::SoC::exti_line_enum_unit_test(line15 | line10));
+        static_assert(::SoC::exti_line_enum_unit_test(line0 | line16));
+        static_assert(::SoC::exti_line_enum_unit_test(line5 | line16));
+        static_assert(::SoC::exti_line_enum_unit_test(line10 | line16));
+        static_assert(::SoC::exti_line_enum_unit_test(line22 | line16));
+    }  // namespace
+
     ::SoC::exti_line::exti_line(::SoC::syscfg& syscfg,
                                 ::SoC::gpio_port::port_enum gpio_port,
                                 exti_line_enum line,
@@ -58,16 +185,11 @@ namespace SoC
 
         ::LL_SYSCFG_SetEXTISource(::SoC::to_underlying(gpio_port), ::SoC::to_underlying(line));
         set_trigger_source(trigger_source);
-        if(line & line0) { irqn = ::IRQn_Type::EXTI0_IRQn; }
-        else if(line & line1) { irqn = ::IRQn_Type::EXTI1_IRQn; }
-        else if(line & line2) { irqn = ::IRQn_Type::EXTI2_IRQn; }
-        else if(line & line3) { irqn = ::IRQn_Type::EXTI3_IRQn; }
-        else if(line & line4) { irqn = ::IRQn_Type::EXTI4_IRQn; }
-        else if(line & line5_9) { irqn = ::IRQn_Type::EXTI9_5_IRQn; }
-        else if(line & line10_15) { irqn = ::IRQn_Type::EXTI15_10_IRQn; }
-        else
+        irqn = ::SoC::exti_line_enum2irqn(line);
+        if constexpr(::SoC::use_full_assert)
         {
-            ::std::unreachable();
+            auto check{::SoC::exti_line_enum_check(line)};
+            ::SoC::assert(check == irqn || check == ::IRQn_Type{}, "一个外部中断线对象只能对应一个中断向量"sv);
         }
     }
 
