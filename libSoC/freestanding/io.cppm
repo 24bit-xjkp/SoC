@@ -16,7 +16,17 @@ import :utils;
 export namespace SoC
 {
     /**
+     * @brief 禁止某种类型的输出设备
+     *
+     * @tparam device_t 设备类型
+     */
+    template <typename device_t>
+    constexpr inline bool forbidden_output_device{false};
+
+    /**
      * @brief 判断device_t是否是type类型的输出设备，要求满足：
+     * - !forbidden_output_device<device_t>，即输出设备类型未被禁用，且
+     * - ::SoC::detail::is_io_target_type<type>，且
      * - auto device_t::write(const type*, const type*) noexcept，或
      * - auto write(device_t&, const type*, const type*) noexcept，考虑adl
      * @tparam device_t 设备类型
@@ -24,7 +34,7 @@ export namespace SoC
      */
     template <typename device_t, typename type>
     concept is_output_device =
-        ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, const type* begin, const type* end) {
+        !::SoC::forbidden_output_device<device_t> && ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, const type* begin, const type* end) {
             { dev.write(begin, end) } noexcept;
         } || requires(device_t& dev, const type* begin, const type* end) {
             { write(dev, begin, end) } noexcept;
@@ -40,7 +50,63 @@ export namespace SoC
     concept is_general_output_device = ::SoC::is_output_device<device_t, char> || ::SoC::is_output_device<device_t, ::std::byte>;
 
     /**
+     * @brief 判断device_t是否是异步输出设备，要求满足：
+     * - 写入数据后立即返回，不等待数据发送完成
+     * @tparam type 输出类型
+     * @warning 异步输出设备允许进行非阻塞的输出操作以提升性能，但是禁止直接在设备上进行输出操作，必须和缓冲区一起组成文件才能使用
+     * @note 由于在异步设备上进行基于临时缓冲区的直接输出操作必须同步完成，因此禁止这类操作
+     */
+    template <::SoC::is_general_output_device type>
+    constexpr inline bool async_output_device{false};
+
+    /**
+     * @brief 判断device_t是否是同步输出设备，要求满足：
+     * - 写入数据后等待数据发送完成
+     * @tparam device_t 设备类型
+     * @tparam type 输出类型
+     */
+    template <typename device_t, typename type>
+    concept is_sync_output_device = ::SoC::is_output_device<device_t, type> && !async_output_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否是异步输出设备，要求满足：
+     * - 写入数据后立即返回，不等待数据发送完成
+     * @tparam device_t 设备类型
+     * @tparam type 输出类型
+     */
+    template <typename device_t, typename type>
+    concept is_async_output_device = ::SoC::is_output_device<device_t, type> && async_output_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否是一种同步输出设备，要求满足：
+     * - SoC::is_sync_output_device<device_t, char>，或
+     * - SoC::is_sync_output_device<device_t, std::byte>
+     */
+    template <typename device_t>
+    concept is_general_sync_output_device =
+        ::SoC::is_sync_output_device<device_t, char> || ::SoC::is_sync_output_device<device_t, ::std::byte>;
+
+    /**
+     * @brief 判断device_t是否是一种异步输出设备，要求满足：
+     * - SoC::is_async_output_device<device_t, char>，或
+     * - SoC::is_async_output_device<device_t, std::byte>
+     */
+    template <typename device_t>
+    concept is_general_async_output_device =
+        ::SoC::is_async_output_device<device_t, char> || ::SoC::is_async_output_device<device_t, ::std::byte>;
+
+    /**
+     * @brief 禁止某种类型的输入设备
+     *
+     * @tparam device_t 设备类型
+     */
+    template <typename device_t>
+    constexpr inline bool forbidden_input_device{false};
+
+    /**
      * @brief 判断device_t是否是type类型的输入设备，要求满足：
+     * - !forbidden_input_device<device_t>，即输入设备类型未被禁用，且
+     * - ::SoC::detail::is_io_target_type<type>，且
      * - type* device_t::read(type*, type*) noexcept，或
      * - type* read(device_t&, type*, type*) noexcept，考虑adl
      * @tparam device_t 设备类型
@@ -48,7 +114,7 @@ export namespace SoC
      */
     template <typename device_t, typename type>
     concept is_input_device =
-        ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, type* begin, type* end) {
+        !::SoC::forbidden_input_device<device_t> && ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, type* begin, type* end) {
             { dev.read(begin, end) } noexcept -> ::std::same_as<type*>;
         } || requires(device_t& dev, type* begin, type* end) {
             { read(dev, begin, end) } noexcept -> ::std::same_as<type*>;
@@ -64,6 +130,52 @@ export namespace SoC
     concept is_general_input_device = ::SoC::is_input_device<device_t, char> || ::SoC::is_input_device<device_t, ::std::byte>;
 
     /**
+     * @brief 判断device_t是否是异步输入设备，要求满足：
+     * - 写入数据后立即返回，不等待数据发送完成
+     * @tparam type 输入类型
+     * @warning 异步输入设备允许进行非阻塞的输入操作以提升性能，但是禁止直接在设备上进行输入操作，必须和缓冲区一起组成文件才能使用
+     * @note 由于在异步设备上进行基于临时缓冲区的直接输入操作必须同步完成，因此禁止这类操作
+     */
+    template <::SoC::is_general_input_device type>
+    constexpr inline bool async_input_device{false};
+
+    /**
+     * @brief 判断device_t是否是同步输入设备，要求满足：
+     * - 写入数据后等待数据发送完成
+     * @tparam device_t 设备类型
+     * @tparam type 输入类型
+     */
+    template <typename device_t, typename type>
+    concept is_sync_input_device = ::SoC::is_input_device<device_t, type> && !async_input_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否是异步输入设备，要求满足：
+     * - 写入数据后立即返回，不等待数据发送完成
+     * @tparam device_t 设备类型
+     * @tparam type 输入类型
+     */
+    template <typename device_t, typename type>
+    concept is_async_input_device = ::SoC::is_input_device<device_t, type> && async_input_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否是一种同步输入设备，要求满足：
+     * - SoC::is_sync_input_device<device_t, char>，或
+     * - SoC::is_sync_input_device<device_t, std::byte>
+     */
+    template <typename device_t>
+    concept is_general_sync_input_device =
+        ::SoC::is_sync_input_device<device_t, char> || ::SoC::is_sync_input_device<device_t, ::std::byte>;
+
+    /**
+     * @brief 判断device_t是否是一种异步输入设备，要求满足：
+     * - SoC::is_async_input_device<device_t, char>，或
+     * - SoC::is_async_input_device<device_t, std::byte>
+     */
+    template <typename device_t>
+    concept is_general_async_input_device =
+        ::SoC::is_async_input_device<device_t, char> || ::SoC::is_async_input_device<device_t, ::std::byte>;
+
+    /**
      * @brief 判断device_t是否是一种设备
      * - SoC::is_general_output_device<device_t>，或
      * - SoC::is_general_input_device<device_t>
@@ -71,6 +183,24 @@ export namespace SoC
      */
     template <typename device_t>
     concept is_general_device = ::SoC::is_general_output_device<device_t> || ::SoC::is_general_input_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否是一种同步设备，要求满足：
+     * - SoC::is_general_sync_output_device<device_t>，或
+     * - SoC::is_general_sync_input_device<device_t>
+     */
+    template <typename device_t>
+    concept is_general_sync_device =
+        ::SoC::is_general_sync_output_device<device_t> || ::SoC::is_general_sync_input_device<device_t>;
+
+    /**
+     * @brief 判断device_t是否是一种异步设备，要求满足：
+     * - SoC::is_general_async_output_device<device_t>，或
+     * - SoC::is_general_async_input_device<device_t>
+     */
+    template <typename device_t>
+    concept is_general_async_device =
+        ::SoC::is_general_async_output_device<device_t> || ::SoC::is_general_async_input_device<device_t>;
 
     /**
      * @brief 判断device_t是否具有写就绪标记，要求满足：
@@ -113,11 +243,11 @@ export namespace SoC
         {
             if constexpr(requires() { device.is_write_ready(); })
             {
-                ::SoC::wait_until([&device] noexcept { return device.is_write_ready(); });
+                ::SoC::wait_until([&device] constexpr noexcept { return device.is_write_ready(); });
             }
             else
             {
-                ::SoC::wait_until([&device] noexcept { is_write_ready(device); });
+                ::SoC::wait_until([&device] constexpr noexcept { is_write_ready(device); });
             }
         }
     }
@@ -135,11 +265,11 @@ export namespace SoC
         {
             if constexpr(requires() { device.is_read_ready(); })
             {
-                ::SoC::wait_until([&device] noexcept { return device.is_read_ready(); });
+                ::SoC::wait_until([&device] constexpr noexcept { return device.is_read_ready(); });
             }
             else
             {
-                ::SoC::wait_until([&device] noexcept { is_read_ready(device); });
+                ::SoC::wait_until([&device] constexpr noexcept { is_read_ready(device); });
             }
         }
     }
@@ -317,6 +447,20 @@ export namespace SoC
             current = begin;
             end = begin;
         }
+
+        /**
+         * @brief 获取输出缓冲区是否为空
+         *
+         * @return 输出缓冲区是否为空
+         */
+        constexpr inline bool obuffer_empty() const noexcept { return current == begin; }
+
+        /**
+         * @brief 获取输入缓冲区是否为空
+         *
+         * @return 输入缓冲区是否为空
+         */
+        constexpr inline bool ibuffer_empty() const noexcept { return current == end; }
     };
 
     /**
@@ -639,6 +783,11 @@ export namespace SoC
             if constexpr(block) { ::SoC::wait_until_write_ready(device); }
             obuffer.clear();
         }
+
+        ~ofile() noexcept
+        {
+            if(!obuffer.obuffer_empty()) { flush<true>(); }
+        }
     };
 
     /**
@@ -660,7 +809,7 @@ export namespace SoC
 
     /**
      * @brief 判断type是否是输出文件，要求满足：
-     * - type::device是输出设备的左值引用，且
+     * - type::device是输出设备的左值引用，其中输出设备要求为同步输出设备或异步输出设备且具有写就绪标志，且
      * - type::obuffer是输出缓冲区对象，且
      * - void type::flush() noexcept
      * @tparam type 要判断的类型
@@ -668,14 +817,16 @@ export namespace SoC
     template <typename type>
     concept is_output_file =
         ::std::is_lvalue_reference_v<decltype(type::device)> &&
-        ::SoC::is_output_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
+        (::SoC::is_sync_output_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> ||
+         (::SoC::is_async_output_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
+          ::SoC::has_write_ready_flag_device<::std::remove_reference_t<decltype(type::device)>>)) &&
         ::SoC::is_buffer<decltype(type::obuffer)> && requires(type& file) {
             { file.flush() } noexcept -> ::std::same_as<void>;
         };
 
     /**
      * @brief 判断type是否是输入文件，要求满足：
-     * - type::device是输入设备的左值引用，且
+     * - type::device是输入设备的左值引用，其中输入设备要求为同步输入设备或异步输入设备且具有读就绪标志，且
      * - type::ibuffer是输入缓冲区对象，且
      * - void type::flush() noexcept
      * @tparam type 要判断的类型
@@ -683,7 +834,9 @@ export namespace SoC
     template <typename type>
     concept is_input_file =
         ::std::is_lvalue_reference_v<decltype(type::device)> &&
-        ::SoC::is_input_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
+        (::SoC::is_sync_input_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> ||
+         (::SoC::is_async_input_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
+          ::SoC::has_read_ready_flag_device<::std::remove_reference_t<decltype(type::device)>>)) &&
         ::SoC::is_buffer<decltype(type::ibuffer)> && requires(type& file) {
             { file.clear() } noexcept -> ::std::same_as<void>;
         };
@@ -783,7 +936,7 @@ export namespace SoC
                                        ::SoC::unified_text_buffer tmp_buffer) noexcept
     {
         auto&& [device, buffer]{::SoC::ofile_trait(file)};
-        constexpr auto max_text_buffer_size{::SoC::detail::get_max_text_buffer_size<decltype(num)>()};
+        constexpr auto max_text_buffer_size{::SoC::max_text_buffer_size<decltype(num)>};
         if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
         {
             auto&& current{buffer.current};
@@ -833,7 +986,7 @@ export namespace SoC
     {
         auto&& [num, format, precision]{format_wrapper};
         auto&& [device, buffer]{::SoC::ofile_trait(file)};
-        constexpr auto max_text_buffer_size{::SoC::detail::get_max_text_buffer_size<decltype(num)>()};
+        constexpr auto max_text_buffer_size{::SoC::max_text_buffer_size<decltype(num)>};
         if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
         {
             auto&& current{buffer.current};
@@ -868,7 +1021,7 @@ export namespace SoC
     {
         auto&& [device, buffer]{::SoC::ofile_trait(file)};
         auto num{format_wrapper.value};
-        constexpr auto max_text_buffer_size{::SoC::detail::get_max_text_buffer_size<type, base>()};
+        constexpr auto max_text_buffer_size{::SoC::max_text_buffer_size<decltype(format_wrapper)>};
         if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
         {
             auto&& current{buffer.current};
@@ -983,11 +1136,14 @@ export namespace SoC
      * @param device 输出设备
      * @param args 参数列表
      */
-    template <::SoC::is_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    template <::SoC::is_sync_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
     constexpr inline void print(device_t& device, args_t&&... args) noexcept
     {
         ::SoC::detail::print_wrapper(device, ::std::forward<args_t>(args)...);
     }
+
+    template <::SoC::is_async_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void print(device_t& device, args_t&&... args) noexcept = delete("异步输出设备不支持直接输出，请使用文件");
 
     /**
      * @brief 将参数列表输出到文件
@@ -1052,12 +1208,17 @@ export namespace SoC
      * @param args 参数列表
      */
     template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
-              ::SoC::is_output_device<char> device_t,
+              ::SoC::is_sync_output_device<char> device_t,
               ::SoC::is_printable_to_device<device_t>... args_t>
     constexpr inline void println(device_t& device, args_t&&... args) noexcept
     {
         ::SoC::print(device, ::std::forward<args_t>(args)..., ::SoC::detail::get_endl<endl>());
     }
+
+    template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
+              ::SoC::is_async_output_device<char> device_t,
+              ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void println(device_t& device, args_t&&... args) noexcept = delete("异步输出设备不支持直接输出，请使用文件");
 
     /**
      * @brief 将参数列表输出到文件，输出完成后换行
@@ -1124,21 +1285,18 @@ namespace SoC::detail
     /**
      * @brief 打印函数包装体，将参数列表打印
      *
+     * @tparam parser_t 格式串解析器类型
      * @tparam output_t 可进行输出操作的类型
      * @tparam args_t 参数类型列表
      * @param output 可进行输出操作的对象
-     * @param parser 格式串解析器
      * @param args 参数列表
      */
-    template <typename output_t, ::std::size_t... indexes, typename... args_t>
-    constexpr inline void print_wrapper(output_t& output,
-                                        ::SoC::detail::is_fmt_parser auto parser,
-                                        ::std::index_sequence<indexes...>,
-                                        args_t&&... args) noexcept
+    template <::SoC::detail::is_fmt_parser parser_t, typename output_t, ::std::size_t... indexes, typename... args_t>
+    constexpr inline void print_wrapper(output_t& output, ::std::index_sequence<indexes...>, args_t&&... args) noexcept
     {
-        constexpr auto placehold_num{parser.get_placehold_num()};
+        constexpr auto placehold_num{parser_t::get_placehold_num()};
         static_assert(placehold_num == sizeof...(args), "占位符个数和参数个数不同");
-        constexpr auto no_placehold_num{parser.get_no_placehold_num()};
+        constexpr auto no_placehold_num{parser_t::get_no_placehold_num()};
         if constexpr(no_placehold_num == 0)
         {
             // 不含需要交错输出的字符串
@@ -1146,8 +1304,8 @@ namespace SoC::detail
         }
         else
         {
-            constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser.get_split_string_tuple()};
-            constexpr auto tuple_index_array{parser.get_tuple_index_array()};
+            constexpr ::SoC::detail::get_fmt_arg_t split_string_tuple{parser_t::get_split_string_tuple()};
+            constexpr auto tuple_index_array{parser_t::get_tuple_index_array()};
             if constexpr(placehold_num != 0)
             {
                 ::SoC::detail::print_wrapper(
@@ -1173,7 +1331,7 @@ namespace SoC::detail
      * @return ::SoC::fmt_string 带行尾序列的格式化字符串
      */
     template <::SoC::end_line_sequence endl>
-    constexpr inline auto get_fmt_string_with_endl(::SoC::detail::is_fmt_parser auto fmt) noexcept
+    consteval inline auto get_fmt_string_with_endl(::SoC::detail::is_fmt_parser auto fmt) noexcept
     {
         constexpr auto endl_string{::SoC::detail::get_endl<endl>()};
         constexpr auto fmt_string{fmt.get_fmt_string()};
@@ -1233,14 +1391,18 @@ export namespace SoC
      * @param fmt 格式串，使用SoC::literal::operator""_fmt创建
      * @param args 参数列表
      */
-    template <::SoC::is_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    template <::SoC::is_sync_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
     constexpr inline void print(device_t& device, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        ::SoC::detail::print_wrapper(device,
-                                     fmt,
-                                     ::std::make_index_sequence<fmt.get_total_num()>{},
-                                     ::std::forward<args_t>(args)...);
+        ::SoC::detail::print_wrapper<decltype(fmt)>(device,
+                                                    ::std::make_index_sequence<fmt.get_total_num()>{},
+                                                    ::std::forward<args_t>(args)...);
     }
+
+    template <::SoC::is_async_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void print(device_t& device,
+                                ::SoC::detail::is_fmt_parser auto fmt,
+                                args_t&&... args) noexcept = delete("异步输出设备不支持直接输出，请使用文件");
 
     /**
      * @brief 将参数列表输出到文件
@@ -1255,10 +1417,9 @@ export namespace SoC
     template <bool flush = false, ::SoC::is_output_file file_t, ::SoC::is_printable_to_file<file_t>... args_t>
     constexpr inline void print(file_t& file, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        ::SoC::detail::print_wrapper(file,
-                                     fmt,
-                                     ::std::make_index_sequence<fmt.get_total_num()>{},
-                                     ::std::forward<args_t>(args)...);
+        ::SoC::detail::print_wrapper<decltype(fmt)>(file,
+                                                    ::std::make_index_sequence<fmt.get_total_num()>{},
+                                                    ::std::forward<args_t>(args)...);
         if constexpr(flush) { file.flush(); }
     }
 
@@ -1273,7 +1434,7 @@ export namespace SoC
      * @param args 参数列表
      */
     template <::SoC::end_line_sequence endl = ::SoC::end_line_sequence::default_endl,
-              ::SoC::is_output_device<char> device_t,
+              ::SoC::is_sync_output_device<char> device_t,
               ::SoC::is_printable_to_device<device_t>... args_t>
     constexpr inline void println(device_t& device, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
@@ -1281,6 +1442,11 @@ export namespace SoC
                      ::SoC::fmt_parser<::SoC::detail::get_fmt_string_with_endl<endl>(fmt)>{},
                      ::std::forward<args_t>(args)...);
     }
+
+    template <::SoC::is_async_output_device<char> device_t, ::SoC::is_printable_to_device<device_t>... args_t>
+    constexpr inline void println(device_t& device,
+                                  ::SoC::detail::is_fmt_parser auto fmt,
+                                  args_t&&... args) noexcept = delete("异步输出设备不支持直接输出，请使用文件");
 
     /**
      * @brief 将参数列表输出到文件，输出完成后换行
