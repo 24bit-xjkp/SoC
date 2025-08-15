@@ -174,6 +174,49 @@ export namespace SoC
 
         ~usart() noexcept;
 
+        struct usart_dma_stream : ::SoC::dma_stream
+        {
+            ::SoC::usart& usart;
+
+            /**
+             * @brief 检查usart和dma是否准备好写入数据
+             *
+             * @note usart发送寄存器为空且dma传输完成即认为就绪
+             * @return 是否准备好写入数据
+             */
+            bool is_write_ready() const noexcept { return usart.get_flag_txe() && is_transfer_complete(); }
+
+        private:
+            friend struct usart;
+
+            usart_dma_stream(::SoC::usart& usart,
+                             ::SoC::dma& dma,
+                             ::SoC::dma_stream::dma_stream_enum stream,
+                             ::SoC::dma_channel channel,
+                             ::SoC::dma_mode mode,
+                             ::SoC::dma_fifo_threshold fifo_threshold,
+                             ::SoC::dma_memory_burst default_burst,
+                             ::SoC::dma_memory_data_size default_data_size,
+                             ::SoC::dma_priority priority) noexcept :
+                ::SoC::dma_stream{dma,
+                                  stream,
+                                  channel,
+                                  ::LL_USART_DMA_GetRegAddr(usart.usart_ptr),
+                                  ::SoC::dma_direction::m2p,
+                                  mode,
+                                  false,
+                                  true,
+                                  ::SoC::dma_periph_data_size::byte,
+                                  default_data_size,
+                                  priority,
+                                  fifo_threshold,
+                                  default_burst,
+                                  ::SoC::dma_periph_burst::single},
+                usart{usart}
+            {
+            }
+        };
+
         /**
          * @brief 获取usart外设指针
          *
@@ -442,14 +485,14 @@ export namespace SoC
          * @param selected_stream 要使用的dma数据流，默认使用序号最小的数据流
          * @return dma数据流对象
          */
-        [[nodiscard("该函数返回具有raii的dma数据流对象，不应该弃用返回值")]] ::SoC::dma_stream
+        [[nodiscard("该函数返回具有raii的dma数据流对象，不应该弃用返回值")]] usart_dma_stream
             enable_dma_write(::SoC::dma& dma,
                              ::SoC::dma_fifo_threshold fifo_threshold = ::SoC::dma_fifo_threshold::disable,
                              ::SoC::dma_memory_burst default_burst = ::SoC::dma_memory_burst::single,
                              ::SoC::dma_memory_data_size default_data_size = ::SoC::dma_memory_data_size::byte,
                              ::SoC::dma_priority priority = ::SoC::dma_priority::low,
                              ::SoC::dma_mode mode = ::SoC::dma_mode::normal,
-                             ::SoC::dma_stream::dma_stream_enum selected_stream = no_selected_stream) const noexcept;
+                             ::SoC::dma_stream::dma_stream_enum selected_stream = no_selected_stream) noexcept;
 
         /**
          * @brief 失能串口dma写入
@@ -464,4 +507,7 @@ export namespace SoC
          */
         bool is_dma_write_enabled() const noexcept;
     };
+
+    template <>
+    constexpr inline bool async_output_device<::SoC::usart::usart_dma_stream>{true};
 }  // namespace SoC

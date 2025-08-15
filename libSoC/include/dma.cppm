@@ -305,12 +305,6 @@ export namespace SoC
         void enable() const noexcept;
 
         /**
-         * @brief 等待直到dma失能，若为循环模式且已使能则断言失败
-         *
-         */
-        void wait_until_disabled() const noexcept;
-
-        /**
          * @brief 获取传输完成标志位掩码
          *
          * @return 传输完成标志位掩码
@@ -610,20 +604,12 @@ export namespace SoC
         void clear_flag_ht() const noexcept;
 
         /**
-         * @brief 判断dma数据流写操作是否就绪
+         * @brief 判断是否传输完成
          *
-         * @note 对于非循环模式，判断dma数据流是否失能；对于循环模式，判断传输完成标记是否置位
-         * @return dma数据流是否就绪
+         * @note tc置位或dma数据流失能认为传输完成
+         * @return 是否传输完成
          */
-        bool is_write_ready() const noexcept;
-
-        /**
-         * @brief 判断dma数据流读操作是否就绪
-         *
-         * @note 对于非循环模式，判断dma数据流是否失能；对于循环模式，判断传输完成标记是否置位
-         * @return dma数据流是否就绪
-         */
-        bool is_read_ready() const noexcept;
+        bool is_transfer_complete() const noexcept;
 
         /**
          * @brief 获取中断号
@@ -695,4 +681,20 @@ export namespace SoC
          */
         bool is_it_ht() const noexcept;
     };
+
+    /**
+     * @brief 禁止dma流作为输出设备
+     *
+     * @note dma流需要配合外设一起才能正确处理时序，因此禁止单独作为输出设备使用
+     */
+    template <>
+    constexpr inline bool forbidden_output_device<::SoC::dma_stream>{true};
+
+    /**
+     * @brief 禁止dma流作为输入设备
+     *
+     * @note dma流需要配合外设一起才能正确处理时序，因此禁止单独作为输入设备使用
+     */
+    template <>
+    constexpr inline bool forbidden_input_device<::SoC::dma_stream>{true};
 }  // namespace SoC

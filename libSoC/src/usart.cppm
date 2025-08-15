@@ -280,13 +280,13 @@ namespace SoC
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(dma.get_dma_enum() == dma_enum, "该dma外设不能操作该串口"sv); }
     }
 
-    ::SoC::dma_stream(::SoC::usart::enable_dma_write)(::SoC::dma& dma,
-                                                      ::SoC::dma_fifo_threshold fifo_threshold,
-                                                      ::SoC::dma_memory_burst default_burst,
-                                                      ::SoC::dma_memory_data_size default_data_size,
-                                                      ::SoC::dma_priority priority,
-                                                      ::SoC::dma_mode mode,
-                                                      ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
+    ::SoC::usart::usart_dma_stream(::SoC::usart::enable_dma_write)(::SoC::dma& dma,
+                                                                   ::SoC::dma_fifo_threshold fifo_threshold,
+                                                                   ::SoC::dma_memory_burst default_burst,
+                                                                   ::SoC::dma_memory_data_size default_data_size,
+                                                                   ::SoC::dma_priority priority,
+                                                                   ::SoC::dma_mode mode,
+                                                                   ::SoC::dma_stream::dma_stream_enum selected_stream) noexcept
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_dma_write_enabled(), "在配置前该串口的dma不应处于使能状态"sv); }
         using enum ::SoC::dma::dma_enum;
@@ -339,20 +339,7 @@ namespace SoC
         }
         if constexpr(::SoC::use_full_assert) { assert_dma(dma, dma_enum); }
         ::LL_USART_EnableDMAReq_TX(usart_ptr);
-        return ::SoC::dma_stream{dma,
-                                 stream,
-                                 channel,
-                                 ::LL_USART_DMA_GetRegAddr(usart_ptr),
-                                 ::SoC::dma_direction::m2p,
-                                 mode,
-                                 false,
-                                 true,
-                                 ::SoC::dma_periph_data_size::byte,
-                                 default_data_size,
-                                 priority,
-                                 fifo_threshold,
-                                 default_burst,
-                                 ::SoC::dma_periph_burst::single};
+        return usart_dma_stream{*this, dma, stream, channel, mode, fifo_threshold, default_burst, default_data_size, priority};
     }
 
     void ::SoC::usart::disable_dma_write() const noexcept { ::LL_USART_DisableDMAReq_TX(usart_ptr); }

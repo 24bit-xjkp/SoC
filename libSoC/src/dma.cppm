@@ -203,19 +203,6 @@ namespace SoC
 
     void ::SoC::dma_stream::enable() const noexcept { ::LL_DMA_EnableStream(dma_ptr, ::SoC::to_underlying(stream)); }
 
-    void ::SoC::dma_stream::wait_until_disabled() const noexcept
-    {
-        if(is_enabled()) [[unlikely]]
-        {
-            if constexpr(::SoC::use_full_assert)
-            {
-                ::SoC::assert(mode != ::SoC::dma_mode::circle,
-                              "循环模式下dma数据流不会自动失能, 在开启新的传输前请先失能dma数据流"sv);
-            }
-            ::SoC::wait_until([this] { return !is_enabled(); });
-        }
-    }
-
     bool ::SoC::dma_stream::check_aligned(::std::uintptr_t num) const noexcept
     {
         auto mask{get_memory_data_size_num() - 1};
@@ -237,7 +224,7 @@ namespace SoC
 
     void ::SoC::dma_stream::write(const void* begin, const void* end) noexcept
     {
-        wait_until_disabled();
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "在开始新的操作前需要保证dma流处于失能状态"sv); }
         clear_flag_tc();
         if constexpr(::SoC::use_full_assert)
         {
@@ -251,7 +238,7 @@ namespace SoC
 
     void ::SoC::dma_stream::read(void* begin, void* end) noexcept
     {
-        wait_until_disabled();
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "在开始新的操作前需要保证dma流处于失能状态"sv); }
         clear_flag_tc();
         if constexpr(::SoC::use_full_assert)
         {
@@ -303,31 +290,7 @@ namespace SoC
         ref = get_ht_mask();
     }
 
-    bool ::SoC::dma_stream::is_write_ready() const noexcept
-    {
-        if constexpr(::SoC::use_full_assert)
-        {
-            ::SoC::assert(direction != ::SoC::dma_direction::p2m, "dma数据流在外设到内存模式下不能进行写操作"sv);
-        }
-        if(mode == ::SoC::dma_mode::circle) { return get_flag_tc(); }
-        else
-        {
-            return !is_enabled();
-        }
-    }
-
-    bool ::SoC::dma_stream::is_read_ready() const noexcept
-    {
-        if constexpr(::SoC::use_full_assert)
-        {
-            ::SoC::assert(direction != ::SoC::dma_direction::p2m, "dma数据流在内存到外设模式下不能进行读操作"sv);
-        }
-        if(mode == ::SoC::dma_mode::circle) { return get_flag_tc(); }
-        else
-        {
-            return !is_enabled();
-        }
-    }
+    bool ::SoC::dma_stream::is_transfer_complete() const noexcept { return get_flag_tc() || !is_enabled(); }
 
     /**
      * @brief 将dma和数据流枚举转换为中断号

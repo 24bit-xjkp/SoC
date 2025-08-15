@@ -7,7 +7,7 @@ using namespace ::std::string_view_literals;
 constexpr auto prescaler{1};
 constexpr auto arr{::SoC::rcc::apb2_tim_freq / 20_K};
 constexpr auto actual_arr{arr / 2};
-inline ::SoC::optional<::SoC::text_ofile<::SoC::dma_stream>&> file;
+inline ::SoC::optional<::SoC::text_ofile<::SoC::usart::usart_dma_stream>&> file;
 
 namespace pid_controller
 {
