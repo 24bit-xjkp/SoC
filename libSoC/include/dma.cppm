@@ -681,20 +681,40 @@ export namespace SoC
          */
         bool is_it_ht() const noexcept;
     };
+}  // namespace SoC
+
+namespace SoC
+{
+    namespace detail
+    {
+        /**
+         * @brief 禁止dma数据流作为IO设备，用于提供更好的报错
+         *
+         * @tparam type dma数据流类型
+         */
+        template <typename type>
+        struct forbidden_dma_stream_as_io_device
+        {
+            constexpr inline static bool with_periph_object{!::std::same_as<type, ::SoC::dma_stream>};
+            static_assert(with_periph_object, "dma数据流需要配合外设对象一起才能正确处理时序，因此禁止单独作为IO设备使用");
+        };
+    }  // namespace detail
 
     /**
-     * @brief 禁止dma流作为输出设备
+     * @brief 禁止dma数据流作为输出设备
      *
-     * @note dma流需要配合外设一起才能正确处理时序，因此禁止单独作为输出设备使用
+     * @note dma数据流需要配合外设对象一起才能正确处理时序，因此禁止单独作为输出设备使用
      */
-    template <>
-    constexpr inline bool forbidden_output_device<::SoC::dma_stream>{true};
+    export template <::std::same_as<::SoC::dma_stream> device_t>
+    constexpr inline bool forbidden_output_device<device_t>{
+        ::SoC::detail::forbidden_dma_stream_as_io_device<device_t>::with_periph_object};
 
     /**
-     * @brief 禁止dma流作为输入设备
+     * @brief 禁止dma数据流作为输入设备
      *
-     * @note dma流需要配合外设一起才能正确处理时序，因此禁止单独作为输入设备使用
+     * @note dma数据流需要配合外设对象一起才能正确处理时序，因此禁止单独作为输入设备使用
      */
-    template <>
-    constexpr inline bool forbidden_input_device<::SoC::dma_stream>{true};
+    export template <::std::same_as<::SoC::dma_stream> device_t>
+    constexpr inline bool forbidden_input_device<device_t>{
+        ::SoC::detail::forbidden_dma_stream_as_io_device<device_t>::with_periph_object};
 }  // namespace SoC

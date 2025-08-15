@@ -9,20 +9,59 @@ import :allocator;
 import :fmt;
 import :utils;
 
+namespace SoC
+{
+
+    /**
+     * @brief 禁止某种类型的输出设备
+     *
+     * @tparam device_t 设备类型
+     */
+    export template <typename device_t>
+    constexpr inline bool forbidden_output_device{false};
+
+    /**
+     * @brief 禁止某种类型的输入设备
+     *
+     * @tparam device_t 设备类型
+     */
+    export template <typename device_t>
+    constexpr inline bool forbidden_input_device{false};
+
+    namespace detail
+    {
+        /**
+         * @brief 检查某种类型的输出设备是否被显式禁用，并提供更好的报错
+         *
+         * @tparam device_t 设备类型
+         */
+        template <typename device_t>
+        struct check_forbidden_output_device
+        {
+            constexpr inline static bool not_forbidden{!::SoC::forbidden_output_device<device_t>};
+            static_assert(not_forbidden, "该输出设备类型被显式禁用");
+        };
+
+        /**
+         * @brief 检查某种类型的输入设备是否被显式禁用，并提供更好的报错
+         *
+         * @tparam device_t 设备类型
+         */
+        template <typename device_t>
+        struct check_forbidden_input_device
+        {
+            constexpr inline static bool not_forbidden{!::SoC::forbidden_input_device<device_t>};
+            static_assert(not_forbidden, "该输入设备类型被显式禁用");
+        };
+    }  // namespace detail
+}  // namespace SoC
+
 /**
  * @brief 基本概念和函数定义
  *
  */
 export namespace SoC
 {
-    /**
-     * @brief 禁止某种类型的输出设备
-     *
-     * @tparam device_t 设备类型
-     */
-    template <typename device_t>
-    constexpr inline bool forbidden_output_device{false};
-
     /**
      * @brief 判断device_t是否是type类型的输出设备，要求满足：
      * - !forbidden_output_device<device_t>，即输出设备类型未被禁用，且
@@ -34,7 +73,7 @@ export namespace SoC
      */
     template <typename device_t, typename type>
     concept is_output_device =
-        !::SoC::forbidden_output_device<device_t> && ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, const type* begin, const type* end) {
+        ::SoC::detail::check_forbidden_output_device<device_t>::not_forbidden && ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, const type* begin, const type* end) {
             { dev.write(begin, end) } noexcept;
         } || requires(device_t& dev, const type* begin, const type* end) {
             { write(dev, begin, end) } noexcept;
@@ -96,14 +135,6 @@ export namespace SoC
         ::SoC::is_async_output_device<device_t, char> || ::SoC::is_async_output_device<device_t, ::std::byte>;
 
     /**
-     * @brief 禁止某种类型的输入设备
-     *
-     * @tparam device_t 设备类型
-     */
-    template <typename device_t>
-    constexpr inline bool forbidden_input_device{false};
-
-    /**
      * @brief 判断device_t是否是type类型的输入设备，要求满足：
      * - !forbidden_input_device<device_t>，即输入设备类型未被禁用，且
      * - ::SoC::detail::is_io_target_type<type>，且
@@ -114,7 +145,7 @@ export namespace SoC
      */
     template <typename device_t, typename type>
     concept is_input_device =
-        !::SoC::forbidden_input_device<device_t> && ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, type* begin, type* end) {
+        ::SoC::detail::check_forbidden_input_device<device_t>::not_forbidden && ::SoC::detail::is_io_target_type<type> && (requires(device_t& dev, type* begin, type* end) {
             { dev.read(begin, end) } noexcept -> ::std::same_as<type*>;
         } || requires(device_t& dev, type* begin, type* end) {
             { read(dev, begin, end) } noexcept -> ::std::same_as<type*>;
@@ -747,6 +778,43 @@ export namespace SoC
                                                     ::SoC::is_has_max_text_buffer_size_printable<arg_t, device_t>);
 }  // namespace SoC
 
+namespace SoC::detail
+{
+    /**
+     * @brief 检查输出文件类型是否合法，并提供更好的报错
+     *
+     * @tparam device_t 输出设备类型
+     * @tparam type 输出类型
+     */
+    template <typename device_t, typename type>
+    struct check_output_file_type
+    {
+        constexpr inline static bool sync_or_async_with_ready_flag{
+            ::SoC::is_sync_output_device<device_t, typename type::value_type> ||
+            (::SoC::is_async_output_device<device_t, typename type::value_type> && ::SoC::has_write_ready_flag_device<device_t>)};
+
+        static_assert(sync_or_async_with_ready_flag,
+                      "绑定到文件的异步输出设备必须支持写就绪标志，以便在刷新缓冲区时等待设备就绪");
+    };
+
+    /**
+     * @brief 检查输入文件类型是否合法，并提供更好的报错
+     *
+     * @tparam device_t 输入设备类型
+     * @tparam type 输入类型
+     */
+    template <typename device_t, typename type>
+    struct check_input_file_type
+    {
+        constexpr inline static bool sync_or_async_with_ready_flag{
+            ::SoC::is_sync_input_device<device_t, typename type::value_type> ||
+            (::SoC::is_async_input_device<device_t, typename type::value_type> && ::SoC::has_read_ready_flag_device<device_t>)};
+
+        static_assert(sync_or_async_with_ready_flag,
+                      "绑定到文件的异步输入设备必须支持读就绪标志，以便在刷新缓冲区时等待设备就绪");
+    };
+}  // namespace SoC::detail
+
 /**
  * @brief 文件类型定义
  *
@@ -815,14 +883,12 @@ export namespace SoC
      * @tparam type 要判断的类型
      */
     template <typename type>
-    concept is_output_file =
-        ::std::is_lvalue_reference_v<decltype(type::device)> &&
-        (::SoC::is_sync_output_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> ||
-         (::SoC::is_async_output_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
-          ::SoC::has_write_ready_flag_device<::std::remove_reference_t<decltype(type::device)>>)) &&
-        ::SoC::is_buffer<decltype(type::obuffer)> && requires(type& file) {
-            { file.flush() } noexcept -> ::std::same_as<void>;
-        };
+    concept is_output_file = ::std::is_lvalue_reference_v<decltype(type::device)> &&
+                             ::SoC::detail::check_output_file_type<::std::remove_reference_t<decltype(type::device)>,
+                                                                   type>::sync_or_async_with_ready_flag &&
+                             ::SoC::is_buffer<decltype(type::obuffer)> && requires(type& file) {
+                                 { file.flush() } noexcept -> ::std::same_as<void>;
+                             };
 
     /**
      * @brief 判断type是否是输入文件，要求满足：
@@ -832,14 +898,12 @@ export namespace SoC
      * @tparam type 要判断的类型
      */
     template <typename type>
-    concept is_input_file =
-        ::std::is_lvalue_reference_v<decltype(type::device)> &&
-        (::SoC::is_sync_input_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> ||
-         (::SoC::is_async_input_device<::std::remove_reference_t<decltype(type::device)>, typename type::value_type> &&
-          ::SoC::has_read_ready_flag_device<::std::remove_reference_t<decltype(type::device)>>)) &&
-        ::SoC::is_buffer<decltype(type::ibuffer)> && requires(type& file) {
-            { file.clear() } noexcept -> ::std::same_as<void>;
-        };
+    concept is_input_file = ::std::is_lvalue_reference_v<decltype(type::device)> &&
+                            ::SoC::detail::check_input_file_type<::std::remove_reference_t<decltype(type::device)>,
+                                                                 type>::sync_or_async_with_ready_flag &&
+                            ::SoC::is_buffer<decltype(type::ibuffer)> && requires(type& file) {
+                                { file.clear() } noexcept -> ::std::same_as<void>;
+                            };
 
     /**
      * @brief 判断type是否是文件，要求满足：
