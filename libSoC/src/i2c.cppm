@@ -15,6 +15,23 @@ namespace SoC
     using namespace ::std::string_view_literals;
     using namespace ::SoC::literal;
 
+    /**
+     * @brief 将i2c枚举转换为apb1 grp1外设时钟使能位
+     *
+     * @param i2c i2c枚举
+     * @return apb1 grp1外设时钟使能位
+     */
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
+        i2c_enum2grp1_periph(::SoC::i2c::i2c_enum i2c) noexcept
+    {
+        auto shift{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10};
+        return 1zu << (shift + 21);
+    }
+
+    static_assert(i2c_enum2grp1_periph(::SoC::i2c::i2c1) == LL_APB1_GRP1_PERIPH_I2C1);
+    static_assert(i2c_enum2grp1_periph(::SoC::i2c::i2c2) == LL_APB1_GRP1_PERIPH_I2C2);
+    static_assert(i2c_enum2grp1_periph(::SoC::i2c::i2c3) == LL_APB1_GRP1_PERIPH_I2C3);
+
     ::SoC::i2c::i2c(i2c_enum i2c,
                     ::std::size_t clock_speed,
                     ::std::size_t address,
@@ -28,13 +45,7 @@ namespace SoC
             ::SoC::assert(!is_enabled(), "初始化前此i2c外设不应处于使能状态"sv);
             ::SoC::assert(clock_speed <= 400_K, "i2c外设时钟速度不能超过400KHz"sv);
         }
-        switch(i2c)
-        {
-            case i2c1: periph = LL_APB1_GRP1_PERIPH_I2C1; break;
-            case i2c2: periph = LL_APB1_GRP1_PERIPH_I2C2; break;
-            case i2c3: periph = LL_APB1_GRP1_PERIPH_I2C3; break;
-            default: ::std::unreachable();
-        }
+        periph = ::SoC::i2c_enum2grp1_periph(i2c);
         ::LL_APB1_GRP1_EnableClock(periph);
         ::LL_I2C_ConfigSpeed(i2c_ptr, ::SoC::rcc::apb1_freq, clock_speed, ::SoC::to_underlying(duty));
         ::LL_I2C_SetOwnAddress1(i2c_ptr, address, ::SoC::to_underlying(address_size));
@@ -132,15 +143,31 @@ namespace SoC
         }
     }
 
-    /// 选择的dma数据流无效时报错信息
-    constexpr auto selected_stream_error_msg{"该i2c外设不能使用指定的dma数据流"sv};
-    /// 配置前dma已经处于使能状态时报错信息
-    constexpr auto dma_enabled_error_msg{"在配置前该i2c外设的dma不应处于使能状态"sv};
-
     void ::SoC::i2c::assert_dma(::SoC::dma& dma) const noexcept
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(dma.get_dma_enum() == dma.dma1, "该dma外设不能操作该i2c外设"sv); }
     }
+
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
+        i2c_enum2dma_stream_channel(::SoC::i2c::i2c_enum i2c) noexcept
+    {
+        auto index{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10};
+        using enum ::SoC::dma_channel;
+        using enum ::SoC::dma_stream::dma_stream_enum;
+        constexpr ::std::pair<::SoC::dma_stream::dma_stream_enum, ::SoC::dma_channel> table[]{
+            {st6, ch1},
+            {st7, ch7},
+            {st4, ch3}
+        };
+        return table[index];
+    }
+
+    static_assert(i2c_enum2dma_stream_channel(::SoC::i2c::i2c1) ==
+                  ::std::pair{::SoC::dma_stream::dma_stream_enum::st6, ::SoC::dma_channel::ch1});
+    static_assert(i2c_enum2dma_stream_channel(::SoC::i2c::i2c2) ==
+                  ::std::pair{::SoC::dma_stream::dma_stream_enum::st7, ::SoC::dma_channel::ch7});
+    static_assert(i2c_enum2dma_stream_channel(::SoC::i2c::i2c3) ==
+                  ::std::pair{::SoC::dma_stream::dma_stream_enum::st4, ::SoC::dma_channel::ch3});
 
     ::SoC::dma_stream(::SoC::i2c::enable_dma_write)(::SoC::dma& dma,
                                                     ::SoC::dma_fifo_threshold fifo_threshold,
@@ -150,36 +177,23 @@ namespace SoC
                                                     ::SoC::dma_mode mode,
                                                     ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
     {
-        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_dma_write_enabled(), ::SoC::dma_enabled_error_msg); }
-        using enum ::SoC::dma_stream::dma_stream_enum;
-        using enum ::SoC::dma_channel;
-        ::SoC::dma_stream::dma_stream_enum stream;
-        ::SoC::dma_channel channel;
-
-        switch(get_i2c_enum())
+        if constexpr(::SoC::use_full_assert)
         {
-            case i2c1:
-                channel = ch1;
-                if(selected_stream == no_selected_stream) [[likely]] { stream = st6; }
-                else
-                {
-                    if constexpr(::SoC::use_full_assert)
-                    {
-                        ::SoC::assert(selected_stream == st6 || selected_stream == st7, ::SoC::selected_stream_error_msg);
-                    }
-                    stream = selected_stream;
-                }
-                break;
-            case i2c2:
-                channel = ch7;
-                stream = st7;
-                break;
-            case i2c3:
-                channel = ch3;
-                stream = st4;
-                break;
-            default: ::std::unreachable();
+            ::SoC::assert(!is_dma_write_enabled(), "在配置前该i2c外设的dma不应处于使能状态"sv);
         }
+        auto i2c_enum{get_i2c_enum()};
+        auto [stream, channel]{i2c_enum2dma_stream_channel(i2c_enum)};
+
+        if(i2c_enum == i2c1 && selected_stream != no_selected_stream) [[unlikely]]
+        {
+            using enum ::SoC::dma_stream::dma_stream_enum;
+            if constexpr(::SoC::use_full_assert)
+            {
+                ::SoC::assert(selected_stream == st6 || selected_stream == st7, "该i2c外设不能使用指定的dma数据流"sv);
+            }
+            stream = selected_stream;
+        }
+
         if constexpr(::SoC::use_full_assert) { assert_dma(dma); }
         ::LL_I2C_EnableDMAReq_TX(i2c_ptr);
         return ::SoC::dma_stream{dma,
