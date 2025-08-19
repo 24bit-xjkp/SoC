@@ -424,52 +424,6 @@ export namespace SoC
         constexpr inline pointer get_buffer_end() noexcept { return begin + buffer_size; }
 
         /**
-         * @brief 获取输出缓冲区剩余容量
-         *
-         * @return 输出缓冲区剩余容量
-         */
-        constexpr inline ::std::size_t get_obuffer_left() noexcept { return get_buffer_end() - current; }
-
-        /**
-         * @brief 获取输入缓冲区剩余容量
-         *
-         * @return 输入缓冲区剩余容量
-         */
-        constexpr inline ::std::size_t get_ibuffer_left() noexcept { return end - current; }
-
-        /**
-         * @brief 将游标向前移动len个元素
-         *
-         * @param len 要前进的距离
-         * @return 游标的旧值
-         */
-        constexpr inline pointer advance(::std::size_t len) noexcept { return ::std::exchange(current, current + len); }
-
-        /**
-         * @brief 将src处的len个元素写入缓冲区
-         *
-         * @param src 源指针
-         * @param len 要写入的元素个数
-         */
-        constexpr inline void write(const_pointer src, ::std::size_t len) noexcept
-        {
-            ::std::memcpy(current, src, len);
-            current += len;
-        }
-
-        /**
-         * @brief 将缓冲区中的len个元素读取到dst处
-         *
-         * @param dst 目标指针
-         * @param len 要读取的元素个数
-         */
-        constexpr inline void read(pointer dst, ::std::size_t len) noexcept
-        {
-            ::std::memcpy(dst, current, len);
-            current += len;
-        }
-
-        /**
          * @brief 清空缓冲区
          *
          */
@@ -528,16 +482,13 @@ export namespace SoC
      * - pointer type::current，且
      * - pointer type::end，且
      * - pointer type::get_buffer_end() noexcept，且
-     * - std::size_t type::get_obuffer_left() noexcept，且
-     * - std::size_t type::get_ibuffer_left() noexcept，且
-     * - pointer type::advance(std::size_t) noexcept，且
-     * - void type::write(const_pointer, std::size_t) noexcept，且
-     * - void type::read(pointer, std::size_t) noexcept，且
-     * - void type::clear() noexcept
+     * - void type::clear() noexcept，且
+     * - bool type::obuffer_empty() const noexcept，且
+     * - bool type::ibuffer_empty() const noexcept
      * @tparam type 要判断的类型
      */
     template <typename type>
-    concept is_buffer = requires(type& buffer) {
+    concept is_buffer = requires(type& buffer, const type& const_buffer) {
         typename type::value_type;
         typename type::pointer;
         typename type::const_pointer;
@@ -547,12 +498,9 @@ export namespace SoC
         requires ::std::same_as<decltype(buffer.end), typename type::pointer>;
 
         { buffer.get_buffer_end() } noexcept -> ::std::same_as<typename type::pointer>;
-        { buffer.get_obuffer_left() } noexcept -> ::std::same_as<::std::size_t>;
-        { buffer.get_ibuffer_left() } noexcept -> ::std::same_as<::std::size_t>;
-        { buffer.advance(1zu) } noexcept -> ::std::same_as<typename type::pointer>;
-        { buffer.write(typename type::const_pointer{}, 1zu) } noexcept -> ::std::same_as<void>;
-        { buffer.read(typename type::pointer{}, 1zu) } noexcept -> ::std::same_as<void>;
         { buffer.clear() } noexcept -> ::std::same_as<void>;
+        { const_buffer.obuffer_empty() } noexcept -> ::std::same_as<bool>;
+        { const_buffer.ibuffer_empty() } noexcept -> ::std::same_as<bool>;
     };
 }  // namespace SoC
 
@@ -813,6 +761,22 @@ namespace SoC::detail
         static_assert(sync_or_async_with_ready_flag,
                       "绑定到文件的异步输入设备必须支持读就绪标志，以便在刷新缓冲区时等待设备就绪");
     };
+
+    template <typename file_t>
+    concept is_output_file_block_flushable = requires(file_t& file) {
+        { file.template flush<true>() } noexcept -> ::std::same_as<void>;
+    };
+
+    template <typename file_t>
+    concept is_output_file_block_flush_with_deduct_this =
+        requires(file_t& file) { requires ::std::is_pointer_v<decltype(&file_t::template flush<true>)>; };
+
+    template <typename file_t>
+    struct check_output_file_block_flush
+    {
+        constexpr inline static bool is_output_file_block_flushable{::SoC::detail::is_output_file_block_flushable<file_t>};
+        static_assert(is_output_file_block_flushable, "绑定到文件的输出设备必须支持阻塞的刷新操作");
+    };
 }  // namespace SoC::detail
 
 /**
@@ -845,11 +809,11 @@ export namespace SoC
          * @tparam block 是否阻塞直到刷新完成
          */
         template <bool block = false>
-        constexpr inline void flush() noexcept
+        constexpr inline void flush(this ofile& self) noexcept
         {
-            ::SoC::write_to_device(device, obuffer.begin, obuffer.current);
-            if constexpr(block) { ::SoC::wait_until_write_ready(device); }
-            obuffer.clear();
+            ::SoC::write_to_device(self.device, self.obuffer.begin, self.obuffer.current);
+            if constexpr(block) { ::SoC::wait_until_write_ready(self.device); }
+            self.obuffer.clear();
         }
 
         ~ofile() noexcept
@@ -879,16 +843,26 @@ export namespace SoC
      * @brief 判断type是否是输出文件，要求满足：
      * - type::device是输出设备的左值引用，其中输出设备要求为同步输出设备或异步输出设备且具有写就绪标志，且
      * - type::obuffer是输出缓冲区对象，且
-     * - void type::flush() noexcept
+     * - void type::template flush<true>() noexcept
      * @tparam type 要判断的类型
      */
     template <typename type>
     concept is_output_file = ::std::is_lvalue_reference_v<decltype(type::device)> &&
                              ::SoC::detail::check_output_file_type<::std::remove_reference_t<decltype(type::device)>,
                                                                    type>::sync_or_async_with_ready_flag &&
-                             ::SoC::is_buffer<decltype(type::obuffer)> && requires(type& file) {
-                                 { file.flush() } noexcept -> ::std::same_as<void>;
-                             };
+                             ::SoC::is_buffer<decltype(type::obuffer)> &&
+                             ::SoC::detail::check_output_file_block_flush<type>::is_output_file_block_flushable;
+
+    /**
+     * @brief 判断file_t是否是输出文件，要求满足：
+     * - file_t满足SoC::is_output_file<file_t>，且
+     * - void file_t::template flush<false>() noexcept
+     * @tparam file_t 文件类型
+     */
+    template <typename file_t>
+    concept is_output_file_no_block_flushable = ::SoC::is_output_file<file_t> && requires(file_t& file) {
+        { file.template flush<false>() } noexcept -> ::std::same_as<void>;
+    };
 
     /**
      * @brief 判断type是否是输入文件，要求满足：
@@ -915,28 +889,6 @@ export namespace SoC
     concept is_general_file = ::SoC::is_output_file<type> || ::SoC::is_input_file<type>;
 
     /**
-     * @brief 从输出文件中萃取设备和缓冲区
-     *
-     * @param file 要萃取的文件
-     * @return std::pair{设备引用, 缓冲区引用}
-     */
-    constexpr inline auto ofile_trait(::SoC::is_output_file auto& file) noexcept
-    {
-        return ::std::pair<decltype((file.device)), decltype((file.obuffer))>{file.device, file.obuffer};
-    }
-
-    /**
-     * @brief 从输入文件中萃取设备和缓冲区
-     *
-     * @param file 要萃取的文件
-     * @return std::pair{设备引用, 缓冲区引用}
-     */
-    constexpr inline auto ifile_trait(::SoC::is_input_file auto& file) noexcept
-    {
-        return ::std::pair<decltype((file.device)), decltype((file.ibuffer))>{file.device, file.ibuffer};
-    }
-
-    /**
      * @brief 轮询等待直到绑定到文件的设备就绪
      *
      * @tparam file_t 文件类型
@@ -946,6 +898,88 @@ export namespace SoC
     constexpr inline void wait_until_write_ready(file_t& file) noexcept
     {
         ::SoC::wait_until_write_ready(file.device);
+    }
+
+    /**
+     * @brief 输出文件萃取器
+     *
+     * @tparam value_type 输出文件元素类型
+     */
+    template <typename value_type>
+    struct ofile_trait_t
+    {
+        using pointer = value_type*;
+        using const_pointer = const value_type*;
+        using callback_t = void (*)(void*) noexcept;
+
+        /// 类型擦除的输出文件指针
+        void* file;
+        /// 类型擦除的刷新回调函数
+        callback_t flush_callback;
+        /// 等待直到写入完成回调函数
+        callback_t wait_until_write_ready_callback;
+        /// 缓冲区当前指针的引用
+        pointer& current;
+        /// 缓冲区结束指针
+        pointer end;
+
+        /**
+         * @brief 向缓冲区写入数据
+         *
+         * @param data 要写入的数据指针
+         * @param size 要写入的数据大小
+         */
+        void write(const_pointer data, ::std::size_t size)
+        {
+            ::std::memcpy(current, data, size);
+            current += size;
+        }
+
+        /**
+         * @brief 获取缓冲区剩余空间大小
+         *
+         * @return 缓冲区剩余空间大小
+         */
+        ::std::size_t get_buffer_size_left() const { return end - current; }
+
+        /**
+         * @brief 刷新缓冲区
+         *
+         */
+        void flush() { flush_callback(file); }
+    };
+
+    /**
+     * @brief 等待直到写入完成
+     *
+     * @param trait 输出文件萃取器
+     */
+    template <typename value_type>
+    void wait_until_write_ready(::SoC::ofile_trait_t<value_type>& trait)
+    {
+        trait.wait_until_write_ready_callback(trait.file);
+    }
+
+    /**
+     * @brief 从输出文件中萃取设备和缓冲区
+     *
+     * @param file 要萃取的文件
+     * @return std::pair{设备引用, 缓冲区引用}
+     */
+    constexpr inline auto ofile_trait(::SoC::is_output_file auto& file) noexcept
+    {
+        using file_t = ::std::remove_reference_t<decltype(file)>;
+        constexpr auto flush{[](void* file) static noexcept -> void { reinterpret_cast<file_t*>(file)->template flush<true>(); }};
+        constexpr auto wait_until_write_ready{[](void* file) static noexcept -> void
+                                              { ::SoC::wait_until_write_ready(*reinterpret_cast<file_t*>(file)); }};
+
+        return ::SoC::ofile_trait_t{
+            &file,
+            flush,
+            wait_until_write_ready,
+            file.obuffer.current,
+            file.obuffer.get_buffer_end(),
+        };
     }
 }  // namespace SoC
 
@@ -958,78 +992,75 @@ export namespace SoC
     /**
      * @brief 将字符串视图输出到file
      *
-     * @param file 输出文件
+     * @param trait 输出文件萃取器
      * @param string 字符串视图
      */
-    constexpr inline void do_print_arg(::SoC::is_output_file auto& file, ::std::string_view string) noexcept
+    constexpr inline void do_print_arg(::SoC::ofile_trait_t<char>& trait, ::std::string_view string) noexcept
     {
-        auto&& [device, buffer]{::SoC::ofile_trait(file)};
-        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= string.size()) [[likely]]
+        if(auto buffer_size_left{trait.get_buffer_size_left()}; buffer_size_left >= string.size()) [[likely]]
         {
-            buffer.write(string.data(), string.size());
+            trait.write(string.data(), string.size());
         }
         else
         {
-            buffer.write(string.data(), buffer_size_left);
-            file.template flush<true>();
+            trait.write(string.data(), buffer_size_left);
+            trait.flush();
             auto output_size_left{string.size() - buffer_size_left};
-            buffer.write(string.data() + buffer_size_left, output_size_left);
+            trait.write(string.data() + buffer_size_left, output_size_left);
         }
     }
 
     /**
      * @brief 将C风格字符串输出到file
      *
-     * @param file 输出文件
+     * @param trait 输出文件萃取器
      * @param string C风格字符串
      */
-    constexpr inline void do_print_arg(::SoC::is_output_file auto& file, const char* string) noexcept
+    constexpr inline void do_print_arg(::SoC::ofile_trait_t<char>& trait, const char* string) noexcept
     {
-        ::SoC::do_print_arg(file, ::std::string_view{string});
+        ::SoC::do_print_arg(trait, ::std::string_view{string});
     }
 
     /**
      * @brief 将整数或浮点数输出到file
      *
-     * @param file 输出文件
+     * @param trait 输出文件萃取器
      * @param num 整数或浮点数
      * @param tmp_buffer 输出缓冲区
      */
-    constexpr inline void do_print_arg(::SoC::is_output_file auto& file,
+    constexpr inline void do_print_arg(::SoC::ofile_trait_t<char>& trait,
                                        ::SoC::detail::is_int_fp auto num,
                                        ::SoC::unified_text_buffer tmp_buffer) noexcept
     {
-        auto&& [device, buffer]{::SoC::ofile_trait(file)};
         constexpr auto max_text_buffer_size{::SoC::max_text_buffer_size<decltype(num)>};
-        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
+        if(auto buffer_size_left{trait.get_buffer_size_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
         {
-            auto&& current{buffer.current};
-            current = ::std::to_chars(current, buffer.get_buffer_end(), num).ptr;
+            trait.current = ::std::to_chars(trait.current, trait.end, num).ptr;
         }
         else
         {
             auto ptr{::std::to_chars(tmp_buffer.begin(), tmp_buffer.end(), num).ptr};
             auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
-            buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
-            if(output_size >= buffer_size_left) { file.template flush<true>(); }
+            trait.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
+            if(output_size >= buffer_size_left) { trait.flush(); }
             else [[likely]]
             {
                 return;
             }
             auto output_size_left{output_size - buffer_size_left};
-            buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
+            trait.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
         }
     }
 
     /**
      * @brief 将布尔值输出到设备或文件
      *
-     * @tparam output_t 输出设备或文件类型
-     * @param output 输出设备或文件
+     * @tparam output_t 输出设备或文件萃取器
+     * @param output 输出设备或文件萃取器
      * @param value 要输出的布尔值
      */
     template <typename output_t>
-        requires (::SoC::is_output_device<output_t, char> || ::SoC::is_output_file<output_t>)
+        requires (::SoC::is_output_device<output_t, char> || ::std::same_as<::SoC::ofile_trait_t<char>, output_t>)
     constexpr inline void do_print_arg(output_t& output, bool value) noexcept
     {
         using namespace ::std::string_view_literals;
@@ -1039,72 +1070,68 @@ export namespace SoC
     /**
      * @brief 将带格式的浮点数输出到文件
      *
-     * @param file 输出文件
+     * @param trait 输出文件萃取器
      * @param format_wrapper 带格式的浮点数包装对象
      * @param tmp_buffer 输出缓冲区
      */
     template <::std::floating_point type>
-    constexpr inline void do_print_arg(::SoC::is_output_file auto& file,
+    constexpr inline void do_print_arg(::SoC::ofile_trait_t<char>& trait,
                                        ::SoC::detail::floating_point_format<type> format_wrapper,
                                        ::SoC::unified_text_buffer tmp_buffer) noexcept
     {
         auto&& [num, format, precision]{format_wrapper};
-        auto&& [device, buffer]{::SoC::ofile_trait(file)};
         constexpr auto max_text_buffer_size{::SoC::max_text_buffer_size<decltype(num)>};
-        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
+        if(auto buffer_size_left{trait.get_buffer_size_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
         {
-            auto&& current{buffer.current};
-            current = ::std::to_chars(current, buffer.get_buffer_end(), num, format, precision).ptr;
+            trait.current = ::std::to_chars(trait.current, trait.end, num, format, precision).ptr;
         }
         else
         {
             auto ptr{::std::to_chars(tmp_buffer.begin(), tmp_buffer.end(), num, format, precision).ptr};
             auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
-            buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
-            if(output_size >= buffer_size_left) { file.template flush<true>(); }
+            trait.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
+            if(output_size >= buffer_size_left) { trait.flush(); }
             else [[likely]]
             {
                 return;
             }
             auto output_size_left{output_size - buffer_size_left};
-            buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
+            trait.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
         }
     }
 
     /**
      * @brief 将带进制的整数输出到文件
      *
-     * @param device 输出文件
+     * @param trait 输出文件萃取器
      * @param format_wrapper 带进制的整数包装对象
      * @param tmp_buffer 输出缓冲区
      */
     template <::std::integral type, ::SoC::detail::integer_base base>
-    constexpr inline void do_print_arg(::SoC::is_output_file auto& file,
+    constexpr inline void do_print_arg(::SoC::ofile_trait_t<char>& trait,
                                        ::SoC::detail::integer_format<type, base> format_wrapper,
                                        ::SoC::unified_text_buffer tmp_buffer) noexcept
     {
-        auto&& [device, buffer]{::SoC::ofile_trait(file)};
         auto num{format_wrapper.value};
         constexpr auto max_text_buffer_size{::SoC::max_text_buffer_size<decltype(format_wrapper)>};
-        if(auto buffer_size_left{buffer.get_obuffer_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
+        if(auto buffer_size_left{trait.get_buffer_size_left()}; buffer_size_left >= max_text_buffer_size) [[likely]]
         {
-            auto&& current{buffer.current};
-            current = ::SoC::detail::write_integer_base_prefix<base>(current);
-            current = ::std::to_chars(current, buffer.get_buffer_end(), num, ::SoC::to_underlying(base)).ptr;
+            trait.current = ::SoC::detail::write_integer_base_prefix<base>(trait.current);
+            trait.current = ::std::to_chars(trait.current, trait.end, num, ::SoC::to_underlying(base)).ptr;
         }
         else
         {
             auto ptr{::SoC::detail::write_integer_base_prefix<base>(tmp_buffer.begin())};
             ptr = ::std::to_chars(ptr, tmp_buffer.end(), num, ::SoC::to_underlying(base)).ptr;
             auto output_size{static_cast<::std::size_t>(ptr - tmp_buffer.begin())};
-            buffer.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
-            if(output_size >= buffer_size_left) { file.template flush<true>(); }
+            trait.write(tmp_buffer.begin(), ::std::min(output_size, buffer_size_left));
+            if(output_size >= buffer_size_left) { trait.flush(); }
             else [[likely]]
             {
                 return;
             }
             auto output_size_left{output_size - buffer_size_left};
-            buffer.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
+            trait.write(tmp_buffer.begin() + buffer_size_left, output_size_left);
         }
     }
 
@@ -1117,8 +1144,10 @@ export namespace SoC
      * @tparam file_t 输出文件类型
      */
     template <typename arg_t, typename file_t>
-    concept is_printable_to_file = ::SoC::is_output_file<file_t> && (::SoC::is_no_max_text_buffer_size_printable<arg_t, file_t> ||
-                                                                     ::SoC::is_has_max_text_buffer_size_printable<arg_t, file_t>);
+    concept is_printable_to_file =
+        ::SoC::is_output_file<file_t> &&
+        (::SoC::is_no_max_text_buffer_size_printable<arg_t, ::SoC::ofile_trait_t<typename file_t::value_type>> ||
+         ::SoC::is_has_max_text_buffer_size_printable<arg_t, ::SoC::ofile_trait_t<typename file_t::value_type>>);
 }  // namespace SoC
 
 namespace SoC::detail
@@ -1221,8 +1250,16 @@ export namespace SoC
     template <bool flush = false, ::SoC::is_output_file file_t, ::SoC::is_printable_to_file<file_t>... args_t>
     constexpr inline void print(file_t& file, args_t&&... args) noexcept
     {
-        ::SoC::detail::print_wrapper(file, ::std::forward<args_t>(args)...);
-        if constexpr(flush) { file.flush(); }
+        auto trait{::SoC::ofile_trait(file)};
+        ::SoC::detail::print_wrapper(trait, ::std::forward<args_t>(args)...);
+        if constexpr(flush)
+        {
+            if constexpr(::SoC::is_output_file_no_block_flushable<file_t>) { file.template flush<false>(); }
+            else
+            {
+                file.template flush<true>();
+            }
+        }
     }
 
     /**
@@ -1481,10 +1518,18 @@ export namespace SoC
     template <bool flush = false, ::SoC::is_output_file file_t, ::SoC::is_printable_to_file<file_t>... args_t>
     constexpr inline void print(file_t& file, ::SoC::detail::is_fmt_parser auto fmt, args_t&&... args) noexcept
     {
-        ::SoC::detail::print_wrapper<decltype(fmt)>(file,
+        auto trait{::SoC::ofile_trait(file)};
+        ::SoC::detail::print_wrapper<decltype(fmt)>(trait,
                                                     ::std::make_index_sequence<fmt.get_total_num()>{},
                                                     ::std::forward<args_t>(args)...);
-        if constexpr(flush) { file.flush(); }
+        if constexpr(flush)
+        {
+            if constexpr(::SoC::is_output_file_no_block_flushable<file_t>) { file.template flush<false>(); }
+            else
+            {
+                file.template flush<true>();
+            }
+        }
     }
 
     /**
