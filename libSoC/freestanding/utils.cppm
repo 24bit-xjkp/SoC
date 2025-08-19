@@ -40,6 +40,14 @@ export namespace SoC
     /// 是否启用全部的断言
     constexpr inline auto use_full_assert{false};
 #endif
+
+#ifdef __cpp_exceptions
+    /// 条件性noexcept，在独立环境下为禁用异常；在宿主环境下支持异常
+    constexpr inline auto optional_noexcept{false};
+#else
+    /// 条件性noexcept，在独立环境下为禁用异常；在宿主环境下支持异常
+    constexpr inline auto optional_noexcept{true};
+#endif
 }  // namespace SoC
 
 namespace SoC
@@ -294,8 +302,8 @@ export namespace SoC
      * @param message 要输出的消息
      * @param location 源代码位置
      */
-    extern "C++" [[noreturn]] [[using gnu: noinline, cold]] void assert_failed(::std::string_view message,
-                                                                               ::std::source_location location) noexcept;
+    extern "C++" [[noreturn]] [[using gnu: noinline, cold]] void
+        assert_failed(::std::string_view message, ::std::source_location location) noexcept(::SoC::optional_noexcept);
 
     /**
      * @brief 基于C++的断言函数
@@ -305,9 +313,10 @@ export namespace SoC
      * @param message 要输出的消息
      * @param location 源代码位置
      */
-    constexpr inline void assert(bool expression,
-                                 ::std::string_view message = ::SoC::detail::default_assert_message,
-                                 ::std::source_location location = ::std::source_location::current()) noexcept
+    constexpr inline void
+        assert(bool expression,
+               ::std::string_view message = ::SoC::detail::default_assert_message,
+               ::std::source_location location = ::std::source_location::current()) noexcept(::SoC::optional_noexcept)
     {
         if constexpr(::SoC::use_full_assert)
         {
@@ -322,9 +331,10 @@ export namespace SoC
      * @param message 要输出的消息
      * @param location 源代码位置
      */
-    constexpr inline void always_assert(bool expression,
-                                        ::std::string_view message = ::SoC::detail::default_assert_message,
-                                        ::std::source_location location = ::std::source_location::current()) noexcept
+    constexpr inline void
+        always_assert(bool expression,
+                      ::std::string_view message = ::SoC::detail::default_assert_message,
+                      ::std::source_location location = ::std::source_location::current()) noexcept(::SoC::optional_noexcept)
     {
         if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
     }
@@ -342,9 +352,11 @@ export namespace SoC
      * @param message 要输出的消息
      * @param location 源代码位置
      */
-    constexpr inline void always_check(bool expression,
-                                       ::std::string_view message = ::SoC::detail::default_assert_message,
-                                       ::std::source_location location = ::std::source_location::current()) noexcept
+    constexpr inline void
+        always_check(bool expression,
+                     ::std::string_view message = ::SoC::detail::default_assert_message,
+                     ::std::source_location location = ::std::source_location::current()) noexcept(::SoC::optional_noexcept ||
+                                                                                                   !::SoC::use_full_assert)
     {
         if constexpr(::SoC::use_full_assert)
         {

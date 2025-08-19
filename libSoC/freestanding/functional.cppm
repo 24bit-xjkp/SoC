@@ -19,6 +19,23 @@ namespace SoC::detail
     export template <typename callable_t, typename... args_t>
     concept static_call_operator = ::std::invocable<decltype(&callable_t::operator()), args_t...>;
 
+    template <typename callable_t, typename return_t, typename... args_t>
+    consteval inline bool function_wrapper_noexcept() noexcept
+    {
+        if constexpr(::std::is_pointer_v<callable_t>)
+        {
+            return ::std::is_nothrow_invocable_r_v<return_t, callable_t, args_t...>;
+        }
+        else if constexpr(::SoC::detail::static_call_operator<callable_t>)
+        {
+            return ::std::is_nothrow_invocable_r_v<return_t, decltype(&callable_t::operator()), args_t...>;
+        }
+        else
+        {
+            return ::std::is_nothrow_invocable_r_v<return_t, callable_t&, args_t...>;
+        }
+    }
+
     /**
      * @brief 函数包装体
      *
@@ -31,7 +48,7 @@ namespace SoC::detail
      */
     template <typename callable_t, typename return_t, typename... args_t>
         requires (!::std::is_reference_v<callable_t>)
-    inline return_t function_wrapper(void* ptr, args_t... args) noexcept
+    inline return_t function_wrapper(void* ptr, args_t... args) noexcept(function_wrapper_noexcept<callable_t, return_t, args_t...>() || ::SoC::optional_noexcept)
     {
         if constexpr(::std::is_pointer_v<callable_t>)
         {
@@ -86,7 +103,7 @@ export namespace SoC
 
         [[no_unique_address]] allocator_t allocator;
         void* ptr{};
-        using func_t = return_t (*)(void*, args_t...) noexcept;
+        using func_t = return_t (*)(void*, args_t...) noexcept(::SoC::optional_noexcept);
         func_t func{};
         using destroy_t = ::std::size_t (*)(void*) noexcept;
         destroy_t destroy_callback{};
@@ -95,7 +112,7 @@ export namespace SoC
          * @brief 析构函数对象并释放内存
          *
          */
-        void destroy() noexcept
+        void destroy() noexcept(::SoC::optional_noexcept)
         {
             if(destroy_callback) { allocator.deallocate(ptr, destroy_callback(ptr)); }
         }
@@ -216,17 +233,10 @@ export namespace SoC
          * @param args 参数列表
          * @return 返回值
          */
-        inline return_t operator() (args_t... args) noexcept
+        inline return_t operator() (args_t... args) noexcept(::SoC::optional_noexcept)
         {
-            if constexpr(::SoC::use_full_assert)
-            {
-                using namespace ::std::string_view_literals;
-                ::SoC::assert(func, "未绑定到可调用对象"sv);
-            }
-            else
-            {
-                if(!func) [[unlikely]] { ::SoC::fast_fail(); }
-            }
+            using namespace ::std::string_view_literals;
+            ::SoC::always_check(func, "未绑定到可调用对象"sv);
             return func(ptr, ::std::forward<args_t>(args)...);
         }
 

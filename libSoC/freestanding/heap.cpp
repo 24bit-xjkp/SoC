@@ -12,7 +12,7 @@ namespace SoC
 {
     using namespace ::std::string_view_literals;
 
-    ::SoC::heap::heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept
+    ::SoC::heap::heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept(::SoC::optional_noexcept)
     {
         if constexpr(::SoC::use_full_assert)
         {
@@ -40,7 +40,7 @@ namespace SoC
         free_page_list.back() = metadata.begin();
     }
 
-    ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(::std::size_t free_list_index) noexcept
+    ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(::std::size_t free_list_index) noexcept(::SoC::optional_noexcept)
     {
         auto&& free_page{free_page_list.back()};
         if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
@@ -83,7 +83,7 @@ namespace SoC
         return page_metadata;
     }
 
-    ::SoC::detail::heap_page_metadata* ::SoC::heap::page_gc(bool assert) noexcept
+    ::SoC::detail::heap_page_metadata* ::SoC::heap::page_gc(bool assert) noexcept(::SoC::optional_noexcept)
     {
 #pragma GCC unroll(0)
         for(auto&& block_list: ::std::ranges::subrange{free_page_list.begin(), free_page_list.end() - 1})
@@ -106,11 +106,7 @@ namespace SoC
         auto free_page{free_page_list.back()};
         if(assert)
         {
-            if constexpr(::SoC::use_full_assert) { ::SoC::assert(free_page != nullptr, "剩余堆空间不足"sv); }
-            else
-            {
-                if(free_page == nullptr) [[unlikely]] { ::SoC::fast_fail(); }
-            }
+            ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv);
         }
         return free_page;
     }
@@ -142,7 +138,7 @@ namespace SoC
         return range_begin;
     }
 
-    void* ::SoC::heap::allocate_pages(::std::size_t page_cnt) noexcept
+    void* ::SoC::heap::allocate_pages(::std::size_t page_cnt) noexcept(::SoC::optional_noexcept)
     {
         // 分配一个页的快速路径
         if(page_cnt == 1) [[likely]]
@@ -190,16 +186,12 @@ namespace SoC
                 }
             }
 
-            if constexpr(::SoC::use_full_assert) { ::SoC::assert(false, "堆中剩余连续分页数量不足"sv); }
-            else
-            {
-                ::SoC::fast_fail();
-            }
+            ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
             return nullptr;
         }
     }
 
-    void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t size) noexcept
+    void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
         auto page_cnt{(size + page_size - 1) / page_size};
         if constexpr(::SoC::use_full_assert)
@@ -219,7 +211,7 @@ namespace SoC
         }
     }
 
-    void* ::SoC::heap::allocate_cold_path(::std::size_t size) noexcept
+    void* ::SoC::heap::allocate_cold_path(::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
         auto actual_size{get_actual_allocate_size(size)};
         auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
@@ -246,7 +238,7 @@ namespace SoC
         return cnt;
     }
 
-    void* ::SoC::heap::allocate(::std::size_t size) noexcept
+    void* ::SoC::heap::allocate(::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
         auto actual_size{get_actual_allocate_size(size)};
         auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
@@ -280,7 +272,7 @@ namespace SoC
         }
     }
 
-    void ::SoC::heap::deallocate(void* ptr, ::std::size_t size) noexcept
+    void ::SoC::heap::deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
         auto page_ptr{reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr)};
         auto actual_size{get_actual_allocate_size(size)};

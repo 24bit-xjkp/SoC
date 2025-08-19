@@ -8,6 +8,7 @@ module;
 #include <version>
 export module SoC.freestanding:allocator;
 import SoC.std;
+import :utils;
 
 namespace SoC::detail
 {
@@ -49,25 +50,12 @@ export namespace SoC
 
     constexpr inline bool std_allocation_result_available{false};
 #endif
+}  // namespace SoC
 
-    /**
-     * @brief 判断type是否为分配器，要求满足：
-     * - 是无状态分配器，即大小不超过一个指针，且
-     * - 可默认构造和平凡复制和移动构造，且
-     * - 可平凡复制和移动赋值，且
-     * - 可相等性比较，且
-     * - void* type::allocate(std::size_t) noexcept，且
-     * - template<typename t> t* type::allocate() noexcept，且
-     * - template<typename t> SoC::allocation_result<t*> type::allocate(std::size_t) noexcept，且
-     * - void type::deallocate(auto* ptr, std::size_t = 1) noexcept，且
-     * - void type::deallocate(void* ptr, std::size_t) noexcept，且
-     * @tparam type 要判断的类型
-     */
+namespace SoC::detail
+{
     template <typename type>
-    concept is_allocator =
-        sizeof(type) <= sizeof(void*) && ::std::is_trivially_copy_constructible_v<type> &&
-        ::std::is_trivially_move_constructible_v<type> && ::std::is_default_constructible_v<type> &&
-        ::std::is_trivially_copy_assignable_v<type> && ::std::is_trivially_move_assignable_v<type> &&
+    concept is_allocator_without_exception =
         ::std::equality_comparable<type> && requires(type& allocator, int* ptr, ::std::size_t n, void* void_ptr) {
             { allocator.allocate(n) } noexcept -> ::std::same_as<void*>;
             { allocator.template allocate<int>() } noexcept -> ::std::same_as<int*>;
@@ -76,6 +64,50 @@ export namespace SoC
             { allocator.deallocate(ptr, n) } noexcept -> ::std::same_as<void>;
             { allocator.deallocate(void_ptr, n) } noexcept -> ::std::same_as<void>;
         };
+
+    template <typename type>
+    concept is_allocator_with_exception =
+        ::std::equality_comparable<type> && requires(type& allocator, int* ptr, ::std::size_t n, void* void_ptr) {
+            { allocator.allocate(n) } -> ::std::same_as<void*>;
+            { allocator.template allocate<int>() } -> ::std::same_as<int*>;
+            { allocator.template allocate<int>(n) } -> ::std::same_as<::SoC::allocation_result<int*>>;
+            { allocator.deallocate(ptr) } -> ::std::same_as<void>;
+            { allocator.deallocate(ptr, n) } -> ::std::same_as<void>;
+            { allocator.deallocate(void_ptr, n) } -> ::std::same_as<void>;
+        };
+}  // namespace SoC::detail
+
+export namespace SoC
+{
+    /**
+     * @brief 判断type是否为分配器，要求满足：
+     * - 是无状态分配器，即大小不超过一个指针，且
+     * - 可默认构造和平凡复制和移动构造，且
+     * - 可平凡复制和移动赋值，且
+     * - 可相等性比较，且
+     * - void* type::allocate(std::size_t) noexcept(::SoC::optional_noexcept)，且
+     * - template<typename t> t* type::allocate() noexcept(::SoC::optional_noexcept)，且
+     * - template<typename t> SoC::allocation_result<t*> type::allocate(std::size_t) noexcept(::SoC::optional_noexcept)，且
+     * - void type::deallocate(auto* ptr, std::size_t = 1) noexcept(::SoC::optional_noexcept)，且
+     * - void type::deallocate(void* ptr, std::size_t) noexcept(::SoC::optional_noexcept)
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_allocator = sizeof(type) <= sizeof(void*) && ::std::is_trivially_copy_constructible_v<type> &&
+                           ::std::is_trivially_move_constructible_v<type> && ::std::is_default_constructible_v<type> &&
+                           ::std::is_trivially_copy_assignable_v<type> && ::std::is_trivially_move_assignable_v<type> &&
+                           ::std::equality_comparable<type> &&
+                           (::SoC::optional_noexcept ? ::SoC::detail::is_allocator_without_exception<type>
+                                                     : ::SoC::detail::is_allocator_with_exception<type>);
+
+    /**
+     * @brief 判断type是否为无异常分配器，要求满足：
+     * - SoC::is_allocator<type>，且
+     * - allocate和deallocate都满足noexcept
+     * @tparam type 要判断的类型
+     */
+    template <typename type>
+    concept is_noexcept_allocator = ::SoC::is_allocator<type> && ::SoC::detail::is_allocator_without_exception<type>;
 
     /**
      * @brief 将SoC分配器包装为标准分配器
@@ -99,9 +131,12 @@ export namespace SoC
          * @param n 分配对象个数
          * @return 分配内存区域首指针
          */
-        constexpr inline type* allocate(::std::size_t n) noexcept { return allocator.template allocate<type>(n).ptr; }
+        constexpr inline type* allocate(::std::size_t n) noexcept(noexcept(allocator.template allocate<type>(n).ptr))
+        {
+            return allocator.template allocate<type>(n).ptr;
+        }
 
-        constexpr inline auto allocate_at_least(::std::size_t n) noexcept
+        constexpr inline auto allocate_at_least(::std::size_t n) noexcept(noexcept(allocator.template allocate<type>(n)))
             requires (::SoC::std_allocation_result_available)
         {
             return allocator.template allocate<type>(n);
@@ -113,7 +148,10 @@ export namespace SoC
          * @param ptr 分配内存区域首指针
          * @param n 分配对象个数
          */
-        constexpr inline void deallocate(type* ptr, ::std::size_t n) noexcept { return allocator.deallocate(ptr, n); }
+        constexpr inline void deallocate(type* ptr, ::std::size_t n) noexcept(noexcept(allocator.deallocate(ptr, n)))
+        {
+            return allocator.deallocate(ptr, n);
+        }
 
         /**
          * @brief 比较两个分配器对象是否相等

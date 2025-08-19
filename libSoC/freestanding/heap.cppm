@@ -65,7 +65,7 @@ export namespace SoC
          * @param free_list_index 空闲链表索引
          * @return 页起始地址
          */
-        ::SoC::detail::free_block_list_t* make_block_in_page(::std::size_t free_list_index) noexcept;
+        ::SoC::detail::free_block_list_t* make_block_in_page(::std::size_t free_list_index) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 将已分块的页从块空闲链表中删除，插入页空闲链表中
@@ -81,7 +81,7 @@ export namespace SoC
          * @param assert 是否断言空闲页链表非空
          * @return 空闲页链表首指针
          */
-        [[using gnu: noinline, cold]] ::SoC::detail::heap_page_metadata* page_gc(bool assert) noexcept;
+        [[using gnu: noinline, cold]] ::SoC::detail::heap_page_metadata* page_gc(bool assert) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 获取页内指针所在页对应的元数据数组索引
@@ -109,7 +109,7 @@ export namespace SoC
          *
          * @param page_cnt 要操作的页数量
          */
-        void* allocate_pages(::std::size_t page_cnt) noexcept;
+        void* allocate_pages(::std::size_t page_cnt) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 释放一个或多个，慢速路径
@@ -117,14 +117,14 @@ export namespace SoC
          * @param ptr 块指针
          * @param size 要释放的大小
          */
-        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t size) noexcept;
+        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 分配冷路径
          *
          * @param size 要分配的大小
          */
-        [[using gnu: noinline, cold]] void* allocate_cold_path(::std::size_t size) noexcept;
+        [[using gnu: noinline, cold]] void* allocate_cold_path(::std::size_t size) noexcept(::SoC::optional_noexcept);
 
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
@@ -143,7 +143,7 @@ export namespace SoC
          * @param end 堆结束地址
          * @note end必须对齐到页边界
          */
-        explicit heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept;
+        explicit heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept(::SoC::optional_noexcept);
 
         inline ~heap() noexcept = default;
 
@@ -191,7 +191,7 @@ export namespace SoC
          * @param size 块大小
          * @return void* 块起始地址
          */
-        void* allocate(::std::size_t size) noexcept;
+        void* allocate(::std::size_t size) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 释放指定块
@@ -199,7 +199,7 @@ export namespace SoC
          * @param ptr 块起始地址
          * @param size 块大小
          */
-        void deallocate(void* ptr, ::std::size_t size) noexcept;
+        void deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept);
     };
 
     namespace detail
@@ -227,7 +227,7 @@ export namespace SoC
              * @param size 要分配的字节数
              * @return 内存区域首指针
              */
-            inline static void* allocate(::std::size_t size) noexcept { return wrapper::heap->allocate(size); }
+            inline static void* allocate(::std::size_t size) noexcept(::SoC::optional_noexcept) { return wrapper::heap->allocate(size); }
 
             /**
              * @brief 分配一个type类型对象所需的空间
@@ -236,7 +236,7 @@ export namespace SoC
              * @return 内存区域首指针
              */
             template <::SoC::detail::is_known_type_allocatable type>
-            inline static type* allocate() noexcept
+            inline static type* allocate() noexcept(::SoC::optional_noexcept)
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
                 return reinterpret_cast<type*>(wrapper::heap->allocate(size));
@@ -250,7 +250,7 @@ export namespace SoC
              * @return SoC::allocation_result<type*> 内存区域首指针和实际可容纳对象数
              */
             template <::SoC::detail::is_known_type_allocatable type>
-            inline static ::SoC::allocation_result<type*> allocate(::std::size_t n) noexcept
+            inline static ::SoC::allocation_result<type*> allocate(::std::size_t n) noexcept(::SoC::optional_noexcept)
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
                 constexpr auto page_size{::SoC::heap::page_size};
@@ -271,7 +271,7 @@ export namespace SoC
              * @param n 要释放的对象个数
              */
             template <::SoC::detail::is_known_type_allocatable type>
-            inline static void deallocate(type* ptr, ::std::size_t n = 1) noexcept
+            inline static void deallocate(type* ptr, ::std::size_t n = 1) noexcept(::SoC::optional_noexcept)
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
                 wrapper::heap->deallocate(ptr, size * n);
@@ -283,7 +283,7 @@ export namespace SoC
              * @param ptr 内存区域首指针
              * @param size 要释放的字节数，需要和分配时保持一致
              */
-            inline static void deallocate(void* ptr, ::std::size_t size) noexcept { wrapper::heap->deallocate(ptr, size); }
+            inline static void deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept) { wrapper::heap->deallocate(ptr, size); }
 
             /**
              * @brief 比较两个分配器对象是否相同
@@ -383,7 +383,7 @@ export namespace SoC
          * @brief 释放智能指针指向的对象
          *
          */
-        constexpr inline void release() noexcept
+        constexpr inline void release() noexcept(::SoC::optional_noexcept)
         {
             if(ptr != nullptr)
             {

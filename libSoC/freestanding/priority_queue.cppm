@@ -144,7 +144,7 @@ namespace SoC
          *
          * @param args 构造参数列表
          */
-        constexpr inline void emplace_back(::std::constructible_from<type> auto&&... args) noexcept
+        constexpr inline void emplace_back(::std::constructible_from<type> auto&&... args) noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
             ::SoC::always_check(!full(), "优先队列已满"sv);
@@ -156,7 +156,7 @@ namespace SoC
          * @brief 从优先队列移除首个元素
          *
          */
-        constexpr inline void pop_front() noexcept
+        constexpr inline void pop_front() noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
             ::SoC::always_check(!full(), "优先队列已空"sv);

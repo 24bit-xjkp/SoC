@@ -34,27 +34,6 @@ export namespace SoC
         /// 缓冲区容量掩码
         constexpr inline static ::std::size_t buffer_mask = buffer_size - 1;
 
-        /**
-         * @brief 检查缓冲区是否已空
-         *
-         * @param location 源代码位置
-         */
-        constexpr inline void assert_not_empty(::std::source_location location = ::std::source_location::current()) const noexcept
-        {
-            using namespace ::std::string_view_literals;
-            ::SoC::always_check(!empty(), "环形缓冲区已空"sv, location);
-        }
-
-        /**
-         * @brief 检查缓冲区是否已满
-         * @param location 源代码位置
-         */
-        constexpr inline void assert_not_full(::std::source_location location = ::std::source_location::current()) const noexcept
-        {
-            using namespace ::std::string_view_literals;
-            ::SoC::always_check(!full(), "环形缓冲区已满"sv, location);
-        }
-
     public:
         /**
          * @brief 构造一个环形缓冲区
@@ -135,9 +114,10 @@ export namespace SoC
          *
          * @param args 构造参数列表
          */
-        constexpr inline void emplace_back(::std::constructible_from<type> auto&&... args) noexcept
+        constexpr inline void emplace_back(::std::constructible_from<type> auto&&... args) noexcept(::SoC::optional_noexcept)
         {
-            assert_not_full();
+            using namespace ::std::string_view_literals;
+            ::SoC::always_check(!full(), "环形缓冲区已满"sv);
             ::new(&buffer[tail++ & buffer_mask].value) type{::std::forward<decltype((args))>(args)...};
         }
 
@@ -158,9 +138,10 @@ export namespace SoC
          *
          * @return 移除的元素
          */
-        constexpr inline value_type pop_front() noexcept
+        constexpr inline value_type pop_front() noexcept(::SoC::optional_noexcept)
         {
-            assert_not_empty();
+            using namespace ::std::string_view_literals;
+            ::SoC::always_check(!empty(), "环形缓冲区已空"sv);
             auto&& ref{buffer[head++ & buffer_mask].value};
             ::SoC::destructure_guard _{ref};
             return ::std::move(ref);
