@@ -15,6 +15,9 @@
     rtlib = "default",
     sysroot = "detect",
     toolchain = "arm-fpv4-none-eabi-gcc",
+    toolchain_host = "native-gcc",
+    build_unit_test = true,
+    march_host = "default",
     unwindlib = "default",
     runtimes = "stdc++_static"
 }

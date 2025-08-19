@@ -3,3 +3,8 @@ option("assert")
     set_description("Use assert in stm32 hal/ll and SoC.")
     add_defines("USE_FULL_ASSERT")
 option_end()
+
+option("build_unit_test")
+    set_default(true)
+    set_description("Build unit test.")
+option_end()
