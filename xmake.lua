@@ -31,6 +31,7 @@ rule("stm32_pc")
             target:add("ldflags", "gcc::-Wno-psabi")
             target:set("toolchains", get_config("toolchain"))
         else
+            target:set("exceptions", "cxx")
             target:add("defines", "USE_FULL_ASSERT")
             target:set("toolchains", get_config("toolchain_host"))
             target:set("policy", "build.c++.modules.std", true)
