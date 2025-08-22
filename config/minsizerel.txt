@@ -5,7 +5,6 @@
     debug_info = "minsizerel",
     debug_strip = "debug",
     enable_lto = true,
-    host = "linux",
     kind = "static",
     march = "armv7e-m",
     mode = "minsizerel",
