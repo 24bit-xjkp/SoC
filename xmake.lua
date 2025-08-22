@@ -15,8 +15,8 @@ set_defaultmode("debug")
 set_config("debug_info", "minsizerel")
 local build_mode = get_config("mode")
 if build_mode then
-    set_rules(get_config("mode"))
-    add_defines(string.format("SOC_BUILD_MODE_%s", string.upper(get_config("mode"))))
+    add_rules(build_mode)
+    add_defines(string.format("SOC_BUILD_MODE_%s", string.upper(build_mode)))
 end
 rule("stm32_pc")
     on_load(function(target)

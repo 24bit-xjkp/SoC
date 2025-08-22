@@ -1,10 +1,11 @@
-if is_mode("debug") then
-    add_rules("releasedbg")
-end
 target("cmsis")
     set_kind("object")
     add_includedirs("include", {public = true})
     add_files("src/*.c")
+
+    if is_mode("debug") then
+        add_rules("releasedbg")
+    end
 
     on_load(function (target)
         import("utility.common")

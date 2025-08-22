@@ -2,6 +2,9 @@ target("SoC.crt")
     set_kind("object")
     add_files("*.cppm", {public = true})
     add_files("*.cpp")
+    if is_mode("debug") then
+        add_rules("releasedbg")
+    end
 
     on_load(function (target)
         import("utility.common")
