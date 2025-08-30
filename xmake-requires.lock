@@ -1,0 +1,15 @@
+{
+    ["cross|arm"] = {
+        ["doctest#3d797cc0"] = {
+            repo = {
+                branch = "master",
+                commit = "32b76e3f861bee1154101bf25821d3b47e962a82",
+                url = "https://gitee.com/tboox/xmake-repo.git"
+            },
+            version = "2.4.12"
+        }
+    },
+    __meta__ = {
+        version = "1.0"
+    }
+}
