@@ -1,6 +1,5 @@
 #include "doctest_pch.hpp"
-import std;
-import SoC.freestanding;
+import SoC.unit_test;
 
 namespace SoC
 {
@@ -40,19 +39,7 @@ TEST_SUITE("heap")
         ::std::uintptr_t* begin{};
         ::std::uintptr_t* end{};
 
-    public:
-        /**
-         * @brief 释放共用内存
-         *
-         */
-        ~heap_test_fixture() noexcept { ::std::free(origin_ptr); }
-
-        /**
-         * @brief 获取堆对象
-         *
-         * @return SoC::heap_test
-         */
-        ::SoC::heap_test get_heap()
+        void allocate_once()
         {
             if(begin == nullptr) [[unlikely]]
             {
@@ -64,9 +51,45 @@ TEST_SUITE("heap")
                 begin = static_cast<::std::uintptr_t*>(ptr);
                 end = begin + (heap_size / sizeof(::std::uintptr_t));
             }
+        }
+
+    public:
+        /**
+         * @brief 释放共用内存
+         *
+         */
+        ~heap_test_fixture() noexcept { ::std::free(origin_ptr); }
+
+        /**
+         * @brief 获取内存区域
+         *
+         * @return ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> 内存区域[begin, end)
+         */
+        ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> get_memory()
+        {
+            allocate_once();
+            return ::std::pair{begin, end};
+        }
+
+        /**
+         * @brief 获取堆对象
+         *
+         * @return SoC::heap_test
+         */
+        ::SoC::heap_test get_heap()
+        {
+            allocate_once();
             return ::SoC::heap_test{begin, end};
         }
     } constinit heap_fixture{};
+
+    TEST_CASE("invalid_initialize")
+    {
+        auto [begin, end]{heap_fixture.get_memory()};
+        REQUIRE_THROWS_AS_MESSAGE((::SoC::heap_test{begin, end + 1}),
+                                  ::SoC::assert_failed_exception,
+                                  "堆结束地址未对齐到页大小的情况下应触发断言失败");
+    }
 
     TEST_CASE("initialize")
     {
