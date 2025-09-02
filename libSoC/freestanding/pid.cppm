@@ -9,6 +9,7 @@ import SoC.std;
 
 export namespace SoC
 {
+    extern "C++" struct pid_test;
     /**
      * @brief pid控制
      *

@@ -33,6 +33,9 @@ export namespace SoC
         constexpr inline operator ::std::string_view () const noexcept { return {begin(), end()}; }
     };
 
+    extern "C++" template <::SoC::fmt_string>
+    struct fmt_parser_test;
+
     /**
      * @brief 编译时格式串解析器
      *

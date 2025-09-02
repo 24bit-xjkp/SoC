@@ -22,10 +22,7 @@ namespace SoC::detail
     template <typename callable_t, typename return_t, typename... args_t>
     consteval inline bool function_wrapper_noexcept() noexcept
     {
-        if constexpr(::std::is_pointer_v<callable_t>)
-        {
-            return ::std::is_nothrow_invocable_r_v<return_t, callable_t, args_t...>;
-        }
+        if constexpr(::std::is_pointer_v<callable_t>) { return ::std::is_nothrow_invocable_r_v<return_t, callable_t, args_t...>; }
         else if constexpr(::SoC::detail::static_call_operator<callable_t>)
         {
             return ::std::is_nothrow_invocable_r_v<return_t, decltype(&callable_t::operator()), args_t...>;
@@ -48,7 +45,9 @@ namespace SoC::detail
      */
     template <typename callable_t, typename return_t, typename... args_t>
         requires (!::std::is_reference_v<callable_t>)
-    inline return_t function_wrapper(void* ptr, args_t... args) noexcept(function_wrapper_noexcept<callable_t, return_t, args_t...>() || ::SoC::optional_noexcept)
+    inline return_t function_wrapper(void* ptr,
+                                     args_t... args) noexcept(function_wrapper_noexcept<callable_t, return_t, args_t...>() ||
+                                                              ::SoC::optional_noexcept)
     {
         if constexpr(::std::is_pointer_v<callable_t>)
         {
@@ -83,6 +82,9 @@ namespace SoC::detail
 
 export namespace SoC
 {
+    extern "C++" template <::SoC::is_allocator, typename, typename...>
+    struct basic_smart_function_test;
+
     /**
      * @brief 类型擦除的函数对象，具有智能语义
      *

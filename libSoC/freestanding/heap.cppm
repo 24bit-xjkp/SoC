@@ -17,7 +17,7 @@ export namespace SoC
          */
         struct free_block_list_t
         {
-            free_block_list_t* next;
+            ::SoC::detail::free_block_list_t* next;
         };
 
         /**
@@ -31,6 +31,8 @@ export namespace SoC
             ::std::size_t used_block;
         };
     }  // namespace detail
+
+    extern "C++" struct heap_test;
 
     /**
      * @brief 基于空闲链表和slab的堆
@@ -227,7 +229,10 @@ export namespace SoC
              * @param size 要分配的字节数
              * @return 内存区域首指针
              */
-            inline static void* allocate(::std::size_t size) noexcept(::SoC::optional_noexcept) { return wrapper::heap->allocate(size); }
+            inline static void* allocate(::std::size_t size) noexcept(::SoC::optional_noexcept)
+            {
+                return wrapper::heap->allocate(size);
+            }
 
             /**
              * @brief 分配一个type类型对象所需的空间
@@ -283,7 +288,10 @@ export namespace SoC
              * @param ptr 内存区域首指针
              * @param size 要释放的字节数，需要和分配时保持一致
              */
-            inline static void deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept) { wrapper::heap->deallocate(ptr, size); }
+            inline static void deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
+            {
+                wrapper::heap->deallocate(ptr, size);
+            }
 
             /**
              * @brief 比较两个分配器对象是否相同
