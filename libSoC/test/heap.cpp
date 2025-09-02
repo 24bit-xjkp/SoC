@@ -2,7 +2,102 @@
 import std;
 import SoC.freestanding;
 
-TEST_CASE("heap_hello_world")
+namespace SoC
 {
-    INFO("hello world");
+    /**
+     * @brief 导出SoC::heap中的符号用于测试
+     *
+     */
+    struct heap_test : ::SoC::heap
+    {
+        using ::SoC::heap::allocate_cold_path;
+        using ::SoC::heap::allocate_pages;
+        using ::SoC::heap::data;
+        using ::SoC::heap::deallocate_pages;
+        using ::SoC::heap::free_list_t;
+        using ::SoC::heap::free_page_list;
+        using ::SoC::heap::get_metadata_index;
+        using ::SoC::heap::heap;
+        using ::SoC::heap::insert_block_into_page_list;
+        using ::SoC::heap::make_block_in_page;
+        using ::SoC::heap::metadata;
+        using ::SoC::heap::min_block_shift;
+        using ::SoC::heap::page_gc;
+        using ::SoC::heap::page_shift;
+        using ::SoC::heap::ptr_size;
+        using ::SoC::heap::remove_pages;
+    };
+}  // namespace SoC
+
+TEST_SUITE("heap")
+{
+    constexpr auto heap_size{128 * 1024zu};
+
+    struct heap_test_fixture
+    {
+    private:
+        void* origin_ptr{};
+        ::std::uintptr_t* begin{};
+        ::std::uintptr_t* end{};
+
+    public:
+        /**
+         * @brief 释放共用内存
+         *
+         */
+        ~heap_test_fixture() noexcept { ::std::free(origin_ptr); }
+
+        /**
+         * @brief 获取堆对象
+         *
+         * @return SoC::heap_test
+         */
+        ::SoC::heap_test get_heap()
+        {
+            if(begin == nullptr) [[unlikely]]
+            {
+                auto size{256 * 1024zu};
+                auto ptr{::std::malloc(size)};
+                REQUIRE_NE(ptr, nullptr);
+                origin_ptr = ptr;
+                REQUIRE_NE(::std::align(::SoC::heap::page_size, heap_size, ptr, size), nullptr);
+                begin = static_cast<::std::uintptr_t*>(ptr);
+                end = begin + (heap_size / sizeof(::std::uintptr_t));
+            }
+            return ::SoC::heap_test{begin, end};
+        }
+    } constinit heap_fixture{};
+
+    TEST_CASE("initialize")
+    {
+        auto heap{heap_fixture.get_heap()};
+        using metadata_t = ::std::remove_reference_t<decltype(heap.metadata.front())>;
+        using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
+
+        auto page_num{heap.metadata.size()};
+        SUBCASE("page_num")
+        {
+            constexpr auto size_per_page{::SoC::heap_test::page_size + sizeof(metadata_t)};
+            REQUIRE_EQ(page_num, heap_size / size_per_page);
+        }
+
+        SUBCASE("metadata")
+        {
+            void* page_begin{heap.metadata.end()};
+            auto space_left{heap_size - page_num * sizeof(metadata_t)};
+            REQUIRE_NE(::std::align(heap.page_size, page_num * heap.page_size, page_begin, space_left), nullptr);
+            auto current_page_address{reinterpret_cast<::std::uintptr_t>(page_begin)};
+            for(auto&& metadata: heap.metadata)
+            {
+                // 除了最后一页，其他页的next_page都指向后一页的metadata
+                auto next_page{&metadata != &heap.metadata.back() ? &metadata + 1 : nullptr};
+                REQUIRE_EQ(metadata.next_page, next_page);
+                // 每一页的free_block_list都指向当前页的首地址
+                REQUIRE_EQ(metadata.free_block_list, reinterpret_cast<free_block_list_t*>(current_page_address));
+                // 页为空，因此每一页的used_block都为0
+                REQUIRE_EQ(metadata.used_block, 0);
+                current_page_address += heap.page_size;
+            }
+        }
+    }
 }

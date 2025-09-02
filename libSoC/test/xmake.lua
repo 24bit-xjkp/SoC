@@ -19,6 +19,6 @@ target("unit_test")
 
     for _, file in ipairs(os.files("*.cpp|utils.cpp")) do
         local name = path.basename(file)
-        add_tests(name, {runargs = {"-tc", name.."*"}})
+        add_tests(name, {runargs = {"-ts", name}})
     end
 target_end()
