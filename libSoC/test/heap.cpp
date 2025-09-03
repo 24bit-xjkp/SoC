@@ -30,67 +30,98 @@ namespace SoC
 
 TEST_SUITE("heap")
 {
-    constexpr auto heap_size{128 * 1024zu};
-
-    struct heap_test_fixture
+    namespace
     {
-    private:
-        void* origin_ptr{};
-        ::std::uintptr_t* begin{};
-        ::std::uintptr_t* end{};
+        /// 测试使用堆空间的大小
+        constexpr auto heap_size{128 * 1024zu};
 
-        void allocate_once()
+        /**
+         * @brief 堆测试用例的夹具，用于提供共用内存
+         *
+         */
+        struct heap_test_fixture
         {
-            if(begin == nullptr) [[unlikely]]
+        private:
+            /// malloc得到的原始指针，用于在析构时进行free操作
+            void* origin_ptr{};
+            /// 内存区域[begin, end)，已对齐到页大小
+            ::std::uintptr_t* begin{};
+            ::std::uintptr_t* end{};
+
+            /**
+             * @brief 分配共用内存，避免测试用例间重复分配
+             *
+             */
+            void allocate_once()
             {
-                auto size{256 * 1024zu};
-                auto ptr{::std::malloc(size)};
-                REQUIRE_NE(ptr, nullptr);
-                origin_ptr = ptr;
-                REQUIRE_NE(::std::align(::SoC::heap::page_size, heap_size, ptr, size), nullptr);
-                begin = static_cast<::std::uintptr_t*>(ptr);
-                end = begin + (heap_size / sizeof(::std::uintptr_t));
+                if(begin == nullptr) [[unlikely]]
+                {
+                    auto size{256 * 1024zu};
+                    auto ptr{::std::malloc(size)};
+                    REQUIRE_NE(ptr, nullptr);
+                    origin_ptr = ptr;
+                    REQUIRE_NE(::std::align(::SoC::heap::page_size, heap_size, ptr, size), nullptr);
+                    begin = static_cast<::std::uintptr_t*>(ptr);
+                    end = begin + (heap_size / sizeof(::std::uintptr_t));
+                }
+            }
+
+        public:
+            /**
+             * @brief 释放共用内存
+             *
+             */
+            ~heap_test_fixture() noexcept { ::std::free(origin_ptr); }
+
+            /**
+             * @brief 获取内存区域
+             *
+             * @return ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> 内存区域[begin, end)
+             */
+            ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> get_memory()
+            {
+                allocate_once();
+                return ::std::pair{begin, end};
+            }
+
+            /**
+             * @brief 获取堆对象
+             *
+             * @return SoC::heap_test
+             */
+            ::SoC::heap_test get_heap()
+            {
+                allocate_once();
+                return ::SoC::heap_test{begin, end};
             }
         }
+        /// 测试夹具，用于提供共用内存
+        constinit heap_fixture{};
+    }  // namespace
 
-    public:
-        /**
-         * @brief 释放共用内存
-         *
-         */
-        ~heap_test_fixture() noexcept { ::std::free(origin_ptr); }
-
-        /**
-         * @brief 获取内存区域
-         *
-         * @return ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> 内存区域[begin, end)
-         */
-        ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> get_memory()
-        {
-            allocate_once();
-            return ::std::pair{begin, end};
-        }
-
-        /**
-         * @brief 获取堆对象
-         *
-         * @return SoC::heap_test
-         */
-        ::SoC::heap_test get_heap()
-        {
-            allocate_once();
-            return ::SoC::heap_test{begin, end};
-        }
-    } constinit heap_fixture{};
-
+    /// @test 测试堆的构造函数能否检出输入内存范围错误
     TEST_CASE("invalid_initialize")
     {
         auto [begin, end]{heap_fixture.get_memory()};
-        REQUIRE_THROWS_AS_MESSAGE((::SoC::heap_test{begin, end + 1}),
-                                  ::SoC::assert_failed_exception,
-                                  "堆结束地址未对齐到页大小的情况下应触发断言失败");
+
+        /// 堆结束地址未对齐到页大小
+        SUBCASE("unaligned_heap_end")
+        {
+            REQUIRE_THROWS_AS_MESSAGE((::SoC::heap_test{begin, end + 1}),
+                                      ::SoC::assert_failed_exception,
+                                      "堆结束地址未对齐到页大小的情况下应触发断言失败");
+        }
+
+        /// 堆大小不足一页
+        SUBCASE("heap_too_small")
+        {
+            REQUIRE_THROWS_AS_MESSAGE((::SoC::heap_test{begin, begin + 1}),
+                                      ::SoC::assert_failed_exception,
+                                      "堆大小不足一页的情况下应触发断言失败");
+        }
     }
 
+    /// @test 测试堆的构造函数能否正常工作
     TEST_CASE("initialize")
     {
         auto heap{heap_fixture.get_heap()};
@@ -98,12 +129,15 @@ TEST_SUITE("heap")
         using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
 
         auto page_num{heap.metadata.size()};
+
+        /// 测试页数量是否正确
         SUBCASE("page_num")
         {
             constexpr auto size_per_page{::SoC::heap_test::page_size + sizeof(metadata_t)};
             REQUIRE_EQ(page_num, heap_size / size_per_page);
         }
 
+        /// 测试metadata初始化是否正确
         SUBCASE("metadata")
         {
             void* page_begin{heap.metadata.end()};
