@@ -156,5 +156,8 @@ TEST_SUITE("heap")
                 current_page_address += heap.page_size;
             }
         }
+
+        /// 测试空闲页链表初始化是否正确
+        SUBCASE("free_page_list") { REQUIRE_EQ(heap.free_page_list.back(), heap.metadata.begin()); }
     }
 }

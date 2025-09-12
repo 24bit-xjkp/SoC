@@ -33,6 +33,7 @@ namespace SoC
         ptr = (ptr + page_size - 1) & (-1zu << shift);
         data = reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr);
 
+        // 将所有未初始化的内存视为空闲页进行划分，并穿成链表
 #pragma GCC unroll(2)
         for(auto&& page: metadata)
         {
@@ -41,6 +42,8 @@ namespace SoC
         }
         metadata.back().next_page = nullptr;
 
+        // 空闲链表按块大小排序，最后一项为空闲页链表
+        // 将首个空闲页放入空闲页链表
         free_page_list.back() = metadata.begin();
     }
 
