@@ -1,13 +1,13 @@
 #include "doctest_pch.hpp"
 import SoC.unit_test;
 
-namespace SoC
+namespace SoC::test
 {
     /**
      * @brief 导出SoC::heap中的符号用于测试
      *
      */
-    struct heap_test : ::SoC::heap
+    struct heap : ::SoC::heap
     {
         using ::SoC::heap::allocate_cold_path;
         using ::SoC::heap::allocate_pages;
@@ -87,12 +87,12 @@ TEST_SUITE("heap")
             /**
              * @brief 获取堆对象
              *
-             * @return SoC::heap_test
+             * @return SoC::test::heap
              */
-            ::SoC::heap_test get_heap()
+            ::SoC::test::heap get_heap()
             {
                 allocate_once();
-                return ::SoC::heap_test{begin, end};
+                return ::SoC::test::heap{begin, end};
             }
         }
         /// 测试夹具，用于提供共用内存
@@ -107,7 +107,7 @@ TEST_SUITE("heap")
         /// 堆结束地址未对齐到页大小
         SUBCASE("unaligned_heap_end")
         {
-            REQUIRE_THROWS_AS_MESSAGE((::SoC::heap_test{begin, end + 1}),
+            REQUIRE_THROWS_AS_MESSAGE((::SoC::test::heap{begin, end + 1}),
                                       ::SoC::assert_failed_exception,
                                       "堆结束地址未对齐到页大小的情况下应触发断言失败");
         }
@@ -115,7 +115,7 @@ TEST_SUITE("heap")
         /// 堆大小不足一页
         SUBCASE("heap_too_small")
         {
-            REQUIRE_THROWS_AS_MESSAGE((::SoC::heap_test{begin, begin + 1}),
+            REQUIRE_THROWS_AS_MESSAGE((::SoC::test::heap{begin, begin + 1}),
                                       ::SoC::assert_failed_exception,
                                       "堆大小不足一页的情况下应触发断言失败");
         }
@@ -133,7 +133,7 @@ TEST_SUITE("heap")
         /// 测试页数量是否正确
         SUBCASE("page_num")
         {
-            constexpr auto size_per_page{::SoC::heap_test::page_size + sizeof(metadata_t)};
+            constexpr auto size_per_page{::SoC::test::heap::page_size + sizeof(metadata_t)};
             REQUIRE_EQ(page_num, heap_size / size_per_page);
         }
 

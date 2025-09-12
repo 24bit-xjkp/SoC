@@ -82,8 +82,12 @@ namespace SoC::detail
 
 export namespace SoC
 {
-    extern "C++" template <::SoC::is_allocator, typename, typename...>
-    struct basic_smart_function_test;
+    namespace test
+    {
+        /// @see ::SoC::basic_smart_function
+        extern "C++" template <::SoC::is_allocator allocator_t, typename return_t, typename... args_t>
+        struct basic_smart_function;
+    }  // namespace test
 
     /**
      * @brief 类型擦除的函数对象，具有智能语义
@@ -101,7 +105,7 @@ export namespace SoC
     {
     private:
         template <::SoC::is_allocator, typename, typename...>
-        friend struct basic_smart_function_test;
+        friend struct ::SoC::test::basic_smart_function;
 
         [[no_unique_address]] allocator_t allocator;
         void* ptr{};

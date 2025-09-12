@@ -33,8 +33,12 @@ export namespace SoC
         constexpr inline operator ::std::string_view () const noexcept { return {begin(), end()}; }
     };
 
-    extern "C++" template <::SoC::fmt_string>
-    struct fmt_parser_test;
+    namespace test
+    {
+        /// @see ::SoC::fmt_string
+        extern "C++" template <::SoC::fmt_string fmt>
+        struct fmt_parser;
+    }
 
     /**
      * @brief 编译时格式串解析器
@@ -46,7 +50,7 @@ export namespace SoC
     {
     private:
         template <::SoC::fmt_string>
-        friend struct fmt_parser_test;
+        friend struct ::SoC::test::fmt_parser;
 
         /**
          * @brief 词法分析使用的括号分类

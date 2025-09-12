@@ -32,7 +32,11 @@ export namespace SoC
         };
     }  // namespace detail
 
-    extern "C++" struct heap_test;
+    namespace test
+    {
+        /// @see ::SoC::heap
+        extern "C++" struct heap;
+    }
 
     /**
      * @brief 基于空闲链表和slab的堆
@@ -42,7 +46,7 @@ export namespace SoC
     {
     private:
         /// 测试接口
-        friend struct heap_test;
+        friend struct ::SoC::test::heap;
 
         /// 元数据区
         ::std::ranges::subrange<::SoC::detail::heap_page_metadata*> metadata;

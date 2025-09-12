@@ -9,7 +9,12 @@ import SoC.std;
 
 export namespace SoC
 {
-    extern "C++" struct pid_test;
+    namespace test
+    {
+        /// @see ::SoC::pid
+        extern "C++" struct pid_test;
+    }  // namespace test
+
     /**
      * @brief pid控制
      *
@@ -17,7 +22,7 @@ export namespace SoC
     struct pid
     {
     private:
-        friend struct pid_test;
+        friend struct ::SoC::test::pid_test;
 
         /// 目标偏置值
         float target_bias;
