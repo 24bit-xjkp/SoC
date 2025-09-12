@@ -26,7 +26,7 @@ namespace SoC::test
         using ::SoC::heap::ptr_size;
         using ::SoC::heap::remove_pages;
     };
-}  // namespace SoC
+}  // namespace SoC::test
 
 TEST_SUITE("heap")
 {
@@ -121,12 +121,13 @@ TEST_SUITE("heap")
         }
     }
 
+    using metadata_t = ::std::remove_reference_t<decltype(::SoC::test::heap::metadata.front())>;
+    using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
+
     /// @test 测试堆的构造函数能否正常工作
     TEST_CASE("initialize")
     {
         auto heap{heap_fixture.get_heap()};
-        using metadata_t = ::std::remove_reference_t<decltype(heap.metadata.front())>;
-        using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
 
         auto page_num{heap.metadata.size()};
 
@@ -159,5 +160,67 @@ TEST_SUITE("heap")
 
         /// 测试空闲页链表初始化是否正确
         SUBCASE("free_page_list") { REQUIRE_EQ(heap.free_page_list.back(), heap.metadata.begin()); }
+    }
+
+    /**
+     * @brief 为测试堆的插入块函数准备堆
+     *
+     * @param heap 堆对象
+     * @return std::array<metadata_t*, 2> 空闲页链表的第一页、第二页
+     */
+    ::std::array<metadata_t*, 2> make_heap_for_insert_block_into_page_list_test(::SoC::test::heap & heap)
+    {
+        auto&& free_page_list{heap.free_page_list.back()};
+        auto first_page{free_page_list};
+        auto second_page{first_page->next_page};
+        // 将空闲页链表的头指针指向第三页，将第一页插入空闲块链表
+        // 即将空闲页链表的前两页放入空闲块链表
+        heap.free_page_list.front() = ::std::exchange(free_page_list, second_page->next_page);
+        // 将第二页设为空闲块链表的尾节点
+        second_page->next_page = nullptr;
+        return {first_page, second_page};
+    }
+
+    /**
+     * @brief 测试堆的插入块函数能否正常工作
+     *
+     * @param heap 堆对象
+     * @param page_ptr 要插入的页的元数据指针
+     */
+    void do_insert_block_into_page_list_test(::SoC::test::heap & heap, metadata_t * page_ptr)
+    {
+        auto&& free_page_list{heap.free_page_list.back()};
+        // 记录空闲页链表的头指针的期望值
+        auto free_page_list_head_gt{free_page_list};
+        // 记录下一个页的元数据指针的期望值
+        auto next_page_gt{page_ptr->next_page};
+        auto next_page{heap.insert_block_into_page_list(page_ptr)};
+
+        // 检查返回值是否正确，即下一个页的元数据指针
+        CHECK_EQ(next_page, next_page_gt);
+        // 检查页是否插入空闲页链表的头部
+        CHECK_EQ(page_ptr, free_page_list);
+        // 检查新插入的页的next_page是否指向了原空闲页链表的头指针，即是否成功穿成链表
+        CHECK_EQ(page_ptr->next_page, free_page_list_head_gt);
+        auto metadata_index{::std::distance(heap.metadata.begin(), page_ptr)};
+        auto data_ptr{reinterpret_cast<::std::uint8_t*>(heap.data) + metadata_index * heap.page_size};
+        // 检查页的空闲块指针是否指向数据块首地址，即完成对于页操作的初始化
+        CHECK_EQ(page_ptr->free_block_list, reinterpret_cast<free_block_list_t*>(data_ptr));
+    }
+
+    /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
+    TEST_CASE("insert_block_into_page_list/first_element")
+    {
+        auto heap{heap_fixture.get_heap()};
+        auto [page_ptr, _]{make_heap_for_insert_block_into_page_list_test(heap)};
+        do_insert_block_into_page_list_test(heap, page_ptr);
+    }
+
+    /// @test 测试堆的插入块函数能否在链表元素数为1时正常工作
+    TEST_CASE("insert_block_into_page_list/last_element")
+    {
+        auto heap{heap_fixture.get_heap()};
+        auto [_, page_ptr]{make_heap_for_insert_block_into_page_list_test(heap)};
+        do_insert_block_into_page_list_test(heap, page_ptr);
     }
 }

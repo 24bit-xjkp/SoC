@@ -17,6 +17,7 @@ export namespace SoC
          */
         struct free_block_list_t
         {
+            // 下一个空闲块，页操作时不使用该变量，块操作时使用
             ::SoC::detail::free_block_list_t* next;
         };
 
@@ -26,8 +27,11 @@ export namespace SoC
          */
         struct heap_page_metadata
         {
+            // 下一个空闲页的元数据指针
             ::SoC::detail::heap_page_metadata* next_page;
+            // 页内空闲块链表的头指针
             ::SoC::detail::free_block_list_t* free_block_list;
+            // 已使用块的数量
             ::std::size_t used_block;
         };
     }  // namespace detail
@@ -74,7 +78,7 @@ export namespace SoC
         ::SoC::detail::free_block_list_t* make_block_in_page(::std::size_t free_list_index) noexcept(::SoC::optional_noexcept);
 
         /**
-         * @brief 将已分块的页从块空闲链表中删除，插入页空闲链表中
+         * @brief 将已分块的页从块空闲链表头部删除，插入页空闲链表头部
          *
          * @param page 页元数据指针
          * @return 下一个元数据的指针

@@ -20,10 +20,7 @@ namespace SoC
         }
         auto bytes{(end - begin) * ptr_size};
         auto pages{bytes / (page_size + sizeof(::SoC::detail::heap_page_metadata))};
-        if constexpr(::SoC::use_full_assert)
-        {
-            ::SoC::assert(pages > 0, "堆大小必须大于一页"sv);
-        }
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(pages > 0, "堆大小必须大于一页"sv); }
         auto metadata_begin{reinterpret_cast<::SoC::detail::heap_page_metadata*>(begin)};
         auto metadata_end{metadata_begin + pages};
         metadata = ::std::ranges::subrange{metadata_begin, metadata_end};
@@ -47,8 +44,12 @@ namespace SoC
         free_page_list.back() = metadata.begin();
     }
 
-    ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(::std::size_t free_list_index) noexcept(::SoC::optional_noexcept)
+    ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(::std::size_t free_list_index) noexcept(
+        ::SoC::optional_noexcept)
     {
+        auto&& block_metadata_ptr{free_page_list[free_list_index]};
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(block_metadata_ptr == nullptr, "仅在块空闲链表为空时调用此函数"sv); }
+
         auto&& free_page{free_page_list.back()};
         if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
         // 空闲页基址
@@ -62,16 +63,16 @@ namespace SoC
 #pragma GCC unroll(0)
         while(page_ptr != page_begin + page_size / ptr_size)
         {
+            // 利于循环展开
             for(auto i{0zu}; i != 4; ++i)
             {
                 *page_ptr = ::SoC::detail::free_block_list_t{page_ptr + step};
                 page_ptr += step;
             }
         }
+        // 最后一个块的next指针设为nullptr
         *(page_ptr - step) = ::SoC::detail::free_block_list_t{};
 
-        auto&& block_metadata_ptr{free_page_list[free_list_index]};
-        if constexpr(::SoC::use_full_assert) { ::SoC::assert(block_metadata_ptr == nullptr, "仅在块空闲链表为空时调用此函数"sv); }
         auto metadata_index{get_metadata_index(page_begin)};
         metadata[metadata_index].next_page = nullptr;
         metadata[metadata_index].free_block_list = page_begin;
@@ -84,6 +85,8 @@ namespace SoC
         ::SoC::detail::heap_page_metadata* page_metadata) noexcept
     {
         auto old_head{::std::exchange(page_metadata, page_metadata->next_page)};
+        // 将空闲块指针指向数据区，对于页来说，完成了空闲链表的重新初始化
+        // 对于其他大小的块，需要使用make_block_in_page函数重新初始化空闲链表
         old_head->free_block_list = (old_head - metadata.begin()) * page_size / ptr_size + data;
         auto old_page_head{::std::exchange(free_page_list.back(), old_head)};
         old_head->next_page = old_page_head;
@@ -111,10 +114,7 @@ namespace SoC
             }
         }
         auto free_page{free_page_list.back()};
-        if(assert)
-        {
-            ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv);
-        }
+        if(assert) { ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv); }
         return free_page;
     }
 
