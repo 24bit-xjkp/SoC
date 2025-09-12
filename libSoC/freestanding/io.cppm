@@ -381,7 +381,7 @@ namespace SoC::detail
         /// 缓冲区数组，可退化为首指针
         alignas(::SoC::detail::get_buffer_align(buffer_size)) value_type begin[buffer_size];
 
-        constexpr inline buffer_impl() noexcept {}
+        constexpr inline buffer_impl() noexcept = default;
     };
 }  // namespace SoC::detail
 
@@ -414,7 +414,7 @@ export namespace SoC
         /// 有效输入缓冲区的尾哨位
         pointer end{begin};
 
-        constexpr inline buffer() noexcept {}
+        constexpr inline buffer() noexcept = default;
 
         /**
          * @brief 获取缓冲区尾哨位

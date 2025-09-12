@@ -11,7 +11,10 @@ namespace SoC
 {
     extern "C"
     {
-        [[gnu::weak]] void Default_Handler() noexcept { while(true); }
+        [[gnu::weak]] void Default_Handler() noexcept
+        {
+            while(true) { ; }
+        }
 
         [[using gnu: weak, alias("Default_Handler")]] void NMI_Handler() noexcept;
         [[using gnu: weak, alias("Default_Handler")]] void HardFault_Handler() noexcept;

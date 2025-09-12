@@ -372,7 +372,7 @@ namespace SoC
         auto b{(temp_sensor1 * temp2 - temp_sensor2 * temp1) / delta_temp};
 
         /// 带隙基准电源标称值对应的adc值
-        ::std::size_t vrefint_typical{*VREFINT_CAL_ADDR};
+        auto vrefint_typical{static_cast<float>(*VREFINT_CAL_ADDR)};
         /// 温度系数标称值30ppm/°C
         constexpr auto vrefint_temp_coeff_typical{30e-6f};
         /// 带隙基准电源温度标称值30°C
@@ -405,9 +405,9 @@ namespace SoC
             /// 根据温度修正内部参考电压
             auto vrefint_cal{(1 + (temp - vrefint_temp_typical) * vrefint_temp_coeff_typical) * vrefint_typical};
             // 计算实际Vref引脚电压
-            actual_vref = vrefint_cal * vref / raw_vrefint;
+            actual_vref = vrefint_cal * vref / static_cast<float>(raw_vrefint);
             // 将温度传感器的adc采样值转化为Vref=3.3下的值
-            auto temp_cal{raw_temp * vref / actual_vref};
+            auto temp_cal{static_cast<float>(raw_temp) * vref / actual_vref};
             // 计算实际温度
             temp = (temp_cal - b) / k;
         }

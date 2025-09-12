@@ -22,7 +22,10 @@ extern "C"
                      void* dso_handle [[maybe_unused]]) noexcept
     {
         auto current_index{::SoC::cxa_at_exit_callback_index++};
-        if(current_index >= ::SoC::max_cxa_at_exit_callback) [[unlikely]] { while(true); }
+        if(current_index >= ::SoC::max_cxa_at_exit_callback) [[unlikely]]
+        {
+            while(true) { ; }
+        }
         ::SoC::cxa_at_exit_callback_array[current_index] = callback;
         ::SoC::cxa_at_exit_callback_arg_array[current_index] = arg;
         return 0;
@@ -32,7 +35,10 @@ extern "C"
      * @brief 用于填充虚表中纯虚函数对应的表项
      *
      */
-    [[noreturn]] void __cxa_pure_virtual() noexcept { while(true); }
+    [[noreturn]] void __cxa_pure_virtual() noexcept
+    {
+        while(true) { ; }
+    }
 
     /**
      * @brief 动态库柄，通过地址实现全局唯一

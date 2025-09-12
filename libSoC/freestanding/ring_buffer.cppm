@@ -39,7 +39,7 @@ export namespace SoC
          * @brief 构造一个环形缓冲区
          *
          */
-        constexpr inline ring_buffer() noexcept {}
+        constexpr inline ring_buffer() noexcept = default;
 
         /**
          * @brief 析构一个环形缓冲区

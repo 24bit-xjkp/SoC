@@ -27,7 +27,7 @@ namespace pid_controller
     {
         i_sample_sum += i;
         // 中断即使被打断也不涉及对共享变量的操作，不需要原子交换
-        if(::std::exchange(i_sample_value, i_sample_sum / ++i_sample_cnt) == float_atomic_exchange_flag)
+        if(::std::exchange(i_sample_value, i_sample_sum / static_cast<float>(++i_sample_cnt)) == float_atomic_exchange_flag)
         {
             i_sample_sum = 0.f;
             i_sample_cnt = 0;
@@ -48,10 +48,10 @@ namespace pid_controller
 #pragma GCC unroll(4)
             for(auto ch0: buffer) { p0_measure += ch0; }
             p0_measure /= 4;
-            auto v_p0{p0_measure * coefficient};
+            auto v_p0{static_cast<float>(p0_measure) * coefficient};
             auto i{::std::max((v_p0 - 1.669f) / 0.13426063f, 0.f)};
             duty = pid(i);
-            channel->set_compare_value(actual_arr * duty);
+            channel->set_compare_value(static_cast<::std::uint32_t>(actual_arr * duty));
             calculate_i_sample_value(i);
             dma_stream->read(buffer.begin(), buffer.end());
             i_sample->reset_dma();

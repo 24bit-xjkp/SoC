@@ -51,6 +51,6 @@ namespace SoC
         ::main();
         ::SoC::_fini();
 
-        while(true);
+        while(true) { ; }
     }
 }  // namespace SoC

@@ -148,11 +148,11 @@ export namespace SoC::literal
 {
     consteval inline ::std::size_t operator""_K (unsigned long long i) noexcept { return i * 1'000; }
 
-    consteval inline ::std::size_t operator""_K (long double i) noexcept { return i * 1'000; }
+    consteval inline ::std::size_t operator""_K (long double i) noexcept { return static_cast<::std::size_t>(i * 1'000); }
 
     consteval inline ::std::size_t operator""_M (unsigned long long i) noexcept { return i * 1'000'000; }
 
-    consteval inline ::std::size_t operator""_M (long double i) noexcept { return i * 1'000'000; }
+    consteval inline ::std::size_t operator""_M (long double i) noexcept { return static_cast<::std::size_t>(i * 1'000'000); }
 
     consteval inline ::SoC::seconds operator""_s (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
@@ -243,7 +243,7 @@ export namespace SoC
     constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept
     {
 #pragma GCC unroll 0
-        while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...));
+        while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...)) { ; }
     }
 }  // namespace SoC
 

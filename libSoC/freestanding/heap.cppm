@@ -40,7 +40,7 @@ export namespace SoC
     {
         /// @see ::SoC::heap
         extern "C++" struct heap;
-    }
+    }  // namespace test
 
     /**
      * @brief 基于空闲链表和slab的堆
@@ -99,10 +99,10 @@ export namespace SoC
          * @param page_ptr 页内指针
          * @return 元数据数组索引
          */
-        [[using gnu: always_inline, hot]] inline ::std::size_t
+        [[using gnu: always_inline, hot]] inline ::std::ptrdiff_t
             get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept
         {
-            return (page_ptr - data) * ptr_size / page_size;
+            return static_cast<::std::ptrdiff_t>((page_ptr - data) * ptr_size / page_size);
         }
 
         /**
@@ -367,9 +367,12 @@ export namespace SoC
          * @brief 默认构造空的智能指针
          *
          */
-        constexpr inline unique_ptr(allocator alloc = ::SoC::ram_allocator) noexcept : ptr{nullptr}, alloc{alloc} {}
+        constexpr inline explicit unique_ptr(allocator alloc = ::SoC::ram_allocator) noexcept : ptr{nullptr}, alloc{alloc} {}
 
-        constexpr inline unique_ptr(pointer ptr, allocator alloc = ::SoC::ram_allocator) noexcept : ptr{ptr}, alloc{alloc} {}
+        constexpr inline explicit unique_ptr(pointer ptr, allocator alloc = ::SoC::ram_allocator) noexcept :
+            ptr{ptr}, alloc{alloc}
+        {
+        }
 
         inline unique_ptr(const unique_ptr&) noexcept = delete;
         inline unique_ptr& operator= (const unique_ptr&) noexcept = delete;
@@ -425,6 +428,6 @@ export namespace SoC
 
         constexpr inline operator const_pointer() const noexcept { return ptr; }
 
-        constexpr inline operator bool() const noexcept { return ptr != nullptr; }
+        constexpr inline explicit operator bool() const noexcept { return ptr != nullptr; }
     };
 }  // namespace SoC

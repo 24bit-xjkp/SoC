@@ -200,7 +200,7 @@ namespace SoC
 
     void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
-        auto page_cnt{(size + page_size - 1) / page_size};
+        auto page_cnt{static_cast<::std::ptrdiff_t>((size + page_size - 1) / page_size)};
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % page_size == 0, "释放范围首指针不满足页对齐"sv);

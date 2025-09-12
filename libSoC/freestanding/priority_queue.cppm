@@ -44,7 +44,7 @@ namespace SoC
          * @brief 默认构造优先队列，初始队列为空
          *
          */
-        explicit constexpr inline priority_queue() noexcept {}
+        explicit constexpr inline priority_queue() noexcept = default;
 
         /**
          * @brief 析构优先队列
