@@ -118,7 +118,12 @@ export namespace SoC
     template <::SoC::is_allocator allocator_t, typename type>
     struct allocator_wrapper
     {
+        /// 底层分配器对象
         [[no_unique_address]] allocator_t allocator;
+        /// 底层分配器对象的allocate函数是否是不抛出的
+        constexpr inline static bool is_allocate_noexcept{noexcept(allocator.template allocate<type>(0zu))};
+        /// 底层分配器对象的deallocate函数是否是不抛出的
+        constexpr inline static bool is_deallocate_noexcept{noexcept(allocator.deallocate(nullptr, 0zu))};
 
         using value_type = type;
         using size_type = ::std::size_t;
@@ -131,16 +136,18 @@ export namespace SoC
          * @param n 分配对象个数
          * @return 分配内存区域首指针
          */
-        constexpr inline type* allocate(::std::size_t n) noexcept(noexcept(allocator.template allocate<type>(n).ptr))
-        {
-            return allocator.template allocate<type>(n).ptr;
-        }
+        constexpr inline type* allocate(::std::size_t n) noexcept(is_allocate_noexcept)
+        { return allocator.template allocate<type>(n).ptr; }
 
-        constexpr inline auto allocate_at_least(::std::size_t n) noexcept(noexcept(allocator.template allocate<type>(n)))
+        /**
+         * @brief 分配至少n个对象的内存
+         *
+         * @param n 分配对象个数
+         * @return 分配内存区域首指针
+         */
+        constexpr inline auto allocate_at_least(::std::size_t n) noexcept(is_allocate_noexcept)
             requires (::SoC::std_allocation_result_available)
-        {
-            return allocator.template allocate<type>(n);
-        }
+        { return allocator.template allocate<type>(n); }
 
         /**
          * @brief 释放内存
@@ -148,10 +155,8 @@ export namespace SoC
          * @param ptr 分配内存区域首指针
          * @param n 分配对象个数
          */
-        constexpr inline void deallocate(type* ptr, ::std::size_t n) noexcept(noexcept(allocator.deallocate(ptr, n)))
-        {
-            return allocator.deallocate(ptr, n);
-        }
+        constexpr inline void deallocate(type* ptr, ::std::size_t n) noexcept(is_deallocate_noexcept)
+        { return allocator.deallocate(ptr, n); }
 
         /**
          * @brief 比较两个分配器对象是否相等
@@ -159,9 +164,7 @@ export namespace SoC
          */
         constexpr inline friend bool operator== (::SoC::allocator_wrapper<allocator_t, type> lhs,
                                                  ::SoC::allocator_wrapper<allocator_t, type> rhs) noexcept
-        {
-            return lhs.allocator == rhs.allocator;
-        }
+        { return lhs.allocator == rhs.allocator; }
     };
 
     /**
@@ -178,9 +181,7 @@ export namespace SoC
          */
         template <typename type>
         consteval inline auto allocate() const noexcept
-        {
-            return ::SoC::detail::constexpr_allocator<type>.allocate(1);
-        }
+        { return ::SoC::detail::constexpr_allocator<type>.allocate(1); }
 
         /**
          * @brief 在常量表达式中分配内存
@@ -211,17 +212,13 @@ export namespace SoC
          */
         template <typename type>
         consteval inline void deallocate(type* ptr, ::std::size_t n = 1) const noexcept
-        {
-            ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n);
-        }
+        { ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n); }
 
         /**
          * @brief 比较两个分配器对象是否相等
          *
          */
         constexpr inline friend bool operator== (::SoC::constexpr_allocator_t, ::SoC::constexpr_allocator_t) noexcept
-        {
-            return true;
-        }
+        { return true; }
     } inline constexpr constexpr_allocator;
 }  // namespace SoC

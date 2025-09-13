@@ -78,7 +78,7 @@ export namespace SoC
         /**
          * @brief 获取占位符列表
          *
-         * @return optional_placehold_list_t 词法分析成功时为占位符列表
+         * @return 词法分析成功时为占位符列表
          */
         constexpr inline static optional_placehold_list_t get_placehold_list() noexcept
         {
@@ -128,7 +128,7 @@ export namespace SoC
          * @brief 获取字符串视图和转义后字符数组大小
          *
          * @param string 字符串视图
-         * @return string_and_size_t 字符串视图和转义后字符数组大小
+         * @return 字符串视图和转义后字符数组大小
          */
         constexpr inline static string_and_size_t get_string_and_size(::std::string_view string) noexcept
         {
@@ -147,7 +147,7 @@ export namespace SoC
         /**
          * @brief 获取储存词法分析结果所需的数组大小
          *
-         * @return optional_size_t 词法分析成功时为数组大小
+         * @return 词法分析成功时为数组大小
          */
         constexpr inline static optional_size_t get_split_string_and_size_array_size() noexcept
         {
@@ -171,7 +171,7 @@ export namespace SoC
         /**
          * @brief 获取占位符的数量
          *
-         * @return optional_size_t 词法分析成功时为占位符数量
+         * @return 词法分析成功时为占位符数量
          */
         constexpr inline static optional_size_t get_placehold_num_impl() noexcept
         {
@@ -182,7 +182,7 @@ export namespace SoC
         /**
          * @brief 获取储存词法分析结果所需的数组大小
          *
-         * @return optional_size_t 词法分析成功时为数组大小
+         * @return 词法分析成功时为数组大小
          */
         constexpr inline static auto get_is_placehold_array() noexcept
         {
@@ -363,7 +363,7 @@ export namespace SoC
          *
          * @return 格式串
          */
-        constexpr inline static decltype(fmt) get_fmt_string() noexcept { return fmt; }
+        constexpr inline static auto get_fmt_string() noexcept { return fmt; }
     };
 
     namespace literal
