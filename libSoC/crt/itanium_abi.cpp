@@ -44,5 +44,5 @@ extern "C"
      * @brief 动态库柄，通过地址实现全局唯一
      *
      */
-    extern constexpr const void* __dso_handle{&__dso_handle};
+    extern constexpr const void* __dso_handle{static_cast<const void* const>(&__dso_handle)};
 }

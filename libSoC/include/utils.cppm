@@ -117,7 +117,7 @@ namespace SoC
      *
      * @return 用户堆
      */
-    export inline ::SoC::heap make_ram_heap() noexcept { return ::SoC::heap{::SoC::_ram_heap_start, ::SoC::_ram_heap_end}; }
+    export inline ::SoC::heap make_ram_heap() noexcept { return ::SoC::heap{auto(::SoC::_ram_heap_start), auto(::SoC::_ram_heap_end)}; }
 
     /**
      * @brief 从ccmram创建堆
@@ -126,6 +126,6 @@ namespace SoC
      */
     export inline ::SoC::heap make_ccmram_heap() noexcept
     {
-        return ::SoC::heap{::SoC::_ccmram_heap_start, ::SoC::_ccmram_heap_end};
+        return ::SoC::heap{auto(::SoC::_ccmram_heap_start), auto(::SoC::_ccmram_heap_end)};
     }
 }  // namespace SoC

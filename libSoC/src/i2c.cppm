@@ -38,6 +38,7 @@ namespace SoC
                     ::SoC::i2c_mode mode,
                     ::SoC::i2c_duty_cycle duty,
                     ::SoC::i2c_type_ack ack,
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     ::SoC::i2c_owm_address_size address_size) noexcept : i2c_ptr{reinterpret_cast<::I2C_TypeDef*>(i2c)}
     {
         if constexpr(::SoC::use_full_assert)
@@ -61,12 +62,6 @@ namespace SoC
             disable();
             ::LL_APB1_GRP1_DisableClock(periph);
         }
-    }
-
-    ::SoC::i2c::i2c(i2c&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(other));
-        other.i2c_ptr = nullptr;
     }
 
     void ::SoC::i2c::enable() const noexcept { ::LL_I2C_Enable(i2c_ptr); }
@@ -136,14 +131,14 @@ namespace SoC
 
 #pragma GCC unroll(0)
         for(auto byte:
-            ::std::ranges::subrange(reinterpret_cast<const ::std::uint8_t*>(begin), reinterpret_cast<const ::std::uint8_t*>(end)))
+            ::std::ranges::subrange(static_cast<const ::std::uint8_t*>(begin), static_cast<const ::std::uint8_t*>(end)))
         {
             wait_until_txe();
             write(byte);
         }
     }
 
-    void ::SoC::i2c::assert_dma(::SoC::dma& dma) const noexcept
+    void ::SoC::i2c::assert_dma(::SoC::dma& dma) noexcept
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(dma.get_dma_enum() == dma.dma1, "该dma外设不能操作该i2c外设"sv); }
     }

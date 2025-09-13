@@ -14,6 +14,7 @@ namespace SoC
 
     ::SoC::heap::heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept(::SoC::optional_noexcept)
     {
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(reinterpret_cast<::std::uintptr_t>(end) % page_size == 0, "堆结束地址必须对齐到页边界"sv);
@@ -42,6 +43,8 @@ namespace SoC
         // 空闲链表按块大小排序，最后一项为空闲页链表
         // 将首个空闲页放入空闲页链表
         free_page_list.back() = metadata.begin();
+
+        // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
 
     ::SoC::detail::free_block_list_t* ::SoC::heap::make_block_in_page(::std::size_t free_list_index) noexcept(
@@ -87,7 +90,7 @@ namespace SoC
         auto old_head{::std::exchange(page_metadata, page_metadata->next_page)};
         // 将空闲块指针指向数据区，对于页来说，完成了空闲链表的重新初始化
         // 对于其他大小的块，需要使用make_block_in_page函数重新初始化空闲链表
-        old_head->free_block_list = (old_head - metadata.begin()) * page_size / ptr_size + data;
+        old_head->free_block_list = ((old_head - metadata.begin()) * page_size / ptr_size) + data;
         auto old_page_head{::std::exchange(free_page_list.back(), old_head)};
         old_head->next_page = old_page_head;
         return page_metadata;
@@ -182,6 +185,7 @@ namespace SoC
                         }
                     }
                     // 连续页范围占用的字节数
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     auto delta{reinterpret_cast<::std::uintptr_t>(range_end) - reinterpret_cast<::std::uintptr_t>(range_begin)};
                     // 转化为连续页数，由于是闭区间，因此+1
                     auto advance{delta / page_size + 1};
@@ -200,6 +204,7 @@ namespace SoC
 
     void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
         auto page_cnt{static_cast<::std::ptrdiff_t>((size + page_size - 1) / page_size)};
         if constexpr(::SoC::use_full_assert)
         {
@@ -216,6 +221,7 @@ namespace SoC
             page_ptr += page_size;
             next_page = ::std::exchange(head, &metadata);
         }
+        // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
 
     void* ::SoC::heap::allocate_cold_path(::std::size_t size) noexcept(::SoC::optional_noexcept)
@@ -281,15 +287,20 @@ namespace SoC
 
     void ::SoC::heap::deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
-        auto page_ptr{reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr)};
+        auto page_ptr{static_cast<::SoC::detail::free_block_list_t*>(ptr)};
         auto actual_size{get_actual_allocate_size(size)};
         auto size_align{::std::countr_zero(actual_size)};
         if constexpr(::SoC::use_full_assert)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             auto ptr_align{::std::countr_zero(reinterpret_cast<::std::uintptr_t>(page_ptr))};
             ::SoC::assert(ptr_align >= size_align, "非法块指针"sv);
         }
-        if(actual_size >= page_size) [[unlikely]] { return deallocate_pages(ptr, size); }
+        if(actual_size >= page_size) [[unlikely]]
+        {
+            deallocate_pages(ptr, size);
+            return;
+        }
         auto metadata_index{get_metadata_index(page_ptr)};
         auto&& metadata_ref{metadata[metadata_index]};
         auto&& [next_page, free_block_list, used_block]{metadata_ref};

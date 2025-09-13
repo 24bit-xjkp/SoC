@@ -136,7 +136,7 @@ export namespace SoC
          *
          * @return 系统控制器时钟是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
     };
 
     /**
@@ -161,7 +161,7 @@ export namespace SoC
 
     private:
         ::SoC::detail::exti_gpio_port gpio_port;
-        exti_line_enum line;
+        ::SoC::moveable_value<exti_line_enum> line;
         ::IRQn_Type irqn;
 
         /// 线枚举默认值
@@ -180,8 +180,8 @@ export namespace SoC
          * @param location 源代码位置
          * @return 若lines为default_lines则返回当前对象管理的中断线，否则返回lines
          */
-        exti_line_enum check_lines(exti_line_enum lines,
-                                   ::std::source_location location = ::std::source_location::current()) const noexcept;
+        [[nodiscard]] exti_line_enum
+            check_lines(exti_line_enum lines, ::std::source_location location = ::std::source_location::current()) const noexcept;
 
     public:
         /**
@@ -201,14 +201,14 @@ export namespace SoC
          *
          * @return gpio端口枚举
          */
-        inline ::SoC::detail::exti_gpio_port get_gpio_port() const noexcept { return gpio_port; }
+        [[nodiscard]] inline ::SoC::detail::exti_gpio_port get_gpio_port() const noexcept { return gpio_port; }
 
         /**
          * @brief 获取中断线枚举
          *
          * @return 中断线枚举
          */
-        inline exti_line_enum get_lines() const noexcept { return line; }
+        [[nodiscard]] inline exti_line_enum get_lines() const noexcept { return line; }
 
         /**
          * @brief 清除中断线的触发源
@@ -218,7 +218,7 @@ export namespace SoC
 
         inline exti_line(const exti_line&) noexcept = delete;
         inline exti_line& operator= (const exti_line&) = delete;
-        exti_line(exti_line&&) noexcept;
+        exti_line(exti_line&&) noexcept = default;
         inline exti_line& operator= (exti_line&&) = delete;
 
         /**
@@ -271,7 +271,7 @@ export namespace SoC
          * @param lines 要判断的线
          * @return 中断源是否使能
          */
-        bool get_it(exti_line_enum lines = default_lines) const noexcept;
+        [[nodiscard]] bool get_it(exti_line_enum lines = default_lines) const noexcept;
 
         /**
          * @brief 获取中断线标志
@@ -280,7 +280,7 @@ export namespace SoC
          * @return true
          * @return false
          */
-        bool get_flag_it(exti_line_enum lines = default_lines) const noexcept;
+        [[nodiscard]] bool get_flag_it(exti_line_enum lines = default_lines) const noexcept;
 
         /**
          * @brief 清除中断线标志

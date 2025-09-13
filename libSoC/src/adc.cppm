@@ -119,12 +119,6 @@ namespace SoC
         }
     }
 
-    ::SoC::adc_regular_group::adc_regular_group(adc_regular_group&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(other));
-        other.adc_ptr = nullptr;
-    }
-
     void ::SoC::adc_regular_group::set_trigger_source(::SoC::adc_regular_trigger_source trigger_source) noexcept
     {
         this->trigger_source = trigger_source;
@@ -209,8 +203,8 @@ namespace SoC
         using enum ::SoC::dma_stream::dma_stream_enum;
         using enum ::SoC::dma_channel;
         using enum ::SoC::adc::adc_enum;
-        ::SoC::dma_channel channel;
-        ::SoC::dma_stream::dma_stream_enum stream;
+        ::SoC::dma_channel channel{};
+        ::SoC::dma_stream::dma_stream_enum stream{};
         switch(get_adc_enum())
         {
             case adc1:
@@ -390,7 +384,7 @@ namespace SoC
             raw_vrefint += vrefint;
             raw_temp += temp;
         }
-        constexpr auto size{sizeof(*buffer) / sizeof(buffer->front())};
+        constexpr auto size{buffer_t{}.size()};
         raw_vrefint /= size;
         raw_temp /= size;
 
@@ -430,12 +424,6 @@ namespace SoC
         enable();
     }
 
-    ::SoC::analog_watchdog::analog_watchdog(::SoC::analog_watchdog&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(other));
-        other.adc_ptr = nullptr;
-    }
-
     ::SoC::analog_watchdog::~analog_watchdog() noexcept
     {
         if(adc_ptr) [[likely]]
@@ -471,6 +459,7 @@ namespace SoC
         ::LL_ADC_SetAnalogWDThresholds(adc_ptr, LL_ADC_AWD_THRESHOLD_HIGH, high_threshold);
     }
 
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
     void ::SoC::analog_watchdog::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept
     {
         ::SoC::enable_irq(irqn);
@@ -484,6 +473,8 @@ namespace SoC
     }
 
     void ::SoC::analog_watchdog::disable_irq() const noexcept { ::SoC::disable_irq(irqn); }
+
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
     void ::SoC::analog_watchdog::set_it_awd(bool enable) const noexcept
     {

@@ -399,7 +399,7 @@ export namespace SoC
          *
          * @return std::pair<write_callback_t, void*> 回调函数和设备指针
          */
-        constexpr inline auto get() const noexcept { return ::std::pair{write_callback, device}; }
+        [[nodiscard]] constexpr inline auto get() const noexcept { return ::std::pair{write_callback, device}; }
 
         /**
          * @brief 尝试写入数据
@@ -517,45 +517,6 @@ export namespace SoC::detail
 
         constexpr inline void operator() () const noexcept { close_clock_callback(clock_enum); }
     };
-
-    /**
-     * @brief 联合体包装器，用于跳过自动构造析构
-     *
-     * @tparam type 要存储的类型
-     */
-    template <typename type>
-    union union_wrapper
-    {
-        using value_type = type;
-        using pointer = type*;
-        using const_pointer = const type*;
-        using reference = type&;
-        using const_reference = const type&;
-
-        value_type value;
-
-        constexpr inline union_wrapper() noexcept {}
-
-        constexpr inline ~union_wrapper() noexcept {}
-    };
-
-    /**
-     * @brief 析构守卫
-     *
-     * @tparam type 要存储的类型
-     */
-    template <typename type>
-    struct destructure_guard
-    {
-        using value_type = type;
-        using pointer = type*;
-        using const_pointer = const type*;
-        using reference = type&;
-        using const_reference = const type&;
-        reference ref;
-
-        ~destructure_guard() noexcept { ref.~type(); }
-    };
 }  // namespace SoC::detail
 
 export namespace SoC
@@ -634,6 +595,11 @@ export namespace SoC
         constexpr inline union_wrapper() noexcept {}
 
         constexpr inline ~union_wrapper() noexcept {}
+
+        constexpr inline union_wrapper(const union_wrapper&) noexcept = default;
+        constexpr inline union_wrapper& operator= (const union_wrapper&) noexcept = default;
+        constexpr inline union_wrapper(union_wrapper&&) noexcept = default;
+        constexpr inline union_wrapper& operator= (union_wrapper&&) noexcept = default;
     };
 
     /**
@@ -652,6 +618,113 @@ export namespace SoC
         reference ref;
 
         ~destructure_guard() noexcept { ref.~type(); }
+
+        constexpr inline destructure_guard(const destructure_guard&) noexcept = default;
+        constexpr inline destructure_guard& operator= (const destructure_guard&) noexcept = default;
+        constexpr inline destructure_guard(destructure_guard&&) noexcept = default;
+        constexpr inline destructure_guard& operator= (destructure_guard&&) noexcept = default;
+    };
+
+    /**
+     * @brief 可移动值类型，用于在移动语义下自动清空值
+     *
+     * @tparam type 值类型
+     */
+    template <typename type>
+    struct moveable_value
+    {
+        using value_type = type;
+        using pointer = type*;
+        using const_pointer = const type*;
+        using reference = type&;
+        using const_reference = const type&;
+        /// 存储的值
+        value_type value{};
+
+        constexpr inline moveable_value() noexcept = default;
+
+        constexpr inline moveable_value(value_type value) noexcept : value{value} {}
+
+        /**
+         * @brief 移动构造函数，自动将other.value清空
+         *
+         * @param other 要移动的值
+         */
+        constexpr inline moveable_value(moveable_value&& other) noexcept : value{::std::exchange(other.value, value_type{})} {}
+
+        /**
+         * @brief 移动赋值运算符，自动将other.value清空
+         *
+         * @param other 要移动的值
+         * @return moveable_value& 移动赋值后的对象
+         */
+        constexpr inline moveable_value& operator= (moveable_value&& other) noexcept
+        {
+            value = ::std::exchange(other.value, value_type{});
+            return *this;
+        }
+
+        /**
+         * @brief 复制构造函数，不进行额外操作
+         *
+         * @param other 要复制的值
+         */
+        constexpr inline moveable_value(const moveable_value&) = default;
+        /**
+         * @brief 复制赋值运算符，不进行额外操作
+         *
+         * @param other 要复制的值
+         * @return moveable_value& 复制赋值后的对象
+         */
+        constexpr inline moveable_value& operator= (const moveable_value&) = default;
+
+        /**
+         * @brief 析构函数，不进行额外操作
+         */
+        constexpr inline ~moveable_value() noexcept = default;
+
+        /**
+         * @brief 类型转换运算符，返回存储的值
+         *
+         * @return value_type 存储的值
+         */
+        constexpr inline operator value_type() const noexcept { return value; }
+
+        /**
+         * @brief 解引用运算符，要求满足：
+         * - *value 成立
+         *
+         * @return 对value解引用的结果
+         */
+        constexpr inline auto&& operator* (this auto&& self) noexcept
+            requires requires { *self.value; }
+        {
+            return ::std::forward_like<decltype(self)>(*self.value);
+        }
+
+        /**
+         * @brief 成员访问运算符，要求满足：
+         * - value->xxx 成立
+         *
+         * @return 对value的成员访问结果
+         */
+        constexpr inline auto operator->(this auto&& self) noexcept
+            requires ::std::is_pointer_v<value_type> || requires { self.value.operator->(); }
+        {
+            return self.value;
+        }
+
+        /**
+         * @brief 下标运算符，要求满足：
+         * - value[index] 成立
+         *
+         * @return 对value[index]的引用
+         */
+        constexpr inline auto&& operator[] (this auto&& self, ::std::size_t index) noexcept
+            requires requires { self.value[index]; }
+        {
+            return ::std::forward_like<decltype(self)>(self.value[index]);
+        }
     };
 
     namespace detail

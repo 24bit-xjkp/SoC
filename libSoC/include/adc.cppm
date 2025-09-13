@@ -182,9 +182,9 @@ export namespace SoC
 
     private:
         ::ADC_TypeDef* adc_ptr;
-        ::SoC::adc_resolution resolution;
-        ::SoC::adc_data_alignment alignment;
-        bool scan_mode;
+        ::SoC::adc_resolution resolution{};
+        ::SoC::adc_data_alignment alignment{};
+        bool scan_mode{};
 
     public:
         using enum adc_enum;
@@ -218,35 +218,35 @@ export namespace SoC
          *
          * @return adc外设指针
          */
-        inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
+        [[nodiscard]] inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
 
         /**
          * @brief 获取adc外设枚举
          *
          * @return adc外设枚举
          */
-        inline adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<adc_enum>(adc_ptr); }
+        [[nodiscard]] inline adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<adc_enum>(adc_ptr); }
 
         /**
          * @brief 获取adc分辨率
          *
          * @return adc分辨率
          */
-        ::SoC::adc_resolution get_resolution() const noexcept { return resolution; }
+        [[nodiscard]] ::SoC::adc_resolution get_resolution() const noexcept { return resolution; }
 
         /**
          * @brief 获取adc数据对齐方式
          *
          * @return adc数据对齐方式
          */
-        ::SoC::adc_data_alignment get_alignment() const noexcept { return alignment; }
+        [[nodiscard]] ::SoC::adc_data_alignment get_alignment() const noexcept { return alignment; }
 
         /**
          * @brief 获取adc扫描模式
          *
          * @return adc扫描模式
          */
-        bool get_scan_mode() const noexcept { return scan_mode; }
+        [[nodiscard]] bool get_scan_mode() const noexcept { return scan_mode; }
 
         /**
          * @brief 设置adc分辨率
@@ -286,7 +286,7 @@ export namespace SoC
          *
          * @return adc外设是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
     };
 
     /**
@@ -485,10 +485,10 @@ export namespace SoC
     struct adc_regular_group
     {
     private:
-        ::ADC_TypeDef* adc_ptr;
+        ::SoC::moveable_value<::ADC_TypeDef*> adc_ptr;
         ::std::size_t ranks;
-        ::SoC::adc_regular_trigger_source trigger_source;
-        ::SoC::adc_regular_dma_mode dma_mode;
+        ::SoC::adc_regular_trigger_source trigger_source{};
+        ::SoC::adc_regular_dma_mode dma_mode{};
 
         /// adc通道转换顺序表
         constexpr inline static ::std::size_t rank_table[]{
@@ -539,35 +539,38 @@ export namespace SoC
          *
          * @return adc外设指针
          */
-        inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
+        [[nodiscard]] inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
 
         /**
          * @brief 获取adc外设枚举
          *
          * @return adc外设枚举
          */
-        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
+        [[nodiscard]] inline ::SoC::adc::adc_enum get_adc_enum() const noexcept
+        {
+            return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr.value);
+        }
 
         /**
          * @brief 获取adc规则组中通道数量
          *
          * @return adc规则组中通道数量
          */
-        inline ::std::size_t get_rank_num() const noexcept { return ranks; }
+        [[nodiscard]] inline ::std::size_t get_rank_num() const noexcept { return ranks; }
 
         /**
          * @brief 获取adc规则组的触发源
          *
          * @return adc规则组的触发源
          */
-        inline ::SoC::adc_regular_trigger_source get_trigger_source() const noexcept { return trigger_source; }
+        [[nodiscard]] inline ::SoC::adc_regular_trigger_source get_trigger_source() const noexcept { return trigger_source; }
 
         /**
          * @brief 获取adc规则组的dma模式
          *
          * @return adc规则组的dma模式
          */
-        inline ::SoC::adc_regular_dma_mode get_dma_mode() const noexcept { return dma_mode; }
+        [[nodiscard]] inline ::SoC::adc_regular_dma_mode get_dma_mode() const noexcept { return dma_mode; }
 
         /**
          * @brief 创建adc规则组，不会开始转换
@@ -594,7 +597,7 @@ export namespace SoC
 
         adc_regular_group(const adc_regular_group&) noexcept = delete;
         adc_regular_group& operator= (const adc_regular_group&) noexcept = delete;
-        adc_regular_group(adc_regular_group&& other) noexcept;
+        adc_regular_group(adc_regular_group&& other) noexcept = default;
         adc_regular_group& operator= (adc_regular_group&&) noexcept = delete;
 
         /**
@@ -663,7 +666,7 @@ export namespace SoC
          *
          * @return 转换完成标志
          */
-        bool get_flag_eocs() const noexcept;
+        [[nodiscard]] bool get_flag_eocs() const noexcept;
 
         /**
          * @brief 清除转换完成标志
@@ -676,7 +679,7 @@ export namespace SoC
          *
          * @return 溢出标志
          */
-        bool get_flag_ovr() const noexcept;
+        [[nodiscard]] bool get_flag_ovr() const noexcept;
 
         /**
          * @brief 清除溢出标志
@@ -689,7 +692,7 @@ export namespace SoC
          *
          * @return adc结果
          */
-        ::std::size_t get_result() const noexcept;
+        [[nodiscard]] ::std::size_t get_result() const noexcept;
 
         /**
          * @brief 停止dma，将adc的dma标志清除
@@ -773,6 +776,11 @@ export namespace SoC
          */
         explicit adc_calibrator(::SoC::adc& adc, ::SoC::dma& dma) noexcept;
 
+        inline adc_calibrator(const adc_calibrator&) noexcept = delete;
+        inline adc_calibrator& operator= (const adc_calibrator&) noexcept = delete;
+        inline adc_calibrator(adc_calibrator&&) noexcept = delete;
+        inline adc_calibrator& operator= (adc_calibrator&&) noexcept = delete;
+
         /**
          * @brief 关闭adc校准器
          *
@@ -785,14 +793,14 @@ export namespace SoC
          *
          * @return 采样是否完成
          */
-        bool is_sample_ready() const noexcept;
+        [[nodiscard]] bool is_sample_ready() const noexcept;
 
         /**
          * @brief 获取校准结果，会阻塞直到采样完成
          *
          * @return std::pair{1LSB对应的电压, 温度}
          */
-        ::std::pair<float, float> get_result() const noexcept;
+        [[nodiscard]] ::std::pair<float, float> get_result() const noexcept;
     };
 
     /**
@@ -804,10 +812,10 @@ export namespace SoC
         using awd_enum = ::SoC::detail::analog_watchdog;
 
     private:
-        ::ADC_TypeDef* adc_ptr;
+        ::SoC::moveable_value<::ADC_TypeDef*> adc_ptr;
         awd_enum awd_channel;
-        ::std::size_t low_threshold;
-        ::std::size_t high_threshold;
+        ::std::size_t low_threshold{};
+        ::std::size_t high_threshold{};
         // 由于clang会崩溃，因此硬编码枚举号
         constexpr inline static ::IRQn_Type irqn{static_cast<::IRQn_Type>(18)};
 
@@ -835,7 +843,7 @@ export namespace SoC
 
         analog_watchdog(const analog_watchdog&) noexcept = delete;
         analog_watchdog& operator= (const analog_watchdog&) noexcept = delete;
-        analog_watchdog(analog_watchdog&&) noexcept;
+        analog_watchdog(analog_watchdog&&) noexcept = default;
         analog_watchdog& operator= (analog_watchdog&&) noexcept = delete;
 
         /**
@@ -843,28 +851,31 @@ export namespace SoC
          *
          * @return adc外设指针
          */
-        inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
+        [[nodiscard]] inline ::ADC_TypeDef* get_adc() const noexcept { return adc_ptr; }
 
         /**
          * @brief 获取adc外设枚举
          *
          * @return adc外设枚举
          */
-        inline ::SoC::adc::adc_enum get_adc_enum() const noexcept { return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
+        [[nodiscard]] inline ::SoC::adc::adc_enum get_adc_enum() const noexcept
+        {
+            return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr.value);
+        }
 
         /**
          * @brief 获取模拟看门狗监视的通道
          *
          * @return 模拟看门狗通道枚举
          */
-        inline awd_enum get_channel() const noexcept { return awd_channel; }
+        [[nodiscard]] inline awd_enum get_channel() const noexcept { return awd_channel; }
 
         /**
          * @brief 判断模拟看门狗是否使能
          *
          * @return 模拟看门狗是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 使能模拟看门狗
@@ -897,7 +908,7 @@ export namespace SoC
          *
          * @return std::pair{低门限, 高门限}
          */
-        inline ::std::pair<::std::size_t, ::std::size_t> get_threshold() const noexcept
+        [[nodiscard]] inline ::std::pair<::std::size_t, ::std::size_t> get_threshold() const noexcept
         {
             return ::std::pair{low_threshold, high_threshold};
         }
@@ -935,21 +946,21 @@ export namespace SoC
          *
          * @return 模拟看门狗中断源状态
          */
-        bool get_it_awd() const noexcept;
+        [[nodiscard]] bool get_it_awd() const noexcept;
 
         /**
          * @brief 判断是否是模拟看门狗中断
          *
          * @return 是否是模拟看门狗中断
          */
-        bool is_it_awd() const noexcept;
+        [[nodiscard]] bool is_it_awd() const noexcept;
 
         /**
          * @brief 获取模拟看门狗中断标志
          *
          * @return 模拟看门狗中断标志
          */
-        bool get_flag_awd() const noexcept;
+        [[nodiscard]] bool get_flag_awd() const noexcept;
 
         /**
          * @brief 清除模拟看门狗中断标志

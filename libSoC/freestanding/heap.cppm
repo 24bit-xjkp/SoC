@@ -179,21 +179,21 @@ export namespace SoC
          *
          * @return 总页数
          */
-        inline ::std::size_t get_total_pages() const noexcept { return metadata.size(); }
+        [[nodiscard]] inline ::std::size_t get_total_pages() const noexcept { return metadata.size(); }
 
         /**
          * @brief 获取当前堆中空闲页数，不论是否分块
          *
          * @return 空闲页数
          */
-        ::std::size_t get_free_pages() const noexcept;
+        [[nodiscard]] ::std::size_t get_free_pages() const noexcept;
 
         /**
          * @brief 获取当前堆中正在使用的页数，不论是否分块
          *
          * @return 正在使用的页数
          */
-        inline ::std::size_t get_using_pages() const noexcept { return get_total_pages() - get_free_pages(); }
+        [[nodiscard]] inline ::std::size_t get_using_pages() const noexcept { return get_total_pages() - get_free_pages(); }
 
         /**
          * @brief 分配指定大小的块
@@ -231,6 +231,11 @@ export namespace SoC
         template <typename wrapper>
         struct heap_allocator_impl
         {
+        private:
+            constexpr inline heap_allocator_impl() noexcept = default;
+            friend wrapper;
+
+        public:
             /**
              * @brief 分配至少size个字节
              *
@@ -252,7 +257,7 @@ export namespace SoC
             inline static type* allocate() noexcept(::SoC::optional_noexcept)
             {
                 constexpr auto size{::std::max(sizeof(type), alignof(type))};
-                return reinterpret_cast<type*>(wrapper::heap->allocate(size));
+                return static_cast<type*>(wrapper::heap->allocate(size));
             }
 
             /**
@@ -272,7 +277,7 @@ export namespace SoC
                 auto actual_size{::SoC::heap::get_actual_allocate_size(total_size)};
                 // 当分配大小超过页大小时转为对齐到整数页
                 if(actual_size >= page_size) [[unlikely]] { actual_size = (total_size + page_size - 1) / page_size * page_size; }
-                return ::SoC::allocation_result<type*>{reinterpret_cast<type*>(wrapper::heap->allocate(size * n)),
+                return ::SoC::allocation_result<type*>{static_cast<type*>(wrapper::heap->allocate(size * n)),
                                                        actual_size / size};
             }
 
@@ -325,7 +330,11 @@ export namespace SoC
     {
     private:
         constinit inline static ::SoC::heap* heap{};
-        friend struct ::SoC::detail::heap_allocator_impl<::SoC::ram_heap_allocator_t>;
+        using base_t = ::SoC::detail::heap_allocator_impl<::SoC::ram_heap_allocator_t>;
+        friend base_t;
+
+    public:
+        using base_t::base_t;
     } inline constexpr ram_allocator{};
 
     /**
@@ -336,7 +345,11 @@ export namespace SoC
     {
     private:
         constinit inline static ::SoC::heap* heap{};
-        friend struct ::SoC::detail::heap_allocator_impl<::SoC::ccmram_heap_allocator_t>;
+        using base_t = ::SoC::detail::heap_allocator_impl<::SoC::ccmram_heap_allocator_t>;
+        friend base_t;
+
+    public:
+        using base_t::base_t;
     } inline constexpr ccmram_allocator{};
 }  // namespace SoC
 

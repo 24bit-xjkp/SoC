@@ -22,7 +22,7 @@ namespace SoC
 
     private:
         ::SoC::union_wrapper<type> buffer[buffer_size];
-        ::std::size_t tail;
+        ::std::size_t tail{};
         [[no_unique_address]] compare comp{};
 
         /**
@@ -106,35 +106,35 @@ namespace SoC
          *
          * @return 队列大小
          */
-        constexpr inline size_t size() const noexcept { return tail; }
+        [[nodiscard]] constexpr inline size_t size() const noexcept { return tail; }
 
         /**
          * @brief 获取优先队列的最大容量
          *
          * @return 最大容量
          */
-        constexpr inline ::std::size_t capacity() const noexcept { return buffer_size; }
+        [[nodiscard]] constexpr inline ::std::size_t capacity() const noexcept { return buffer_size; }
 
         /**
          * @brief 检查优先队列是否为空
          *
          * @return 队列是否为空
          */
-        constexpr inline bool empty() const noexcept { return tail == 0; }
+        [[nodiscard]] constexpr inline bool empty() const noexcept { return tail == 0; }
 
         /**
          * @brief 检查优先队列是否已满
          *
          * @return 队列是否已满
          */
-        constexpr inline bool full() const noexcept { return tail == buffer_size; }
+        [[nodiscard]] constexpr inline bool full() const noexcept { return tail == buffer_size; }
 
         /**
          * @brief 获取优先队列的首个元素
          *
          * @return 首个元素的引用
          */
-        constexpr inline auto&& top(this auto&& self) noexcept
+        [[nodiscard]] constexpr inline auto&& top(this auto&& self) noexcept
         {
             return ::std::forward_like<decltype(self)>(self.buffer[0].value);
         }

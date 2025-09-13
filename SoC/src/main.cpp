@@ -31,9 +31,9 @@ namespace pid_controller
         {
             i_sample_sum = 0.f;
             i_sample_cnt = 0;
+            return;
         }
-        // 设置采样点数上限，避免更新过慢
-        else if(i_sample_cnt == 500)
+        if(i_sample_cnt == 500)
         {
             i_sample_sum = 0.f;
             i_sample_cnt = 0;
@@ -203,7 +203,7 @@ int main()
     key_check_tim.enable();
 
     auto usart1_dma_write{usart1.enable_dma_write(dma2, ::SoC::dma_fifo_threshold::full, ::SoC::dma_memory_burst::inc16)};
-    ::SoC::text_ofile file{usart1_dma_write, {}};
+    ::SoC::text_ofile file{usart1_dma_write};
     ::file = file;
 
     ::SoC::gpio_port gpio_b{::SoC::gpio_port::pb};

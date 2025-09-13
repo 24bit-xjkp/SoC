@@ -31,14 +31,14 @@ namespace SoC
 
     void ::SoC::oled::write_command(::std::uint8_t command) const noexcept
     {
-        ::std::uint8_t buffer[]{this->command_prefix, command};
-        i2c.write(slave_address, buffer, buffer + 2);
+        ::std::uint8_t buffer[]{command_prefix, command};
+        i2c.write(slave_address, auto(buffer), auto(buffer) + 2);
     }
 
     void ::SoC::oled::write_data(::std::uint8_t data) const noexcept
     {
-        ::std::uint8_t buffer[]{this->data_prefix, data};
-        i2c.write(slave_address, buffer, buffer + 2);
+        ::std::uint8_t buffer[]{data_prefix, data};
+        i2c.write(slave_address, auto(buffer), auto(buffer) + 2);
     }
 
     void ::SoC::oled::set_cursor(::std::uint8_t page, ::std::uint8_t column) noexcept
@@ -53,7 +53,7 @@ namespace SoC
         for(auto&& [page, page_index]: ::std::views::zip(buffer, ::std::views::iota(0)))
         {
             write_command(0xb0 | page_index);
-            write_command(0x00 | 0);
+            write_command(0x00 | 0); // NOLINT(misc-redundant-expression)
             write_command(0x10 | 0);
 
             auto _{i2c.get_condition_guard()};

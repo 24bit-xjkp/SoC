@@ -38,7 +38,7 @@ export namespace SoC
         /// @see ::SoC::fmt_string
         extern "C++" template <::SoC::fmt_string fmt>
         struct fmt_parser;
-    }
+    }  // namespace test
 
     /**
      * @brief 编译时格式串解析器
@@ -105,7 +105,7 @@ export namespace SoC
                 {
                     switch(back)
                     {
-                        case brace_t::single_left_brace: brace_stack.pop_back(); break;
+                        case brace_t::single_left_brace:
                         case brace_t::single_right_brace: brace_stack.pop_back(); break;
                         case brace_t::placehold: brace_stack.push_back(brace_t::single_right_brace); break;
                         default: break;
@@ -115,7 +115,7 @@ export namespace SoC
                 {
                     switch(back)
                     {
-                        case brace_t::single_left_brace: return ::std::nullopt;
+                        case brace_t::single_left_brace:
                         case brace_t::single_right_brace: return ::std::nullopt;
                         default: break;
                     }

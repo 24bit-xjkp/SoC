@@ -123,9 +123,9 @@ export namespace SoC
         using enum usart_enum;
 
     private:
-        ::USART_TypeDef* usart_ptr{};
+        ::SoC::moveable_value<::USART_TypeDef*> usart_ptr{};
         ::SoC::usart_data_width data_width{};
-        ::SoC::detail::dtor_close_clock_callback_t callback;
+        ::SoC::detail::dtor_close_clock_callback_t callback{};
         ::IRQn_Type irqn{};
 
         void wait_until_write_complete() const noexcept;
@@ -136,7 +136,7 @@ export namespace SoC
          * @param dma dma外设
          * @param dma_enum 指定dma外设对应的枚举
          */
-        void assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) const noexcept;
+        static void assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) noexcept;
 
         /// 没有选定的dma数据流，即使用模式配置
         constexpr inline static auto no_selected_stream{static_cast<::SoC::dma_stream::dma_stream_enum>(-1zu)};
@@ -169,7 +169,7 @@ export namespace SoC
         constexpr inline usart(const usart&) noexcept = delete;
         constexpr inline usart& operator= (const usart&) noexcept = delete;
 
-        usart(usart&& other) noexcept;
+        usart(usart&& other) noexcept = default;
         usart& operator= (usart&&) noexcept = delete;
 
         ~usart() noexcept;
@@ -184,7 +184,7 @@ export namespace SoC
              * @note usart发送寄存器为空且dma传输完成即认为就绪
              * @return 是否准备好写入数据
              */
-            bool is_write_ready() const noexcept { return usart.get_flag_txe() && is_transfer_complete(); }
+            [[nodiscard]] bool is_write_ready() const noexcept { return usart.get_flag_txe() && is_transfer_complete(); }
 
         private:
             friend struct usart;
@@ -222,21 +222,21 @@ export namespace SoC
          *
          * @return usart外设指针
          */
-        inline ::USART_TypeDef* get_usart() const noexcept { return usart_ptr; }
+        [[nodiscard]] inline ::USART_TypeDef* get_usart() const noexcept { return usart_ptr; }
 
         /**
          * @brief 获取usart外设枚举
          *
          * @return usart外设枚举
          */
-        inline usart_enum get_usart_enum() const noexcept { return ::SoC::bit_cast<usart_enum>(usart_ptr); }
+        [[nodiscard]] inline usart_enum get_usart_enum() const noexcept { return ::SoC::bit_cast<usart_enum>(usart_ptr.value); }
 
         /**
          * @brief 获取中断枚举
          *
          * @return 中断枚举
          */
-        inline ::IRQn_Type get_irqn() const noexcept { return irqn; }
+        [[nodiscard]] inline ::IRQn_Type get_irqn() const noexcept { return irqn; }
 
         /**
          * @brief 向usart外设写入数据
@@ -271,7 +271,7 @@ export namespace SoC
          */
         inline static void write_wrapper(void* usart, const void* buffer, const void* end) noexcept
         {
-            return reinterpret_cast<::SoC::usart*>(usart)->write(buffer, end);
+            static_cast<::SoC::usart*>(usart)->write(buffer, end);
         }
 
         /**
@@ -280,7 +280,7 @@ export namespace SoC
          * @note 这会忽略第9位
          * @return 读取到的数据
          */
-        ::std::uint8_t read() const noexcept;
+        [[nodiscard]] ::std::uint8_t read() const noexcept;
 
         /**
          * @brief 从usart读取9位数据
@@ -288,7 +288,7 @@ export namespace SoC
          * @note 仅限数据宽度为9位时使用
          * @return 读取到的数据
          */
-        ::std::uint16_t read9() const noexcept;
+        [[nodiscard]] ::std::uint16_t read9() const noexcept;
 
         /**
          * @brief 从串口中读取数据并填充[begin, end)范围内的缓冲区
@@ -342,21 +342,21 @@ export namespace SoC
          *
          * @return 中断是否使能
          */
-        bool get_it_txe() const noexcept;
+        [[nodiscard]] bool get_it_txe() const noexcept;
 
         /**
          * @brief 获取发送寄存器空标记
          *
          * @return 发送寄存器空标记状态
          */
-        bool get_flag_txe() const noexcept;
+        [[nodiscard]] bool get_flag_txe() const noexcept;
 
         /**
          * @brief 判断发生的串口中断是否为发送寄存器空中断
          *
          * @return 发生的串口中断是否为发送寄存器空中断
          */
-        bool is_it_txe() const noexcept;
+        [[nodiscard]] bool is_it_txe() const noexcept;
 
         /**
          * @brief 设置接收寄存器非空中断状态
@@ -370,21 +370,21 @@ export namespace SoC
          *
          * @return 中断是否使能
          */
-        bool get_it_rxne() const noexcept;
+        [[nodiscard]] bool get_it_rxne() const noexcept;
 
         /**
          * @brief 获取接收寄存器非空标记
          *
          * @return 接收寄存器非空标记状态
          */
-        bool get_flag_rxne() const noexcept;
+        [[nodiscard]] bool get_flag_rxne() const noexcept;
 
         /**
          * @brief 判断发生的串口中断是否为接收寄存器非空中断
          *
          * @return 发生的串口中断是否为接收寄存器非空中断
          */
-        bool is_it_rxne() const noexcept;
+        [[nodiscard]] bool is_it_rxne() const noexcept;
 
         /**
          * @brief 设置空闲中断状态
@@ -398,21 +398,21 @@ export namespace SoC
          *
          * @return 中断是否使能
          */
-        bool get_it_idle() const noexcept;
+        [[nodiscard]] bool get_it_idle() const noexcept;
 
         /**
          * @brief 获取空闲标记
          *
          * @return 空闲标记状态
          */
-        bool get_flag_idle() const noexcept;
+        [[nodiscard]] bool get_flag_idle() const noexcept;
 
         /**
          * @brief 判断发生的串口中断是否为空闲中断
          *
          * @return 发生的串口中断是否为空闲中断
          */
-        bool is_it_idle() const noexcept;
+        [[nodiscard]] bool is_it_idle() const noexcept;
 
         /**
          * @brief 清除空闲标记
@@ -425,7 +425,7 @@ export namespace SoC
          *
          * @return 发送完成标记状态
          */
-        bool get_flag_tc() const noexcept;
+        [[nodiscard]] bool get_flag_tc() const noexcept;
 
         /**
          * @brief 清除发送完成标记
@@ -445,14 +445,14 @@ export namespace SoC
          *
          * @return 中断是否使能
          */
-        bool get_it_tc() const noexcept;
+        [[nodiscard]] bool get_it_tc() const noexcept;
 
         /**
          * @brief 判断发生的串口中断是否为发送完成中断
          *
          * @return 发生的串口中断是否为发送完成中断
          */
-        bool is_it_tc() const noexcept;
+        [[nodiscard]] bool is_it_tc() const noexcept;
 
         /**
          * @brief 使能usart外设
@@ -471,7 +471,7 @@ export namespace SoC
          *
          * @return usart外设是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 使能串口dma写入
@@ -505,7 +505,7 @@ export namespace SoC
          *
          * @return 串口dma写入是否使能
          */
-        bool is_dma_write_enabled() const noexcept;
+        [[nodiscard]] bool is_dma_write_enabled() const noexcept;
     };
 
     template <>

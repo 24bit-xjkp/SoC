@@ -51,16 +51,16 @@ namespace SoC::detail
     {
         if constexpr(::std::is_pointer_v<callable_t>)
         {
-            return ::std::invoke_r<return_t>(reinterpret_cast<callable_t>(ptr), ::std::forward<args_t>(args)...);
+            return ::std::invoke_r<return_t>(static_cast<callable_t>(ptr), ::std::forward<args_t>(args)...);
         }
         else if constexpr(::SoC::detail::static_call_operator<callable_t>)
         {
-            return ::std::invoke_r<return_t>(reinterpret_cast<decltype(&callable_t::operator())>(ptr),
+            return ::std::invoke_r<return_t>(static_cast<decltype(&callable_t::operator())>(ptr),
                                              ::std::forward<args_t>(args)...);
         }
         else
         {
-            return ::std::invoke_r<return_t>(*reinterpret_cast<callable_t*>(ptr), ::std::forward<args_t>(args)...);
+            return ::std::invoke_r<return_t>(*static_cast<callable_t*>(ptr), ::std::forward<args_t>(args)...);
         }
     }
 
@@ -73,7 +73,7 @@ namespace SoC::detail
         requires (!::std::is_reference_v<callable_t>)
     inline ::std::size_t function_destroy_callback(void* ptr) noexcept
     {
-        reinterpret_cast<callable_t*>(ptr)->~callable_t();
+        static_cast<callable_t*>(ptr)->~callable_t();
         constexpr auto allocated_size{::std::max(sizeof(callable_t), alignof(callable_t))};
         return allocated_size;
     }
@@ -148,7 +148,7 @@ export namespace SoC
             if constexpr(::std::is_lvalue_reference_v<callable_t>)
             {
                 // 对于左值采用引用语义
-                ptr = const_cast<void*>(reinterpret_cast<const void*>(&callable));
+                ptr = const_cast<void*>(static_cast<const void*>(&callable));
             }
             else if constexpr(::std::is_pointer_v<no_ref_callable_t>)
             {
@@ -166,7 +166,7 @@ export namespace SoC
                 {
                     // 对于其他类型，采用拥有语义，进行动态分配
                     ptr = allocator.template allocate<no_ref_callable_t>();
-                    ::new(ptr) no_ref_callable_t{::std::move(callable)};
+                    ::new(ptr) no_ref_callable_t{::std::forward<callable_t>(callable)};
                     destroy_callback = ::SoC::detail::function_destroy_callback<no_ref_callable_t>;
                 }
             }

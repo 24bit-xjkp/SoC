@@ -9,7 +9,7 @@ import :common;
 
 namespace SoC
 {
-    using cursor = ::SoC::cursor_t<::std::size_t>;
+    using cursor = ::SoC::cursor_t<::size_t>;
     extern "C"
     {
         extern ::SoC::cursor _sdata;
@@ -26,7 +26,7 @@ namespace SoC
         [[gnu::naked, noreturn]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b SoC_startup\n"); }
     }
 
-    using no_optimize_cursor = volatile ::std::size_t*;
+    using no_optimize_cursor = volatile ::size_t*;
 
     void copy(::SoC::no_optimize_cursor begin, ::SoC::no_optimize_cursor end, ::SoC::no_optimize_cursor from) noexcept
     {
@@ -43,9 +43,9 @@ namespace SoC
     extern "C" [[noreturn, gnu::used]] void SoC_startup() noexcept
     {
         ::SoC::SystemInit();
-        ::SoC::copy(::SoC::_sdata, ::SoC::_edata, ::SoC::_sidata);
-        ::SoC::fill(::SoC::_sbss, ::SoC::_ebss);
-        ::SoC::copy(::SoC::_sccmram, ::SoC::_eccmram, ::SoC::_siccmram);
+        ::SoC::copy(auto(::SoC::_sdata), auto(::SoC::_edata), auto(::SoC::_sidata));
+        ::SoC::fill(auto(::SoC::_sbss), auto(::SoC::_ebss));
+        ::SoC::copy(auto(::SoC::_sccmram), auto(::SoC::_eccmram), auto(::SoC::_siccmram));
 
         ::SoC::_init();
         ::main();

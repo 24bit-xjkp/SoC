@@ -35,9 +35,6 @@ namespace SoC
     }
 }  // namespace SoC
 
-namespace std
-{
-    using ::std::size_t;
-}
+using ::std::size_t;
 
 extern "C++" int main();

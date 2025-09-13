@@ -206,12 +206,6 @@ namespace SoC
         ::LL_TIM_SetRepetitionCounter(tim_ptr, rep_cnt);
     }
 
-    ::SoC::tim::tim(::SoC::tim&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(*this));
-        other.tim_ptr = nullptr;
-    }
-
     ::SoC::tim::~tim() noexcept
     {
         if(tim_ptr != nullptr) [[likely]]
@@ -266,7 +260,7 @@ namespace SoC
         {
             switch(get_tim_enum())
             {
-                case tim1: break;
+                case tim1:
                 case tim8: break;
                 case tim2:
                 case tim3:
@@ -469,12 +463,6 @@ namespace SoC
 
         ::LL_TIM_OC_SetPolarity(tim_ptr, ::SoC::to_underlying(channel), ::SoC::to_underlying(polarity));
         if(init_state) [[likely]] { enable(); }
-    }
-
-    ::SoC::tim_channel::tim_channel(::SoC::tim_channel&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(*this));
-        other.tim_ptr = nullptr;
     }
 
     ::SoC::tim_channel::~tim_channel() noexcept

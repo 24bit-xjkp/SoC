@@ -86,28 +86,28 @@ export namespace SoC
          *
          * @return 缓冲区是否为空
          */
-        constexpr inline bool empty() const noexcept { return head == tail; }
+        [[nodiscard]] constexpr inline bool empty() const noexcept { return head == tail; }
 
         /**
          * @brief 检查缓冲区是否已满
          *
          * @return 缓冲区是否已满
          */
-        constexpr inline bool full() const noexcept { return tail - head == buffer_size; }
+        [[nodiscard]] constexpr inline bool full() const noexcept { return tail - head == buffer_size; }
 
         /**
          * @brief 获取缓冲区已用大小
          *
          * @return 已用大小
          */
-        constexpr inline ::std::size_t size() const noexcept { return tail - head; }
+        [[nodiscard]] constexpr inline ::std::size_t size() const noexcept { return tail - head; }
 
         /**
          * @brief 获取缓冲区容量
          *
          * @return 缓冲区容量
          */
-        constexpr inline ::std::size_t capacity() const noexcept { return buffer_size; }
+        [[nodiscard]] constexpr inline ::std::size_t capacity() const noexcept { return buffer_size; }
 
         /**
          * @brief 向缓冲区添加元素

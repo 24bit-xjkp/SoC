@@ -361,14 +361,29 @@ namespace SoC::detail
         /// 分配器
         [[no_unique_address]] allocator_t allocator;
         /// 缓冲区首指针
-        const pointer begin;
+        pointer begin;
 
-        constexpr inline buffer_impl(allocator_t alloc = allocator_t{}) noexcept :
+        constexpr inline buffer_impl(allocator_t alloc = allocator_t{}) noexcept(::SoC::is_noexcept_allocator<allocator_t>) :
             allocator{alloc}, begin{allocator.template allocate<value_type>(buffer_size).ptr}
         {
         }
 
         constexpr inline ~buffer_impl() noexcept { allocator.deallocate(begin, buffer_size); }
+
+        inline buffer_impl(const buffer_impl&) = delete;
+        inline buffer_impl& operator= (const buffer_impl&) = delete;
+
+        constexpr inline buffer_impl(buffer_impl&& other) noexcept :
+            allocator{other.allocator}, begin{::std::exchange(other.begin, nullptr)}
+        {
+        }
+
+        constexpr inline buffer_impl& operator= (buffer_impl&& other) noexcept
+        {
+            auto _{::std::move(*this)};
+            ::std::ranges::swap(other, *this);
+            return *this;
+        }
     };
 
     template <::SoC::detail::is_io_target_type type, ::std::size_t buffer_size>
@@ -403,7 +418,11 @@ export namespace SoC
         requires (buffer_size != 0 && buffer_size % 4 == 0)
     struct buffer : ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>
     {
-        using ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>::begin;
+    private:
+        using base_t = ::SoC::detail::buffer_impl<type, buffer_size, allocator_type>;
+
+    public:
+        using base_t::begin;
         using value_type = type;
         using pointer = value_type*;
         using const_pointer = const value_type*;
@@ -414,7 +433,16 @@ export namespace SoC
         /// 有效输入缓冲区的尾哨位
         pointer end{begin};
 
-        constexpr inline buffer() noexcept = default;
+        constexpr inline buffer() noexcept(noexcept(base_t{})) = default;
+
+        constexpr inline ~buffer() noexcept { clear(); }
+
+        constexpr inline buffer(const buffer&) = delete;
+        constexpr inline buffer& operator= (const buffer&) = delete;
+
+        constexpr inline buffer(buffer&& other) noexcept = default;
+
+        constexpr inline buffer& operator= (buffer&& other) noexcept = default;
 
         /**
          * @brief 获取缓冲区尾哨位
@@ -438,14 +466,14 @@ export namespace SoC
          *
          * @return 输出缓冲区是否为空
          */
-        constexpr inline bool obuffer_empty() const noexcept { return current == begin; }
+        [[nodiscard]] constexpr inline bool obuffer_empty() const noexcept { return current == begin; }
 
         /**
          * @brief 获取输入缓冲区是否为空
          *
          * @return 输入缓冲区是否为空
          */
-        constexpr inline bool ibuffer_empty() const noexcept { return current == end; }
+        [[nodiscard]] constexpr inline bool ibuffer_empty() const noexcept { return current == end; }
     };
 
     /**
@@ -566,9 +594,11 @@ namespace SoC::detail
     template <::SoC::detail::integer_base base>
     inline char* write_integer_base_prefix(char* buffer) noexcept
     {
+        // NOLINTBEGIN(bugprone-not-null-terminated-result)
         if constexpr(base == ::SoC::integer_base8) { ::std::memcpy(buffer, "0o", 2); }
         else if constexpr(base == ::SoC::integer_base2) { ::std::memcpy(buffer, "0b", 2); }
         else if constexpr(base == ::SoC::integer_base16) { ::std::memcpy(buffer, "0x", 2); }
+        // NOLINTEND(bugprone-not-null-terminated-result)
         return buffer + 2;
     }
 }  // namespace SoC::detail
@@ -799,9 +829,27 @@ export namespace SoC
     {
         using value_type = type;
         // 输出设备
-        device_t& device;
+        device_t* device{};
         // 输出缓冲区
-        buffer_t obuffer;
+        buffer_t obuffer{};
+
+        constexpr inline ofile() noexcept(noexcept(buffer_t{})) = default;
+
+        constexpr inline ofile(device_t& device) noexcept(noexcept(buffer_t{})) : device{&device} {}
+
+        inline ofile(const ofile&) = delete;
+        inline ofile& operator= (const ofile&) = delete;
+
+        inline ofile(ofile&& other) noexcept : device{::std::exchange(other.device, nullptr)}, obuffer{::std::move(other.obuffer)}
+        {
+        }
+
+        inline ofile& operator= (ofile&& other) noexcept
+        {
+            auto _{::std::move(*this)};
+            ::std::ranges::swap(_, other);
+            return *this;
+        }
 
         /**
          * @brief 刷新缓冲区，将缓冲区内数据写入设备后清空缓冲区
@@ -811,14 +859,14 @@ export namespace SoC
         template <bool block = false>
         constexpr inline void flush(this ofile& self) noexcept
         {
-            ::SoC::write_to_device(self.device, self.obuffer.begin, self.obuffer.current);
-            if constexpr(block) { ::SoC::wait_until_write_ready(self.device); }
+            ::SoC::write_to_device(*self.device, auto(self.obuffer.begin), self.obuffer.current);
+            if constexpr(block) { ::SoC::wait_until_write_ready(*self.device); }
             self.obuffer.clear();
         }
 
         ~ofile() noexcept
         {
-            if(!obuffer.obuffer_empty()) { flush<true>(); }
+            if(device != nullptr && !obuffer.obuffer_empty()) { flush<true>(); }
         }
     };
 
@@ -841,14 +889,14 @@ export namespace SoC
 
     /**
      * @brief 判断type是否是输出文件，要求满足：
-     * - type::device是输出设备的左值引用，其中输出设备要求为同步输出设备或异步输出设备且具有写就绪标志，且
+     * - type::device是输出设备的指针，其中输出设备要求为同步输出设备或异步输出设备且具有写就绪标志，且
      * - type::obuffer是输出缓冲区对象，且
      * - void type::template flush<true>() noexcept
      * @tparam type 要判断的类型
      */
     template <typename type>
-    concept is_output_file = ::std::is_lvalue_reference_v<decltype(type::device)> &&
-                             ::SoC::detail::check_output_file_type<::std::remove_reference_t<decltype(type::device)>,
+    concept is_output_file = ::std::is_pointer_v<decltype(type::device)> &&
+                             ::SoC::detail::check_output_file_type<::std::remove_pointer_t<decltype(type::device)>,
                                                                    type>::sync_or_async_with_ready_flag &&
                              ::SoC::is_buffer<decltype(type::obuffer)> &&
                              ::SoC::detail::check_output_file_block_flush<type>::is_output_file_block_flushable;
@@ -866,14 +914,14 @@ export namespace SoC
 
     /**
      * @brief 判断type是否是输入文件，要求满足：
-     * - type::device是输入设备的左值引用，其中输入设备要求为同步输入设备或异步输入设备且具有读就绪标志，且
+     * - type::device是输入设备的指针，其中输入设备要求为同步输入设备或异步输入设备且具有读就绪标志，且
      * - type::ibuffer是输入缓冲区对象，且
      * - void type::flush() noexcept
      * @tparam type 要判断的类型
      */
     template <typename type>
-    concept is_input_file = ::std::is_lvalue_reference_v<decltype(type::device)> &&
-                            ::SoC::detail::check_input_file_type<::std::remove_reference_t<decltype(type::device)>,
+    concept is_input_file = ::std::is_pointer_v<decltype(type::device)> &&
+                            ::SoC::detail::check_input_file_type<::std::remove_pointer_t<decltype(type::device)>,
                                                                  type>::sync_or_async_with_ready_flag &&
                             ::SoC::is_buffer<decltype(type::ibuffer)> && requires(type& file) {
                                 { file.clear() } noexcept -> ::std::same_as<void>;
@@ -897,7 +945,7 @@ export namespace SoC
     template <::SoC::is_general_file file_t>
     constexpr inline void wait_until_write_ready(file_t& file) noexcept
     {
-        ::SoC::wait_until_write_ready(file.device);
+        ::SoC::wait_until_write_ready(*file.device);
     }
 
     /**
@@ -940,7 +988,7 @@ export namespace SoC
          *
          * @return 缓冲区剩余空间大小
          */
-        ::std::size_t get_buffer_size_left() const { return end - current; }
+        [[nodiscard]] ::std::size_t get_buffer_size_left() const { return end - current; }
 
         /**
          * @brief 刷新缓冲区
@@ -969,9 +1017,9 @@ export namespace SoC
     constexpr inline auto ofile_trait(::SoC::is_output_file auto& file) noexcept
     {
         using file_t = ::std::remove_reference_t<decltype(file)>;
-        constexpr auto flush{[](void* file) static noexcept -> void { reinterpret_cast<file_t*>(file)->template flush<true>(); }};
+        constexpr auto flush{[](void* file) static noexcept -> void { static_cast<file_t*>(file)->template flush<true>(); }};
         constexpr auto wait_until_write_ready{[](void* file) static noexcept -> void
-                                              { ::SoC::wait_until_write_ready(*reinterpret_cast<file_t*>(file)); }};
+                                              { ::SoC::wait_until_write_ready(*static_cast<file_t*>(file)); }};
 
         return ::SoC::ofile_trait_t{
             &file,

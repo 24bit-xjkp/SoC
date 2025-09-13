@@ -96,7 +96,7 @@ export namespace SoC
          *
          * @return gpio外设号
          */
-        ::std::size_t get_periph() const noexcept;
+        [[nodiscard]] ::std::size_t get_periph() const noexcept;
 
     public:
         using enum port_enum;
@@ -124,15 +124,16 @@ export namespace SoC
          *
          * @return gpio端口枚举
          */
-        constexpr inline ::SoC::gpio_port::port_enum get_port_enum() const noexcept { return port; }
+        [[nodiscard]] constexpr inline ::SoC::gpio_port::port_enum get_port_enum() const noexcept { return port; }
 
         /**
          * @brief 获取gpio端口指针
          *
          * @return gpio端口指针
          */
-        inline ::GPIO_TypeDef* get_port() const noexcept
+        [[nodiscard]] inline ::GPIO_TypeDef* get_port() const noexcept
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             return reinterpret_cast<::GPIO_TypeDef*>(AHB1PERIPH_BASE + 0x0400zu * ::SoC::to_underlying(port));
         }
 
@@ -153,7 +154,7 @@ export namespace SoC
          *
          * @return gpio端口时钟是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
     };
 
     /**
@@ -271,7 +272,7 @@ export namespace SoC
          * @param location 源代码位置
          * @return pin_enum 映射后的引脚列表
          */
-        pin_enum check_pin(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) const noexcept;
+        [[nodiscard]] pin_enum check_pin(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) const noexcept;
 
         /**
          * @brief 断言当前对象中的引脚工作在输出模式下
@@ -306,15 +307,16 @@ export namespace SoC
          * @brief 获取gpio结构体指针
          *
          */
-        constexpr inline ::GPIO_TypeDef* get_port() const noexcept { return gpio; }
+        [[nodiscard]] constexpr inline ::GPIO_TypeDef* get_port() const noexcept { return gpio; }
 
         /**
          * @brief 获取gpio端口枚举
          *
          * @return gpio端口枚举
          */
-        inline ::SoC::gpio_port::port_enum get_port_enum() const noexcept
+        [[nodiscard]] inline ::SoC::gpio_port::port_enum get_port_enum() const noexcept
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             return ::SoC::gpio_port::port_enum{(reinterpret_cast<::std::uintptr_t>(gpio) - AHB1PERIPH_BASE) / 0x0400zu};
         }
 
@@ -322,13 +324,13 @@ export namespace SoC
          * @brief 获取所有引脚
          *
          */
-        constexpr inline pin_enum get_pin() const noexcept { return pin; }
+        [[nodiscard]] constexpr inline pin_enum get_pin() const noexcept { return pin; }
 
         /**
          * @brief 获取引脚的工作模式
          *
          */
-        constexpr inline ::SoC::gpio_mode get_mode() const noexcept { return mode; }
+        [[nodiscard]] constexpr inline ::SoC::gpio_mode get_mode() const noexcept { return mode; }
 
         /**
          * @brief 切换指定引脚的状态
@@ -375,6 +377,6 @@ export namespace SoC
          * @return true 所有指定引脚均为高电平
          * @return false 有引脚为低电平
          */
-        bool read(pin_enum pin_in = default_pins) const noexcept;
+        [[nodiscard]] bool read(pin_enum pin_in = default_pins) const noexcept;
     };
 }  // namespace SoC

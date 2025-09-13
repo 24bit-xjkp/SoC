@@ -80,7 +80,7 @@ export namespace SoC
          *
          * @return pid目标值
          */
-        constexpr inline float get_target() const noexcept { return target; }
+        [[nodiscard]] constexpr inline float get_target() const noexcept { return target; }
 
         /**
          * @brief 目标值步进
@@ -112,7 +112,7 @@ export namespace SoC
         {
             auto error{target - input};
             error_sum += error;
-            auto output{kp * error + ki * error_sum};
+            auto output{(kp * error) + ki * error_sum};
             auto old_output{output};
             // 限幅
             output = ::std::min(output, max_pid_output);

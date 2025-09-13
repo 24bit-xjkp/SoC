@@ -64,6 +64,7 @@ namespace SoC
     using namespace ::std::string_view_literals;
     using namespace ::SoC::literal;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ASSERT_FAILED_MESSAGE "\N{ESCAPE}[31m断言失败:\N{ESCAPE}[39m\r\n"
 
 #ifdef USE_FULL_ASSERT

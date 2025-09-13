@@ -124,12 +124,6 @@ namespace SoC
         }
     }
 
-    ::SoC::dma_stream::dma_stream(dma_stream&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(other));
-        other.dma_ptr = nullptr;
-    }
-
     /// 内存侧访问错误信息
     constexpr auto memory_access_error_msg{"内存侧操作带宽超出fifo深度"sv};
     /// 内存侧访问错误信息
@@ -231,7 +225,7 @@ namespace SoC
             ::SoC::assert(direction == ::SoC::dma_direction::m2p, "仅内存到外设模式支持写入操作"sv);
         }
         set_memory_address(begin);
-        auto size{static_cast<::std::size_t>(reinterpret_cast<const char*>(end) - reinterpret_cast<const char*>(begin))};
+        auto size{static_cast<::std::size_t>(static_cast<const char*>(end) - static_cast<const char*>(begin))};
         set_data_item(size, get_periph_data_size_num());
         enable();
     }
@@ -245,7 +239,7 @@ namespace SoC
             ::SoC::assert(direction == ::SoC::dma_direction::p2m, "仅外设到内存模式支持读取操作"sv);
         }
         set_memory_address(begin);
-        auto size{static_cast<::std::size_t>(reinterpret_cast<char*>(end) - reinterpret_cast<char*>(begin))};
+        auto size{static_cast<::std::size_t>(static_cast<char*>(end) - static_cast<char*>(begin))};
         set_data_item(size, get_memory_data_size_num());
         enable();
     }
@@ -342,7 +336,7 @@ namespace SoC
         if(irqn != 0) [[likely]] { return irqn; }
         else
         {
-            irqn = ::SoC::dma_stream2irqn(::SoC::bit_cast<::SoC::dma::dma_enum>(dma_ptr), stream);
+            irqn = ::SoC::dma_stream2irqn(::SoC::bit_cast<::SoC::dma::dma_enum>(dma_ptr.value), stream);
             return irqn;
         }
     }

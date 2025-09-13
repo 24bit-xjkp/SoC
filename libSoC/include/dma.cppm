@@ -82,14 +82,14 @@ export namespace SoC
          *
          * @return dma外设枚举
          */
-        inline dma_enum get_dma_enum() const noexcept { return ::SoC::bit_cast<dma_enum>(dma_ptr); }
+        [[nodiscard]] inline dma_enum get_dma_enum() const noexcept { return ::SoC::bit_cast<dma_enum>(dma_ptr); }
 
         /**
          * @brief 获取dma外设指针
          *
          * @return dma外设指针
          */
-        inline ::DMA_TypeDef* get_dma() const noexcept { return dma_ptr; }
+        [[nodiscard]] inline ::DMA_TypeDef* get_dma() const noexcept { return dma_ptr; }
 
         /**
          * @brief 使能dma时钟
@@ -108,7 +108,7 @@ export namespace SoC
          *
          * @return dma时钟是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
     };
 
     /**
@@ -250,7 +250,7 @@ export namespace SoC
         using enum dma_stream_enum;
 
     private:
-        ::DMA_TypeDef* dma_ptr;
+        ::SoC::moveable_value<::DMA_TypeDef*> dma_ptr;
         dma_stream_enum stream;
         ::SoC::dma_direction direction;
         ::SoC::dma_mode mode;
@@ -266,14 +266,14 @@ export namespace SoC
          *
          * @return 是否合法
          */
-        bool check_memory_access() const noexcept;
+        [[nodiscard]] bool check_memory_access() const noexcept;
 
         /**
          * @brief 检测外设侧参数是否合法
          *
          * @return 是否合法
          */
-        bool check_periph_access() const noexcept;
+        [[nodiscard]] bool check_periph_access() const noexcept;
 
         /**
          * @brief 检查输入是否满足对齐要求
@@ -281,7 +281,7 @@ export namespace SoC
          * @param num 缓冲区首指针或缓冲区大小
          * @return 内存地址是否满足对齐要求
          */
-        bool check_aligned(::std::uintptr_t num) const noexcept;
+        [[nodiscard]] bool check_aligned(::std::uintptr_t num) const noexcept;
 
         /**
          * @brief 设置dma的内存访问地址
@@ -309,14 +309,14 @@ export namespace SoC
          *
          * @return 传输完成标志位掩码
          */
-        auto get_tc_mask() const noexcept;
+        [[nodiscard]] auto get_tc_mask() const noexcept;
 
         /**
          * @brief 获取传输半完成标志位掩码
          *
          * @return 传输半完成标志位掩码
          */
-        auto get_ht_mask() const noexcept;
+        [[nodiscard]] auto get_ht_mask() const noexcept;
 
     public:
         /**
@@ -324,56 +324,56 @@ export namespace SoC
          *
          * @return dma外设指针
          */
-        inline ::DMA_TypeDef* get_dma() const noexcept { return dma_ptr; }
+        [[nodiscard]] inline ::DMA_TypeDef* get_dma() const noexcept { return dma_ptr; }
 
         /**
          * @brief 获取dma数据流枚举
          *
          * @return dma数据流枚举
          */
-        inline dma_stream_enum get_stream() const noexcept { return stream; }
+        [[nodiscard]] inline dma_stream_enum get_stream() const noexcept { return stream; }
 
         /**
          * @brief 获取fifo队列深度枚举
          *
          * @return fifo队列深度枚举
          */
-        inline ::SoC::dma_fifo_threshold get_fifo_threshold() const noexcept { return fifo_threshold; }
+        [[nodiscard]] inline ::SoC::dma_fifo_threshold get_fifo_threshold() const noexcept { return fifo_threshold; }
 
         /**
          * @brief 获取内存侧数据宽度枚举
          *
          * @return 内存侧数据宽度枚举
          */
-        inline ::SoC::dma_memory_data_size get_memory_data_size() const noexcept { return mem_data_size; }
+        [[nodiscard]] inline ::SoC::dma_memory_data_size get_memory_data_size() const noexcept { return mem_data_size; }
 
         /**
          * @brief 获取内存侧突发枚举
          *
          * @return 内存侧突发枚举
          */
-        inline ::SoC::dma_memory_burst get_memory_burst() const noexcept { return mem_burst; }
+        [[nodiscard]] inline ::SoC::dma_memory_burst get_memory_burst() const noexcept { return mem_burst; }
 
         /**
          * @brief 获取外设侧数据宽度枚举
          *
          * @return 外设侧数据宽度枚举
          */
-        inline ::SoC::dma_periph_data_size get_periph_data_size() const noexcept { return pf_data_size; }
+        [[nodiscard]] inline ::SoC::dma_periph_data_size get_periph_data_size() const noexcept { return pf_data_size; }
 
         /**
          * @brief 获取外设侧突发枚举
          *
          * @return 外设侧突发枚举
          */
-        inline ::SoC::dma_periph_burst get_periph_burst() const noexcept { return pf_burst; }
+        [[nodiscard]] inline ::SoC::dma_periph_burst get_periph_burst() const noexcept { return pf_burst; }
 
         /**
          * @brief 获取fifo队列深度
          *
          * @return fifo队列深度，以字节为单位
          */
-        inline ::std::size_t get_fifo_size() const noexcept
+        [[nodiscard]] inline ::std::size_t get_fifo_size() const noexcept
         {
             switch(fifo_threshold)
             {
@@ -391,7 +391,7 @@ export namespace SoC
          *
          * @return 内存侧数据宽度，以字节为单位
          */
-        inline ::std::size_t get_memory_data_size_num() const noexcept
+        [[nodiscard]] inline ::std::size_t get_memory_data_size_num() const noexcept
         {
             switch(mem_data_size)
             {
@@ -407,7 +407,7 @@ export namespace SoC
          *
          * @return 内存侧突发拍数
          */
-        inline ::std::size_t get_memory_burst_num() const noexcept
+        [[nodiscard]] inline ::std::size_t get_memory_burst_num() const noexcept
         {
             switch(mem_burst)
             {
@@ -424,7 +424,7 @@ export namespace SoC
          *
          * @return 外设侧数据宽度，以字节为单位
          */
-        inline ::std::size_t get_periph_data_size_num() const noexcept
+        [[nodiscard]] inline ::std::size_t get_periph_data_size_num() const noexcept
         {
             switch(pf_data_size)
             {
@@ -440,7 +440,7 @@ export namespace SoC
          *
          * @return 外设侧突发拍数
          */
-        inline ::std::size_t get_periph_burst_num() const noexcept
+        [[nodiscard]] inline ::std::size_t get_periph_burst_num() const noexcept
         {
             switch(pf_burst)
             {
@@ -494,7 +494,7 @@ export namespace SoC
 
         inline dma_stream(const dma_stream&) noexcept = delete;
         inline dma_stream& operator= (const dma_stream&) noexcept = delete;
-        dma_stream(dma_stream&& other) noexcept;
+        dma_stream(dma_stream&& other) noexcept = default;
         inline dma_stream& operator= (dma_stream&&) noexcept = delete;
 
         /**
@@ -551,7 +551,7 @@ export namespace SoC
          *
          * @return dma数据流是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 失能dma数据流
@@ -582,7 +582,7 @@ export namespace SoC
          *
          * @return 传输完成标记
          */
-        bool get_flag_tc() const noexcept;
+        [[nodiscard]] bool get_flag_tc() const noexcept;
 
         /**
          * @brief 清除传输完成标记
@@ -595,7 +595,7 @@ export namespace SoC
          *
          * @return 传输半完成标记
          */
-        bool get_flag_ht() const noexcept;
+        [[nodiscard]] bool get_flag_ht() const noexcept;
 
         /**
          * @brief 清除传输半完成标记
@@ -609,7 +609,7 @@ export namespace SoC
          * @note tc置位或dma数据流失能认为传输完成
          * @return 是否传输完成
          */
-        bool is_transfer_complete() const noexcept;
+        [[nodiscard]] bool is_transfer_complete() const noexcept;
 
         /**
          * @brief 获取中断号
@@ -651,14 +651,14 @@ export namespace SoC
          *
          * @return 是否使能中断源
          */
-        bool get_it_tc() const noexcept;
+        [[nodiscard]] bool get_it_tc() const noexcept;
 
         /**
          * @brief 判断发生的dma中断是否为传输完成中断
          *
          * @return 是否为传输完成中断
          */
-        bool is_it_tc() const noexcept;
+        [[nodiscard]] bool is_it_tc() const noexcept;
 
         /**
          * @brief 设置是否使能dma传输半完成中断源
@@ -672,14 +672,14 @@ export namespace SoC
          *
          * @return 是否使能中断源
          */
-        bool get_it_ht() const noexcept;
+        [[nodiscard]] bool get_it_ht() const noexcept;
 
         /**
          * @brief 判断发生的dma中断是否为传输半完成中断
          *
          * @return 是否为传输半完成中断
          */
-        bool is_it_ht() const noexcept;
+        [[nodiscard]] bool is_it_ht() const noexcept;
     };
 }  // namespace SoC
 

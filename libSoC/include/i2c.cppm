@@ -91,7 +91,7 @@ export namespace SoC
         using i2c_enum = ::SoC::detail::i2c;
 
     private:
-        ::I2C_TypeDef* i2c_ptr;
+        ::SoC::moveable_value<::I2C_TypeDef*> i2c_ptr;
         ::std::size_t periph;
 
         /**
@@ -123,7 +123,7 @@ export namespace SoC
          *
          * @param dma dma外设
          */
-        void assert_dma(::SoC::dma& dma) const noexcept;
+        static void assert_dma(::SoC::dma& dma) noexcept;
 
     public:
         using enum i2c_enum;
@@ -155,7 +155,7 @@ export namespace SoC
 
         inline i2c(const i2c&) noexcept = delete;
         inline i2c& operator= (const i2c&) noexcept = delete;
-        i2c(i2c&& other) noexcept;
+        i2c(i2c&& other) noexcept = default;
         inline i2c& operator= (i2c&&) noexcept = delete;
 
         /**
@@ -163,14 +163,14 @@ export namespace SoC
          *
          * @return i2c外设指针
          */
-        inline ::I2C_TypeDef* get_i2c() const noexcept { return i2c_ptr; }
+        [[nodiscard]] inline ::I2C_TypeDef* get_i2c() const noexcept { return i2c_ptr; }
 
         /**
          * @brief 获取i2c外设枚举
          *
          * @return i2c外设枚举
          */
-        inline i2c_enum get_i2c_enum() const noexcept { return ::SoC::bit_cast<i2c_enum>(i2c_ptr); }
+        [[nodiscard]] inline i2c_enum get_i2c_enum() const noexcept { return ::SoC::bit_cast<i2c_enum>(i2c_ptr.value); }
 
         /**
          * @brief 使能i2c外设
@@ -189,7 +189,7 @@ export namespace SoC
          *
          * @return i2c外设是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 设置数据接受后的应答行为
@@ -203,21 +203,21 @@ export namespace SoC
          *
          * @return i2c繁忙标志
          */
-        bool get_flag_busy() const noexcept;
+        [[nodiscard]] bool get_flag_busy() const noexcept;
 
         /**
          * @brief 获取i2c起始位标志
          *
          * @return i2c起始位标志
          */
-        bool get_flag_sb() const noexcept;
+        [[nodiscard]] bool get_flag_sb() const noexcept;
 
         /**
          * @brief 获取i2c地址标志
          *
          * @return i2c地址标志
          */
-        bool get_flag_addr() const noexcept;
+        [[nodiscard]] bool get_flag_addr() const noexcept;
 
         /**
          * @brief 清除i2c地址标志
@@ -230,14 +230,14 @@ export namespace SoC
          *
          * @return i2c传输完成标志
          */
-        bool get_flag_btf() const noexcept;
+        [[nodiscard]] bool get_flag_btf() const noexcept;
 
         /**
          * @brief 获取i2c停止标志
          *
          * @return i2c停止标志
          */
-        bool get_flag_stop() const noexcept;
+        [[nodiscard]] bool get_flag_stop() const noexcept;
 
         /**
          * @brief 清除i2c停止标志
@@ -250,7 +250,7 @@ export namespace SoC
          *
          * @return i2c发送寄存器空标志
          */
-        bool get_flag_txe() const noexcept;
+        [[nodiscard]] bool get_flag_txe() const noexcept;
 
         /**
          * @brief 发生通信起始位
@@ -344,6 +344,6 @@ export namespace SoC
          *
          * @return i2c外设dma写入是否使能
          */
-        bool is_dma_write_enabled() const noexcept;
+        [[nodiscard]] bool is_dma_write_enabled() const noexcept;
     };
 }  // namespace SoC

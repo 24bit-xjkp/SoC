@@ -27,10 +27,13 @@ namespace SoC
 
     ::SoC::syscfg::syscfg(syscfg&& other) noexcept { other.need_stop_clock = false; }
 
+    // NOLINTNEXTLINE
     void ::SoC::syscfg::enable() const noexcept { ::LL_APB2_GRP1_EnableClock(periph); }
 
+    // NOLINTNEXTLINE
     void ::SoC::syscfg::disable() const noexcept { ::LL_APB2_GRP1_DisableClock(periph); }
 
+    // NOLINTNEXTLINE
     bool ::SoC::syscfg::is_enabled() const noexcept { return ::LL_APB2_GRP1_IsEnabledClock(periph); }
 }  // namespace SoC
 
@@ -202,22 +205,16 @@ namespace SoC
         }
     }
 
-    ::SoC::exti_line::exti_line(exti_line&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(other));
-        other.line = exti_line_enum{};
-    }
-
     void ::SoC::exti_line::set_trigger_source(::SoC::exti_trigger_source trigger_source) const noexcept
     {
-        if(trigger_source & ::SoC::exti_trigger_source::rising) { ::LL_EXTI_EnableRisingTrig_0_31(::SoC::to_underlying(line)); }
-        if(trigger_source & ::SoC::exti_trigger_source::falling) { ::LL_EXTI_EnableFallingTrig_0_31(::SoC::to_underlying(line)); }
+        if(trigger_source & ::SoC::exti_trigger_source::rising) { ::LL_EXTI_EnableRisingTrig_0_31(::SoC::to_underlying(line.value)); }
+        if(trigger_source & ::SoC::exti_trigger_source::falling) { ::LL_EXTI_EnableFallingTrig_0_31(::SoC::to_underlying(line.value)); }
     }
 
     void ::SoC::exti_line::clear_trigger_source() const noexcept
     {
-        ::LL_EXTI_DisableRisingTrig_0_31(::SoC::to_underlying(line));
-        ::LL_EXTI_DisableFallingTrig_0_31(::SoC::to_underlying(line));
+        ::LL_EXTI_DisableRisingTrig_0_31(::SoC::to_underlying(line.value));
+        ::LL_EXTI_DisableFallingTrig_0_31(::SoC::to_underlying(line.value));
     }
 
     void ::SoC::exti_line::enable_irq(::std::size_t encoded_priority) const noexcept
@@ -241,7 +238,7 @@ namespace SoC
         else
         {
             auto value{::SoC::to_underlying(lines)};
-            auto mask{::SoC::to_underlying(line)};
+            auto mask{::SoC::to_underlying(line.value)};
             if constexpr(::SoC::use_full_assert)
             {
                 ::SoC::assert((value & mask) == value, "访问未绑定到当前对象的中断线"sv, location);

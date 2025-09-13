@@ -172,14 +172,14 @@ export namespace SoC
     private:
         friend struct tim_channel;
         using tim_enum = ::SoC::detail::tim;
-        ::TIM_TypeDef* tim_ptr;
-        ::SoC::detail::dtor_close_clock_callback_t callback;
+        ::SoC::moveable_value<::TIM_TypeDef*> tim_ptr;
+        ::SoC::detail::dtor_close_clock_callback_t callback{};
 
         /**
          * @brief 判断当前定时器是不是高级定时器
          *
          */
-        bool is_advanced_tim() const noexcept;
+        [[nodiscard]] bool is_advanced_tim() const noexcept;
 
         /**
          * @brief 检查当前定时器是不是高级定时器，不是则断言失败
@@ -194,7 +194,7 @@ export namespace SoC
          * @param irq 中断类型
          * @return 中断号枚举
          */
-        ::IRQn_Type get_irqn(::SoC::tim_irq irq) const noexcept;
+        [[nodiscard]] ::IRQn_Type get_irqn(::SoC::tim_irq irq) const noexcept;
 
     public:
         using enum tim_enum;
@@ -218,7 +218,7 @@ export namespace SoC
 
         tim(const tim&) noexcept = delete;
         tim& operator= (const tim&) noexcept = delete;
-        tim(tim&& other) noexcept;
+        tim(tim&& other) noexcept = default;
         tim& operator= (tim&& other) noexcept = delete;
         ~tim() noexcept;
 
@@ -227,14 +227,14 @@ export namespace SoC
          *
          * @return tim外设指针
          */
-        constexpr inline ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
+        [[nodiscard]] constexpr ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
 
         /**
          * @brief 获取tim外设枚举
          *
          * @return tim外设枚举
          */
-        constexpr inline tim_enum get_tim_enum() const noexcept { return ::SoC::bit_cast<tim_enum>(tim_ptr); }
+        [[nodiscard]] constexpr tim_enum get_tim_enum() const noexcept { return ::SoC::bit_cast<tim_enum>(tim_ptr.value); }
 
         /**
          * @brief 使能tim外设，包括计数和高级定时器的输出
@@ -253,7 +253,7 @@ export namespace SoC
          *
          * @return tim外设计数是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 判断tim外设的输出是否使能
@@ -261,7 +261,7 @@ export namespace SoC
          * @note 高级定时器的输出使能才有意义，但此函数不会检查定时器类型
          * @return tim外设的输出是否使能
          */
-        bool is_output_enabled() const noexcept;
+        [[nodiscard]] bool is_output_enabled() const noexcept;
 
         /**
          * @brief 使能arr预装载功能
@@ -304,7 +304,7 @@ export namespace SoC
          * @note 只有高级定时器支持
          * @return 定时器刹车中断源是否使能
          */
-        bool get_it_brk() const noexcept;
+        [[nodiscard]] bool get_it_brk() const noexcept;
 
         /**
          * @brief 设置定时器触发中断源是否使能
@@ -318,7 +318,7 @@ export namespace SoC
          *
          * @return 定时器触发中断源是否使能
          */
-        bool get_it_trig() const noexcept;
+        [[nodiscard]] bool get_it_trig() const noexcept;
 
         /**
          * @brief 设置定时器换向中断源是否使能
@@ -334,7 +334,7 @@ export namespace SoC
          * @note 只有高级定时器支持
          * @return 定时器换向中断源是否使能
          */
-        bool get_it_com() const noexcept;
+        [[nodiscard]] bool get_it_com() const noexcept;
 
         /**
          * @brief 设置定时器更新中断源是否使能
@@ -348,7 +348,7 @@ export namespace SoC
          *
          * @return 定时器更新中断源是否使能
          */
-        bool get_it_update() const noexcept;
+        [[nodiscard]] bool get_it_update() const noexcept;
 
         /**
          * @brief 使能定时器中断
@@ -380,7 +380,7 @@ export namespace SoC
          * @note 只有高级定时器支持
          * @return 定时器刹车标志
          */
-        bool get_flag_brk() const noexcept;
+        [[nodiscard]] bool get_flag_brk() const noexcept;
 
         /**
          * @brief 清除定时器刹车标志
@@ -394,7 +394,7 @@ export namespace SoC
          *
          * @return 定时器触发标志
          */
-        bool get_flag_trig() const noexcept;
+        [[nodiscard]] bool get_flag_trig() const noexcept;
 
         /**
          * @brief 清除定时器触发标志
@@ -408,7 +408,7 @@ export namespace SoC
          * @note 只有高级定时器支持
          * @return 定时器换向标志
          */
-        bool get_flag_com() const noexcept;
+        [[nodiscard]] bool get_flag_com() const noexcept;
 
         /**
          * @brief 清除定时器换向标志
@@ -422,7 +422,7 @@ export namespace SoC
          *
          * @return 定时器更新标志
          */
-        bool get_flag_update() const noexcept;
+        [[nodiscard]] bool get_flag_update() const noexcept;
 
         /**
          * @brief 清除定时器更新标志
@@ -436,14 +436,14 @@ export namespace SoC
          * @note 只有高级定时器支持
          * @return 是否是刹车中断
          */
-        bool is_it_brk() const noexcept;
+        [[nodiscard]] bool is_it_brk() const noexcept;
 
         /**
          * @brief 判断当前中断是否是触发中断
          *
          * @return 是否是触发中断
          */
-        bool is_it_trig() const noexcept;
+        [[nodiscard]] bool is_it_trig() const noexcept;
 
         /**
          * @brief 判断当前中断是否是换向中断
@@ -451,14 +451,14 @@ export namespace SoC
          * @note 只有高级定时器支持
          * @return 是否是换向中断
          */
-        bool is_it_com() const noexcept;
+        [[nodiscard]] bool is_it_com() const noexcept;
 
         /**
          * @brief 判断当前中断是否是更新中断
          *
          * @return 是否是更新中断
          */
-        bool is_it_update() const noexcept;
+        [[nodiscard]] bool is_it_update() const noexcept;
     };
 
     /**
@@ -483,7 +483,7 @@ export namespace SoC
         };
 
         using tim_channel_enum = ::SoC::detail::tim_channel;
-        ::TIM_TypeDef* tim_ptr;
+        ::SoC::moveable_value<::TIM_TypeDef*> tim_ptr;
         tim_channel_enum channel;
         tim_channel_enum compl_channel{};
         tim_channel_mode channel_mode;
@@ -500,7 +500,7 @@ export namespace SoC
          *
          * @return 通道对应中断和标志的掩码
          */
-        ::std::size_t get_it_flag_mask() const noexcept;
+        [[nodiscard]] ::std::size_t get_it_flag_mask() const noexcept;
 
     public:
         using enum tim_channel_enum;
@@ -524,7 +524,7 @@ export namespace SoC
 
         tim_channel(const tim_channel&) noexcept = delete;
         tim_channel& operator= (const tim_channel&) noexcept = delete;
-        tim_channel(tim_channel&& other) noexcept;
+        tim_channel(tim_channel&& other) noexcept = default;
         tim_channel& operator= (tim_channel&& other) noexcept = delete;
         ~tim_channel() noexcept;
 
@@ -533,21 +533,21 @@ export namespace SoC
          *
          * @return tim外设指针
          */
-        constexpr inline ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
+        [[nodiscard]] constexpr ::TIM_TypeDef* get_tim() const noexcept { return tim_ptr; }
 
         /**
          * @brief 获取tim主通道枚举
          *
          * @return tim主通道枚举
          */
-        constexpr inline tim_channel_enum get_channel() const noexcept { return channel; }
+        [[nodiscard]] constexpr tim_channel_enum get_channel() const noexcept { return channel; }
 
         /**
          * @brief 判断当前tim通道对象是否有绑定互补通道
          *
          * @return 是否绑定互补通道
          */
-        constexpr inline bool has_compl_channel() const noexcept { return compl_channel == tim_channel_enum{}; }
+        [[nodiscard]] constexpr bool has_compl_channel() const noexcept { return compl_channel == tim_channel_enum{}; }
 
         /**
          * @brief 使能tim外设通道，同时处理关联的互补通道
@@ -566,7 +566,7 @@ export namespace SoC
          *
          * @return tim外设通道是否使能
          */
-        bool is_enabled() const noexcept;
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 判断tim外设互补通道是否使能
@@ -574,7 +574,7 @@ export namespace SoC
          * @return true 关联的互补通道已使能
          * @return false 关联的互补通道未使能或未关联互补通道
          */
-        bool is_compl_enabled() const noexcept;
+        [[nodiscard]] bool is_compl_enabled() const noexcept;
 
         /**
          * @brief 配置互补通道，将互补通道关联到此对象
@@ -622,14 +622,14 @@ export namespace SoC
          *
          * @return 定时器比较/捕获中断是否使能
          */
-        bool get_it_cc() const noexcept;
+        [[nodiscard]] bool get_it_cc() const noexcept;
 
         /**
          * @brief 获取定时器比较/捕获标志
          *
          * @return 定时器比较/捕获标志
          */
-        bool get_flag_cc() const noexcept;
+        [[nodiscard]] bool get_flag_cc() const noexcept;
 
         /**
          * @brief 清除定时器比较/捕获标志
@@ -642,6 +642,6 @@ export namespace SoC
          *
          * @return 当前中断是否为定时器比较/捕获中断
          */
-        bool is_it_cc() const noexcept;
+        [[nodiscard]] bool is_it_cc() const noexcept;
     };
 }  // namespace SoC

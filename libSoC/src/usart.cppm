@@ -87,12 +87,6 @@ namespace SoC
         enable();
     }
 
-    ::SoC::usart::usart(usart&& other) noexcept
-    {
-        ::std::memcpy(reinterpret_cast<void*>(this), &other, sizeof(*this));
-        other.usart_ptr = nullptr;
-    }
-
     ::SoC::usart::~usart() noexcept
     {
         if(usart_ptr != nullptr)
@@ -120,7 +114,7 @@ namespace SoC
         if(data_width == ::SoC::usart_data_width::bit8) [[likely]]
         {
 #pragma GCC unroll 0
-            for(auto data: ::std::ranges::subrange{reinterpret_cast<const ::std::byte*>(buffer), end})
+            for(auto data: ::std::ranges::subrange{static_cast<const ::std::byte*>(buffer), end})
             {
                 wait_until_write_complete();
                 ::LL_USART_TransmitData8(usart_ptr, static_cast<::std::uint8_t>(data));
@@ -129,7 +123,7 @@ namespace SoC
         else
         {
 #pragma GCC unroll 0
-            for(auto data: ::std::ranges::subrange{reinterpret_cast<const ::std::byte*>(buffer), end})
+            for(auto data: ::std::ranges::subrange{static_cast<const ::std::byte*>(buffer), end})
             {
                 wait_until_write_complete();
                 ::LL_USART_TransmitData9(usart_ptr, static_cast<::std::uint8_t>(data));
@@ -171,7 +165,7 @@ namespace SoC
 
     [[gnu::noinline]] void* ::SoC::usart::read(void* begin, void* end) const noexcept
     {
-        auto ptr{reinterpret_cast<::std::uint8_t*>(begin)};
+        auto ptr{static_cast<::std::uint8_t*>(begin)};
 #pragma GCC unroll 0
         while(ptr != end && !get_flag_idle()) { *ptr++ = read(); }
         clear_flag_idle();
@@ -180,7 +174,7 @@ namespace SoC
 
     [[gnu::noinline]] ::std::uint16_t* ::SoC::usart::read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept
     {
-        auto ptr{reinterpret_cast<::std::uint16_t*>(begin)};
+        auto ptr{begin};
 #pragma GCC unroll 0
         while(ptr != end && !get_flag_idle()) { *ptr++ = read9(); }
         clear_flag_idle();
@@ -275,7 +269,7 @@ namespace SoC
 
     bool ::SoC::usart::is_enabled() const noexcept { return ::LL_USART_IsEnabled(usart_ptr); }
 
-    void ::SoC::usart::assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) const noexcept
+    void ::SoC::usart::assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) noexcept
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(dma.get_dma_enum() == dma_enum, "该dma外设不能操作该串口"sv); }
     }
@@ -292,9 +286,9 @@ namespace SoC
         using enum ::SoC::dma::dma_enum;
         using enum ::SoC::dma_stream::dma_stream_enum;
         using enum ::SoC::dma_channel;
-        ::SoC::dma::dma_enum dma_enum;
-        ::SoC::dma_stream::dma_stream_enum stream;
-        ::SoC::dma_channel channel;
+        ::SoC::dma::dma_enum dma_enum{};
+        ::SoC::dma_stream::dma_stream_enum stream{};
+        ::SoC::dma_channel channel{};
         switch(get_usart_enum())
         {
             case usart1:
