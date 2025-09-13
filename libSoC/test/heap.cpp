@@ -43,7 +43,7 @@ TEST_SUITE("heap")
         {
         private:
             /// malloc得到的原始指针，用于在析构时进行free操作
-            void* origin_ptr{};
+            std::unique_ptr<::std::uintptr_t> origin_ptr{};
             /// 内存区域[begin, end)，已对齐到页大小
             ::std::uintptr_t* begin{};
             ::std::uintptr_t* end{};
@@ -57,22 +57,16 @@ TEST_SUITE("heap")
                 if(begin == nullptr) [[unlikely]]
                 {
                     auto size{256 * 1024zu};
-                    auto ptr{::std::malloc(size)};
+                    origin_ptr = ::std::make_unique<::std::uintptr_t>(size / sizeof(::std::uintptr_t));
+                    void* ptr{origin_ptr.get()};
                     REQUIRE_NE(ptr, nullptr);
-                    origin_ptr = ptr;
                     REQUIRE_NE(::std::align(::SoC::heap::page_size, heap_size, ptr, size), nullptr);
-                    begin = static_cast<::std::uintptr_t*>(ptr);
+                    begin = origin_ptr.get();
                     end = begin + (heap_size / sizeof(::std::uintptr_t));
                 }
             }
 
         public:
-            /**
-             * @brief 释放共用内存
-             *
-             */
-            ~heap_test_fixture() noexcept { ::std::free(origin_ptr); }
-
             /**
              * @brief 获取内存区域
              *
@@ -144,14 +138,14 @@ TEST_SUITE("heap")
             void* page_begin{heap.metadata.end()};
             auto space_left{heap_size - page_num * sizeof(metadata_t)};
             REQUIRE_NE(::std::align(heap.page_size, page_num * heap.page_size, page_begin, space_left), nullptr);
-            auto current_page_address{reinterpret_cast<::std::uintptr_t>(page_begin)};
+            auto current_page_address{::std::bit_cast<::std::uintptr_t>(page_begin)};
             for(auto&& metadata: heap.metadata)
             {
                 // 除了最后一页，其他页的next_page都指向后一页的metadata
                 auto next_page{&metadata != &heap.metadata.back() ? &metadata + 1 : nullptr};
                 REQUIRE_EQ(metadata.next_page, next_page);
                 // 每一页的free_block_list都指向当前页的首地址
-                REQUIRE_EQ(metadata.free_block_list, reinterpret_cast<free_block_list_t*>(current_page_address));
+                REQUIRE_EQ(metadata.free_block_list, ::std::bit_cast<free_block_list_t*>(current_page_address));
                 // 页为空，因此每一页的used_block都为0
                 REQUIRE_EQ(metadata.used_block, 0);
                 current_page_address += heap.page_size;
@@ -203,9 +197,9 @@ TEST_SUITE("heap")
         // 检查新插入的页的next_page是否指向了原空闲页链表的头指针，即是否成功穿成链表
         CHECK_EQ(page_ptr->next_page, free_page_list_head_gt);
         auto metadata_index{::std::distance(heap.metadata.begin(), page_ptr)};
-        auto data_ptr{reinterpret_cast<::std::uint8_t*>(heap.data) + metadata_index * heap.page_size};
+        auto data_address{::std::bit_cast<::std::uintptr_t>(heap.data) + metadata_index * heap.page_size};
         // 检查页的空闲块指针是否指向数据块首地址，即完成对于页操作的初始化
-        CHECK_EQ(page_ptr->free_block_list, reinterpret_cast<free_block_list_t*>(data_ptr));
+        CHECK_EQ(page_ptr->free_block_list, ::std::bit_cast<free_block_list_t*>(data_address));
     }
 
     /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
