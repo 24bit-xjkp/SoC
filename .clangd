@@ -1,5 +1,11 @@
 ﻿Diagnostics:
   UnusedIncludes: None
+  ClangTidy:
+    Remove:
+    - performance-*
+    - cppcoreguidelines-pro-*
+    - readability-*
+    - clang-analyzer-*
 Hover:
   ShowAKA: Yes
 Documentation:
