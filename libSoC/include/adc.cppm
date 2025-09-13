@@ -164,7 +164,7 @@ export namespace SoC
      * @brief adc数据对齐方式枚举
      *
      */
-    enum class adc_data_alignment : ::std::size_t
+    enum class adc_data_alignment : ::std::uint16_t
     {
         /// 右对齐，高位进行填充
         right = LL_ADC_DATA_ALIGN_RIGHT,
@@ -343,7 +343,7 @@ export namespace SoC
      * @brief adc采样时间
      *
      */
-    enum class adc_sampling_time : ::std::size_t
+    enum class adc_sampling_time : ::std::uint8_t
     {
         /// 采样3个ADC时钟周期
         cycles3 = LL_ADC_SAMPLINGTIME_3CYCLES,
@@ -409,7 +409,7 @@ export namespace SoC
      * @brief adc规则组不连续扫描
      *
      */
-    enum class adc_regular_seq_discont : ::std::size_t
+    enum class adc_regular_seq_discont : ::std::uint16_t
     {
         /// 禁用不连续扫描
         disable = LL_ADC_REG_SEQ_DISCONT_DISABLE,
@@ -435,7 +435,7 @@ export namespace SoC
      * @brief adc规则组dma模式
      *
      */
-    enum class adc_regular_dma_mode : ::std::size_t
+    enum class adc_regular_dma_mode : ::std::uint16_t
     {
         /// 不使用dma
         none = LL_ADC_REG_DMA_TRANSFER_NONE,

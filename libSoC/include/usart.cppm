@@ -33,7 +33,7 @@ export namespace SoC
      * @brief usart工作模式
      *
      */
-    enum class usart_mode : ::std::size_t
+    enum class usart_mode : ::std::uint8_t
     {
         async,
         sync,
@@ -44,7 +44,7 @@ export namespace SoC
      * @brief usart数据宽度
      *
      */
-    enum class usart_data_width : ::std::size_t
+    enum class usart_data_width : ::std::uint16_t
     {
         bit8,
         bit9 = ::SoC::mask_single_one<12>,
@@ -55,7 +55,7 @@ export namespace SoC
      * @brief usart停止位数量
      *
      */
-    enum class usart_stop_bit : ::std::size_t
+    enum class usart_stop_bit : ::std::uint8_t
     {
         bit0_5,
         bit1,
@@ -68,7 +68,7 @@ export namespace SoC
      * @brief usart校验位
      *
      */
-    enum class usart_parity : ::std::size_t
+    enum class usart_parity : ::std::uint16_t
     {
         none,
         even = ::SoC::mask_single_one<10>,
@@ -80,7 +80,7 @@ export namespace SoC
      * @brief usart传输方向
      *
      */
-    enum class usart_direction : ::std::size_t
+    enum class usart_direction : ::std::uint8_t
     {
         none,
         rx = ::SoC::mask_single_one<2>,
@@ -93,7 +93,7 @@ export namespace SoC
      * @brief usart硬件流量控制
      *
      */
-    enum class usart_hardware_flow_control : ::std::size_t
+    enum class usart_hardware_flow_control : ::std::uint16_t
     {
         none,
         rts = ::SoC::mask_single_one<8>,
@@ -106,7 +106,7 @@ export namespace SoC
      * @brief usart过采样倍数
      *
      */
-    enum class usart_oversampling : ::std::size_t
+    enum class usart_oversampling : ::std::uint8_t
     {
         by16 = 4,
         by8 = 3,

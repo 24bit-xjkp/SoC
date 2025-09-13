@@ -1314,7 +1314,7 @@ export namespace SoC
      * @brief 行尾序列
      *
      */
-    enum class end_line_sequence
+    enum class end_line_sequence : ::std::uint8_t
     {
         /// 回车
         cr,

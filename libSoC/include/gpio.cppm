@@ -15,7 +15,7 @@ namespace SoC::detail
      * @brief gpio端口
      *
      */
-    enum class gpio_port : ::std::size_t
+    enum class gpio_port : ::std::uint8_t
     {
         pa,
         pb,
@@ -32,7 +32,7 @@ namespace SoC::detail
      * @brief gpio引脚
      *
      */
-    enum class gpio_pin : ::std::size_t
+    enum class gpio_pin : ::std::uint16_t
     {
         p0 = ::SoC::mask_single_one<0>,
         p1 = ::SoC::mask_single_one<1>,
@@ -161,7 +161,7 @@ export namespace SoC
      * @brief gpio引脚工作模式
      *
      */
-    enum class gpio_mode : ::std::size_t
+    enum class gpio_mode : ::std::uint8_t
     {
         /// 输入模式
         input,
@@ -177,7 +177,7 @@ export namespace SoC
      * @brief gpio引脚输出速度
      *
      */
-    enum class gpio_speed : ::std::size_t
+    enum class gpio_speed : ::std::uint8_t
     {
         /// 低速 ~2MHz
         low,
@@ -195,7 +195,7 @@ export namespace SoC
      * @brief gpio引脚输出状态
      *
      */
-    enum class gpio_output_type : ::std::size_t
+    enum class gpio_output_type : ::std::uint8_t
     {
         /// 推挽输出
         push_pull,
@@ -209,7 +209,7 @@ export namespace SoC
      * @brief gpio引脚上下拉电阻
      *
      */
-    enum class gpio_pull : ::std::size_t
+    enum class gpio_pull : ::std::uint8_t
     {
         /// 无上下拉电阻
         no_pull,
@@ -272,7 +272,8 @@ export namespace SoC
          * @param location 源代码位置
          * @return pin_enum 映射后的引脚列表
          */
-        [[nodiscard]] pin_enum check_pin(pin_enum pin_in, ::std::source_location location = ::std::source_location::current()) const noexcept;
+        [[nodiscard]] pin_enum check_pin(pin_enum pin_in,
+                                         ::std::source_location location = ::std::source_location::current()) const noexcept;
 
         /**
          * @brief 断言当前对象中的引脚工作在输出模式下
@@ -317,7 +318,8 @@ export namespace SoC
         [[nodiscard]] inline ::SoC::gpio_port::port_enum get_port_enum() const noexcept
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            return ::SoC::gpio_port::port_enum{(reinterpret_cast<::std::uintptr_t>(gpio) - AHB1PERIPH_BASE) / 0x0400zu};
+            return static_cast<::SoC::gpio_port::port_enum>((reinterpret_cast<::std::uintptr_t>(gpio) - AHB1PERIPH_BASE) /
+                                                            0x0400zu);
         }
 
         /**

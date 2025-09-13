@@ -37,7 +37,7 @@ namespace SoC::detail
      * @brief tim外设主通道
      *
      */
-    enum class tim_channel : ::std::size_t
+    enum class tim_channel : ::std::uint16_t
     {
         /// 主通道1
         ch1 = LL_TIM_CHANNEL_CH1,
@@ -57,7 +57,7 @@ export namespace SoC
      * @brief tim外设计数模式
      *
      */
-    enum class tim_mode : ::std::size_t
+    enum class tim_mode : ::std::uint8_t
     {
         /// 向上计数
         up = LL_TIM_COUNTERMODE_UP,
@@ -75,7 +75,7 @@ export namespace SoC
      * @brief tim外设时钟分割模式
      *
      */
-    enum class tim_clock_div : ::std::size_t
+    enum class tim_clock_div : ::std::uint16_t
     {
         /// 不分割
         div1 = LL_TIM_CLOCKDIVISION_DIV1,
@@ -89,7 +89,7 @@ export namespace SoC
      * @brief tim外设输出比较模式
      *
      */
-    enum class tim_oc_mode : ::std::size_t
+    enum class tim_oc_mode : ::std::uint8_t
     {
         /// 冻结模式
         frozen = LL_TIM_OCMODE_FROZEN,
@@ -113,7 +113,7 @@ export namespace SoC
      * @brief tim外设输出极性
      *
      */
-    enum class tim_oc_polarity : ::std::size_t
+    enum class tim_oc_polarity : ::std::uint8_t
     {
         /// 高电平有效
         high = LL_TIM_OCPOLARITY_HIGH,
@@ -125,7 +125,7 @@ export namespace SoC
      * @brief 定时器触发输出
      *
      */
-    enum class tim_trigger_output : ::std::size_t
+    enum class tim_trigger_output : ::std::uint8_t
     {
         /// 强制触发更新事件
         reset = LL_TIM_TRGO_RESET,
@@ -149,7 +149,7 @@ export namespace SoC
      * @brief 定时器中断类型
      *
      */
-    enum class tim_irq : ::std::size_t
+    enum class tim_irq : ::std::uint8_t
     {
         /// 高级定时器刹车中断
         brk,
@@ -472,7 +472,7 @@ export namespace SoC
          * @brief tim外设通道工作模式
          *
          */
-        enum class tim_channel_mode : ::std::size_t
+        enum class tim_channel_mode : ::std::uint8_t
         {
             /// 输出比较模式
             oc,

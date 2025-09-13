@@ -143,7 +143,7 @@ export namespace SoC
      * @brief 外部线中断触发源
      *
      */
-    enum class exti_trigger_source : ::std::size_t
+    enum class exti_trigger_source : ::std::uint8_t
     {
         rising = 1,
         falling = 2,

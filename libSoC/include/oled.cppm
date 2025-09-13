@@ -13,7 +13,7 @@ export namespace SoC
      * @brief oled字体大小
      *
      */
-    enum class oled_font_size : ::std::size_t
+    enum class oled_font_size : ::std::uint8_t
     {
         /// 8x16
         f8x16,

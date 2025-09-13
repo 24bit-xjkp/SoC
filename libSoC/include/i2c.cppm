@@ -30,7 +30,7 @@ export namespace SoC
      * @brief i2c工作模式
      *
      */
-    enum class i2c_mode : ::std::size_t
+    enum class i2c_mode : ::std::uint8_t
     {
         /// 标准i2c模式
         i2c = LL_I2C_MODE_I2C,
@@ -47,7 +47,7 @@ export namespace SoC
      * @brief i2c快速模式时钟占空比
      *
      */
-    enum class i2c_duty_cycle : ::std::size_t
+    enum class i2c_duty_cycle : ::std::uint16_t
     {
         /// 低电平时间/高电平时间=2
         duty_2 = LL_I2C_DUTYCYCLE_2,
@@ -60,7 +60,7 @@ export namespace SoC
      * @brief i2c数据接收后的应答行为
      *
      */
-    enum class i2c_type_ack : ::std::size_t
+    enum class i2c_type_ack : ::std::uint16_t
     {
         /// 发送ack信号
         ack = LL_I2C_ACK,
@@ -73,7 +73,7 @@ export namespace SoC
      * @brief i2c地址位数
      *
      */
-    enum class i2c_owm_address_size : ::std::size_t
+    enum class i2c_owm_address_size : ::std::uint16_t
     {
         /// 7位地址
         bit7 = LL_I2C_OWNADDRESS1_7BIT,

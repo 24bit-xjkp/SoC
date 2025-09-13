@@ -15,7 +15,7 @@ export namespace SoC
      * @brief 中断优先级分组
      *
      */
-    enum class nvic_priority_group
+    enum class nvic_priority_group : ::std::uint8_t
     {
         /// 0bit抢占优先级，4bit响应优先级
         g0 = 7,

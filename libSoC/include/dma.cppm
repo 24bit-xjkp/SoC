@@ -25,7 +25,7 @@ namespace SoC::detail
      * @brief dma数据流枚举
      *
      */
-    enum class dma_stream : ::std::size_t
+    enum class dma_stream : ::std::uint8_t
     {
         st0,
         st1,
@@ -131,7 +131,7 @@ export namespace SoC
      * @brief dma传输模式
      *
      */
-    enum class dma_mode : ::std::size_t
+    enum class dma_mode : ::std::uint16_t
     {
         /// 单次传输
         normal = LL_DMA_MODE_NORMAL,
@@ -145,7 +145,7 @@ export namespace SoC
      * @brief dma传输方向枚举
      *
      */
-    enum class dma_direction : ::std::size_t
+    enum class dma_direction : ::std::uint8_t
     {
         /// 外设到内存
         p2m = LL_DMA_DIRECTION_PERIPH_TO_MEMORY,
@@ -159,7 +159,7 @@ export namespace SoC
      * @brief dma内存侧数据传输宽度
      *
      */
-    enum class dma_memory_data_size : ::std::size_t
+    enum class dma_memory_data_size : ::std::uint16_t
     {
         /// 1字节
         byte = LL_DMA_MDATAALIGN_BYTE,
@@ -173,7 +173,7 @@ export namespace SoC
      * @brief dma外设侧数据传输宽度
      *
      */
-    enum class dma_periph_data_size : ::std::size_t
+    enum class dma_periph_data_size : ::std::uint16_t
     {
         /// 1字节
         byte = LL_DMA_PDATAALIGN_BYTE,

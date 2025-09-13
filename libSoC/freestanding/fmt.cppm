@@ -56,7 +56,7 @@ export namespace SoC
          * @brief 词法分析使用的括号分类
          *
          */
-        enum class brace_t : ::std::size_t
+        enum class brace_t : ::std::uint8_t
         {
             /// 占位符
             placehold,
@@ -410,7 +410,7 @@ namespace SoC::detail
      * @brief 整数进制
      *
      */
-    enum class integer_base
+    enum class integer_base : ::std::uint8_t
     {
         bin = 2,
         oct = 8,

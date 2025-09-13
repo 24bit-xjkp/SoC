@@ -13,7 +13,7 @@ export namespace SoC
      * @brief 当前构建模式
      *
      */
-    enum class build_mode : ::std::size_t
+    enum class build_mode : ::std::uint8_t
     {
         debug,
         release,
