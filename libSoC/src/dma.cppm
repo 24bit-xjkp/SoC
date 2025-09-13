@@ -83,7 +83,7 @@ namespace SoC
                                   ::SoC::dma_memory_burst mem_burst,
                                   ::SoC::dma_periph_burst pf_burst) noexcept :
         dma_ptr{dma.get_dma()}, stream{stream}, direction{direction}, mode{mode}, fifo_threshold{fifo_threshold},
-        mem_data_size{mem_data_size}, mem_burst{mem_burst}, pf_data_size{pf_data_size}, pf_burst{pf_burst}
+        mem_burst{mem_burst}, mem_data_size{mem_data_size}, pf_data_size{pf_data_size}, pf_burst{pf_burst}
     {
         if constexpr(::SoC::use_full_assert)
         {

@@ -124,9 +124,9 @@ export namespace SoC
 
     private:
         ::SoC::moveable_value<::USART_TypeDef*> usart_ptr{};
-        ::SoC::usart_data_width data_width{};
         ::SoC::detail::dtor_close_clock_callback_t callback{};
         ::IRQn_Type irqn{};
+        ::SoC::usart_data_width data_width{};
 
         void wait_until_write_complete() const noexcept;
 

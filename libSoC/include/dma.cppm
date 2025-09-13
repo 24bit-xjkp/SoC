@@ -255,8 +255,8 @@ export namespace SoC
         ::SoC::dma_direction direction;
         ::SoC::dma_mode mode;
         ::SoC::dma_fifo_threshold fifo_threshold;
-        ::SoC::dma_memory_data_size mem_data_size;
         ::SoC::dma_memory_burst mem_burst;
+        ::SoC::dma_memory_data_size mem_data_size;
         ::SoC::dma_periph_data_size pf_data_size;
         ::SoC::dma_periph_burst pf_burst;
         ::IRQn_Type irqn{};

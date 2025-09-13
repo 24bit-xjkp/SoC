@@ -116,7 +116,7 @@ export namespace SoC
         };
 
         /// 没有选定的dma数据流，即使用模式配置
-        constexpr inline static ::SoC::dma_stream::dma_stream_enum no_selected_stream{-1zu};
+        constexpr inline static auto no_selected_stream{static_cast<::SoC::dma_stream::dma_stream_enum>(-1)};
 
         /**
          * @brief 断言dma外设为指定外设

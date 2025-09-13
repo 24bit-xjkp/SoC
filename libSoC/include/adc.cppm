@@ -491,7 +491,7 @@ export namespace SoC
         ::SoC::adc_regular_dma_mode dma_mode{};
 
         /// adc通道转换顺序表
-        constexpr inline static ::std::size_t rank_table[]{
+        constexpr inline static ::std::uint16_t rank_table[]{
             LL_ADC_REG_RANK_1,
             LL_ADC_REG_RANK_2,
             LL_ADC_REG_RANK_3,
@@ -531,7 +531,7 @@ export namespace SoC
         };
 
         /// 没有选定的dma数据流，即使用模式配置
-        constexpr inline static ::SoC::dma_stream::dma_stream_enum no_selected_stream{-1zu};
+        constexpr inline static auto no_selected_stream{static_cast<::SoC::dma_stream::dma_stream_enum>(-1)};
 
     public:
         /**
