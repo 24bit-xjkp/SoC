@@ -5,7 +5,7 @@
  */
 
 module;
-#include <pch.hpp>
+#include "pch.hpp"
 module SoC:exti_impl;
 import :exti;
 import :nvic;
@@ -207,8 +207,14 @@ namespace SoC
 
     void ::SoC::exti_line::set_trigger_source(::SoC::exti_trigger_source trigger_source) const noexcept
     {
-        if(trigger_source & ::SoC::exti_trigger_source::rising) { ::LL_EXTI_EnableRisingTrig_0_31(::SoC::to_underlying(line.value)); }
-        if(trigger_source & ::SoC::exti_trigger_source::falling) { ::LL_EXTI_EnableFallingTrig_0_31(::SoC::to_underlying(line.value)); }
+        if(trigger_source & ::SoC::exti_trigger_source::rising)
+        {
+            ::LL_EXTI_EnableRisingTrig_0_31(::SoC::to_underlying(line.value));
+        }
+        if(trigger_source & ::SoC::exti_trigger_source::falling)
+        {
+            ::LL_EXTI_EnableFallingTrig_0_31(::SoC::to_underlying(line.value));
+        }
     }
 
     void ::SoC::exti_line::clear_trigger_source() const noexcept

@@ -5,7 +5,7 @@
  */
 
 module;
-#include <pch.hpp>
+#include "pch.hpp"
 module SoC:gpio_impl;
 import :gpio;
 

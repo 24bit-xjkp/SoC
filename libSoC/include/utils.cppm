@@ -5,7 +5,7 @@
  */
 
 module;
-#include <pch.hpp>
+#include "pch.hpp"
 export module SoC:utils;
 export import SoC.freestanding;
 import SoC.std;
@@ -117,7 +117,10 @@ namespace SoC
      *
      * @return 用户堆
      */
-    export inline ::SoC::heap make_ram_heap() noexcept { return ::SoC::heap{auto(::SoC::_ram_heap_start), auto(::SoC::_ram_heap_end)}; }
+    export inline ::SoC::heap make_ram_heap() noexcept
+    {
+        return ::SoC::heap{auto(::SoC::_ram_heap_start), auto(::SoC::_ram_heap_end)};
+    }
 
     /**
      * @brief 从ccmram创建堆

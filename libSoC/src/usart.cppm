@@ -5,7 +5,7 @@
  */
 
 module;
-#include <pch.hpp>
+#include "pch.hpp"
 module SoC:usart_impl;
 import :usart;
 import :init;

@@ -5,7 +5,7 @@
  */
 
 module;
-#include <pch.hpp>
+#include "pch.hpp"
 module SoC:adc_impl;
 import :adc;
 import :nvic;
