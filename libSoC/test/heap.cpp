@@ -42,8 +42,7 @@ TEST_SUITE("heap")
         struct heap_test_fixture
         {
         private:
-            /// malloc得到的原始指针，用于在析构时进行free操作
-            std::unique_ptr<::std::uintptr_t> origin_ptr{};
+            std::unique_ptr<::std::uintptr_t[]> origin_ptr{};
             /// 内存区域[begin, end)，已对齐到页大小
             ::std::uintptr_t* begin{};
             ::std::uintptr_t* end{};
@@ -57,11 +56,11 @@ TEST_SUITE("heap")
                 if(begin == nullptr) [[unlikely]]
                 {
                     auto size{256 * 1024zu};
-                    origin_ptr = ::std::make_unique<::std::uintptr_t>(size / sizeof(::std::uintptr_t));
+                    origin_ptr = ::std::make_unique<::std::uintptr_t[]>(size / sizeof(::std::uintptr_t));
                     void* ptr{origin_ptr.get()};
                     REQUIRE_NE(ptr, nullptr);
                     REQUIRE_NE(::std::align(::SoC::heap::page_size, heap_size, ptr, size), nullptr);
-                    begin = origin_ptr.get();
+                    begin = static_cast<::std::uintptr_t*>(ptr);
                     end = begin + (heap_size / sizeof(::std::uintptr_t));
                 }
             }
