@@ -18,5 +18,7 @@
     build_unit_test = true,
     march_host = "default",
     unwindlib = "default",
-    runtimes = "stdc++_static"
+    runtimes = "stdc++_static",
+    unit_test_with_asan = true,
+    unit_test_with_ubsan = true
 }
