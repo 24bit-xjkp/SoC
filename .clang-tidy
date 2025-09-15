@@ -33,7 +33,6 @@ Checks: >
         -cert-oop54-cpp,
         concurrency-*,
         bugprone-*,
-        -bugprone-reserved-identifier,
         -bugprone-invalid-enum-default-initialization,
         -bugprone-easily-swappable-parameters,
         -bugprone-unhandled-self-assignment,

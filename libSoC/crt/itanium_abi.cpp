@@ -9,6 +9,8 @@ import :common;
 
 extern "C"
 {
+    // NOLINTBEGIN(bugprone-reserved-identifier)
+
     /**
      * @brief 注册程序退出时要执行的函数
      *
@@ -45,4 +47,6 @@ extern "C"
      *
      */
     extern constexpr const void* __dso_handle{static_cast<const void* const>(&__dso_handle)};
+
+    // NOLINTEND(bugprone-reserved-identifier)
 }

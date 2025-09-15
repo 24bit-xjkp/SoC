@@ -33,12 +33,14 @@ namespace SoC
 
 extern "C"
 {
+    // NOLINTBEGIN(bugprone-reserved-identifier)
     extern ::SoC::cursor __preinit_array_start;
     extern ::SoC::cursor __preinit_array_end;
     extern ::SoC::cursor __init_array_start;
     extern ::SoC::cursor __init_array_end;
     extern ::SoC::cursor __fini_array_start;
     extern ::SoC::cursor __fini_array_end;
+    // NOLINTEND(bugprone-reserved-identifier)
 }
 
 namespace SoC
@@ -67,7 +69,7 @@ namespace SoC
             // 执行带参数的析构回调
             (::SoC::cxa_at_exit_callback_array[i])(::SoC::cxa_at_exit_callback_arg_array[i]);
         }
-        
+
         // 执行.fini_array段中的终止回调
         ::SoC::do_init_fini(auto(::__fini_array_start), auto(::__fini_array_end));
     }
