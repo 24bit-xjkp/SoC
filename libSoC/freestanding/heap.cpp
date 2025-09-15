@@ -101,20 +101,23 @@ namespace SoC
 #pragma GCC unroll(0)
         for(auto&& block_list: ::std::ranges::subrange{free_page_list.begin(), free_page_list.end() - 1})
         {
-            while(block_list != nullptr && block_list->used_block == 0) { block_list = insert_block_into_page_list(block_list); }
-            // 一次回收未完全完成，继续通过游标遍历链表
-            if(block_list != nullptr)
+            auto block_list_cursor{block_list};
+            if(block_list_cursor == nullptr) { continue; }
+            // 删除除了第一个块以外的所有空闲块
+            for(auto block_list_next{block_list_cursor->next_page}; block_list_next != nullptr;
+                block_list_next = block_list_cursor->next_page)
             {
-                auto block_list_cursor{block_list};
-                while(block_list_cursor != nullptr)
+                if(block_list_next->used_block == 0)
                 {
-                    if(block_list_cursor->used_block == 0) { insert_block_into_page_list(block_list_cursor); }
-                    else
-                    {
-                        block_list_cursor = block_list_cursor->next_page;
-                    }
+                    block_list_cursor->next_page = insert_block_into_page_list(block_list_next);
+                }
+                else
+                {
+                    block_list_cursor = block_list_next;
                 }
             }
+            // 若第一个块也空闲，则插入到空闲页链表
+            if(block_list->used_block == 0) { block_list = insert_block_into_page_list(block_list); }
         }
         auto free_page{free_page_list.back()};
         if(assert) { ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv); }
