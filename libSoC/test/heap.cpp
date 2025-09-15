@@ -204,21 +204,24 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
-    TEST_CASE("insert_block_into_page_list/first_element")
+    TEST_CASE("insert_block_into_page_list")
     {
-        auto heap{heap_fixture.get_heap()};
-        auto [page_ptr, _]{make_heap_for_insert_block_into_page_list_test(heap)};
-        do_insert_block_into_page_list_test(heap, page_ptr);
+        SUBCASE("first_element")
+        {
+            auto heap{heap_fixture.get_heap()};
+            auto [page_ptr, _]{make_heap_for_insert_block_into_page_list_test(heap)};
+            do_insert_block_into_page_list_test(heap, page_ptr);
+        }
+
+        SUBCASE("last_element")
+        {
+            auto heap{heap_fixture.get_heap()};
+            auto [_, page_ptr]{make_heap_for_insert_block_into_page_list_test(heap)};
+            do_insert_block_into_page_list_test(heap, page_ptr);
+        }
     }
 
-    /// @test 测试堆的插入块函数能否在链表元素数为1时正常工作
-    TEST_CASE("insert_block_into_page_list/last_element")
-    {
-        auto heap{heap_fixture.get_heap()};
-        auto [_, page_ptr]{make_heap_for_insert_block_into_page_list_test(heap)};
-        do_insert_block_into_page_list_test(heap, page_ptr);
-    }
-
+    /// @test 测试堆的页回收函数能否正常工作
     TEST_CASE("page_gc")
     {
         auto heap{heap_fixture.get_heap()};
@@ -291,7 +294,7 @@ TEST_SUITE("heap")
             CHECK_EQ(heap.free_page_list[4]->next_page, page_ptr256_2);
             CHECK_EQ(heap.free_page_list[4]->next_page->next_page, nullptr);
 
-            metadata_t* free_page_list_gt[]{page_ptr256_1, page_ptr256_3, page_ptr128_1, page_ptr32, origin_free_page_list_head};
+            ::std::array free_page_list_gt{page_ptr256_1, page_ptr256_3, page_ptr128_1, page_ptr32, origin_free_page_list_head};
             for(auto page_ptr{heap.free_page_list.back()};
                 auto&& [index_in_free_page_list_gt, page_ptr_gt]: ::std::views::zip(::std::views::iota(0), free_page_list_gt))
             {
