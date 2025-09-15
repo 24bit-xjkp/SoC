@@ -54,7 +54,7 @@ namespace SoC
 
     void ::SoC::adc::disable() const noexcept { ::LL_ADC_Disable(adc_ptr); }
 
-    bool ::SoC::adc::is_enabled() const noexcept { return LL_ADC_IsEnabled(adc_ptr); }
+    bool ::SoC::adc::is_enabled() const noexcept { return static_cast<bool>(::LL_ADC_IsEnabled(adc_ptr)); }
 
     void ::SoC::adc::set_resolution(::SoC::adc_resolution resolution) noexcept
     {
@@ -110,7 +110,7 @@ namespace SoC
 
     ::SoC::adc_regular_group::~adc_regular_group() noexcept
     {
-        if(adc_ptr) [[likely]]
+        if(adc_ptr != nullptr) [[likely]]
         {
             clear_flag_eocs();
             clear_flag_ovr();
@@ -279,11 +279,11 @@ namespace SoC
 
     void ::SoC::adc_regular_group::disable() const noexcept { ::LL_ADC_REG_StopConversionExtTrig(adc_ptr); }
 
-    bool ::SoC::adc_regular_group::get_flag_eocs() const noexcept { return ::LL_ADC_IsActiveFlag_EOCS(adc_ptr); }
+    bool ::SoC::adc_regular_group::get_flag_eocs() const noexcept { return static_cast<bool>(::LL_ADC_IsActiveFlag_EOCS(adc_ptr)); }
 
     void ::SoC::adc_regular_group::clear_flag_eocs() const noexcept { ::LL_ADC_ClearFlag_EOCS(adc_ptr); }
 
-    bool ::SoC::adc_regular_group::get_flag_ovr() const noexcept { return ::LL_ADC_IsActiveFlag_OVR(adc_ptr); }
+    bool ::SoC::adc_regular_group::get_flag_ovr() const noexcept { return static_cast<bool>(::LL_ADC_IsActiveFlag_OVR(adc_ptr)); }
 
     void ::SoC::adc_regular_group::clear_flag_ovr() const noexcept { ::LL_ADC_ClearFlag_OVR(adc_ptr); }
 
@@ -426,7 +426,7 @@ namespace SoC
 
     ::SoC::analog_watchdog::~analog_watchdog() noexcept
     {
-        if(adc_ptr) [[likely]]
+        if(adc_ptr != nullptr) [[likely]]
         {
             clear_flag_awd();
             disable_irq();
@@ -485,11 +485,11 @@ namespace SoC
         }
     }
 
-    bool ::SoC::analog_watchdog::get_it_awd() const noexcept { return ::LL_ADC_IsEnabledIT_AWD1(adc_ptr); }
+    bool ::SoC::analog_watchdog::get_it_awd() const noexcept { return static_cast<bool>(::LL_ADC_IsEnabledIT_AWD1(adc_ptr)); }
 
     bool ::SoC::analog_watchdog::is_it_awd() const noexcept { return get_flag_awd() && get_it_awd(); }
 
-    bool ::SoC::analog_watchdog::get_flag_awd() const noexcept { return ::LL_ADC_IsActiveFlag_AWD1(adc_ptr); }
+    bool ::SoC::analog_watchdog::get_flag_awd() const noexcept { return static_cast<bool>(::LL_ADC_IsActiveFlag_AWD1(adc_ptr)); }
 
     void ::SoC::analog_watchdog::clear_flag_awd() const noexcept { ::LL_ADC_ClearFlag_AWD1(adc_ptr); }
 }  // namespace SoC

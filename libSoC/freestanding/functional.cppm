@@ -120,7 +120,7 @@ export namespace SoC
          */
         void destroy() noexcept(::SoC::optional_noexcept)
         {
-            if(destroy_callback) { allocator.deallocate(ptr, destroy_callback(ptr)); }
+            if(destroy_callback != nullptr) { allocator.deallocate(ptr, destroy_callback(ptr)); }
         }
 
     public:

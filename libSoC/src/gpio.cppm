@@ -43,7 +43,7 @@ namespace SoC
 
     void ::SoC::gpio_port::disable() const noexcept { ::LL_AHB1_GRP1_DisableClock(get_periph()); }
 
-    bool ::SoC::gpio_port::is_enabled() const noexcept { return ::LL_AHB1_GRP1_IsEnabledClock(get_periph()); }
+    bool ::SoC::gpio_port::is_enabled() const noexcept { return static_cast<bool>(::LL_AHB1_GRP1_IsEnabledClock(get_periph())); }
 }  // namespace SoC
 
 namespace SoC
@@ -160,7 +160,7 @@ namespace SoC
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         pin_in = check_pin(pin_in);
         // 低16位置1，高16位清零
-        gpio->BSRR = ::SoC::to_underlying(pin) << !level * 16;
+        gpio->BSRR = ::SoC::to_underlying(pin) << static_cast<unsigned int>(!level) * 16zu;
     }
 
     bool ::SoC::gpio_pin::read(pin_enum pin_in) const noexcept
@@ -170,10 +170,13 @@ namespace SoC
             ::SoC::assert(mode != ::SoC::gpio_mode::analog, "模拟模式下不支持读取数据寄存器"sv);
         }
         pin_in = check_pin(pin_in);
-        if(mode == ::SoC::gpio_mode::output) { return ::LL_GPIO_IsOutputPinSet(gpio, ::SoC::to_underlying(pin_in)); }
+        if(mode == ::SoC::gpio_mode::output)
+        {
+            return static_cast<bool>(::LL_GPIO_IsOutputPinSet(gpio, ::SoC::to_underlying(pin_in)));
+        }
         else
         {
-            return ::LL_GPIO_IsInputPinSet(gpio, ::SoC::to_underlying(pin_in));
+            return static_cast<bool>(::LL_GPIO_IsInputPinSet(gpio, ::SoC::to_underlying(pin_in)));
         }
     }
 }  // namespace SoC

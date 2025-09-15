@@ -83,7 +83,7 @@ namespace SoC::detail
      */
     constexpr inline bool operator& (::SoC::detail::exti_line value, ::SoC::detail::exti_line mask) noexcept
     {
-        return ::SoC::to_underlying(value) & ::SoC::to_underlying(mask);
+        return (::SoC::to_underlying(value) & ::SoC::to_underlying(mask)) != ::std::underlying_type_t<::SoC::detail::exti_line>{};
     }
 }  // namespace SoC::detail
 

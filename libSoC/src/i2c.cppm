@@ -57,7 +57,7 @@ namespace SoC
 
     ::SoC::i2c::~i2c() noexcept
     {
-        if(i2c_ptr)
+        if(i2c_ptr != nullptr)
         {
             disable();
             ::LL_APB1_GRP1_DisableClock(periph);
@@ -68,28 +68,28 @@ namespace SoC
 
     void ::SoC::i2c::disable() const noexcept { ::LL_I2C_Disable(i2c_ptr); }
 
-    bool ::SoC::i2c::is_enabled() const noexcept { return ::LL_I2C_IsEnabled(i2c_ptr); }
+    bool ::SoC::i2c::is_enabled() const noexcept { return static_cast<bool>(::LL_I2C_IsEnabled(i2c_ptr)); }
 
     void ::SoC::i2c::set_ack(::SoC::i2c_type_ack ack) const noexcept
     {
         ::LL_I2C_AcknowledgeNextData(i2c_ptr, ::SoC::to_underlying(ack));
     }
 
-    bool ::SoC::i2c::get_flag_busy() const noexcept { return ::LL_I2C_IsActiveFlag_BUSY(i2c_ptr); }
+    bool ::SoC::i2c::get_flag_busy() const noexcept { return static_cast<bool>(::LL_I2C_IsActiveFlag_BUSY(i2c_ptr)); }
 
-    bool ::SoC::i2c::get_flag_sb() const noexcept { return ::LL_I2C_IsActiveFlag_SB(i2c_ptr); }
+    bool ::SoC::i2c::get_flag_sb() const noexcept { return static_cast<bool>(::LL_I2C_IsActiveFlag_SB(i2c_ptr)); }
 
-    bool ::SoC::i2c::get_flag_addr() const noexcept { return ::LL_I2C_IsActiveFlag_ADDR(i2c_ptr); }
+    bool ::SoC::i2c::get_flag_addr() const noexcept { return static_cast<bool>(::LL_I2C_IsActiveFlag_ADDR(i2c_ptr)); }
 
     void ::SoC::i2c::clear_flag_addr() const noexcept { ::LL_I2C_ClearFlag_ADDR(i2c_ptr); }
 
-    bool ::SoC::i2c::get_flag_btf() const noexcept { return ::LL_I2C_IsActiveFlag_BTF(i2c_ptr); }
+    bool ::SoC::i2c::get_flag_btf() const noexcept { return static_cast<bool>(::LL_I2C_IsActiveFlag_BTF(i2c_ptr)); }
 
-    bool ::SoC::i2c::get_flag_stop() const noexcept { return ::LL_I2C_IsActiveFlag_STOP(i2c_ptr); }
+    bool ::SoC::i2c::get_flag_stop() const noexcept { return static_cast<bool>(::LL_I2C_IsActiveFlag_STOP(i2c_ptr)); }
 
     void ::SoC::i2c::clear_flag_stop() const noexcept { ::LL_I2C_ClearFlag_STOP(i2c_ptr); }
 
-    bool ::SoC::i2c::get_flag_txe() const noexcept { return ::LL_I2C_IsActiveFlag_TXE(i2c_ptr); }
+    bool ::SoC::i2c::get_flag_txe() const noexcept { return static_cast<bool>(::LL_I2C_IsActiveFlag_TXE(i2c_ptr)); }
 
     void ::SoC::i2c::start() const noexcept
     {
@@ -209,5 +209,5 @@ namespace SoC
 
     void ::SoC::i2c::disable_dma_write() const noexcept { ::LL_I2C_DisableDMAReq_TX(i2c_ptr); }
 
-    bool ::SoC::i2c::is_dma_write_enabled() const noexcept { return ::LL_I2C_IsEnabledDMAReq_TX(i2c_ptr); }
+    bool ::SoC::i2c::is_dma_write_enabled() const noexcept { return static_cast<bool>(::LL_I2C_IsEnabledDMAReq_TX(i2c_ptr)); }
 }  // namespace SoC

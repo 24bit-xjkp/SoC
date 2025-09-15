@@ -48,7 +48,8 @@ namespace SoC
      */
     constexpr inline bool operator& (::SoC::exti_trigger_source value, ::SoC::exti_trigger_source mask) noexcept
     {
-        return ::SoC::to_underlying(value) & ::SoC::to_underlying(mask);
+        return (::SoC::to_underlying(value) & ::SoC::to_underlying(mask)) !=
+               ::std::underlying_type_t<::SoC::exti_trigger_source>{};
     }
 
     /// 外部线中断触发源枚举到中断号枚举的映射表
@@ -266,13 +267,13 @@ namespace SoC
     bool ::SoC::exti_line::get_it(exti_line_enum lines) const noexcept
     {
         lines = check_lines(lines);
-        return ::LL_EXTI_IsEnabledIT_0_31(::SoC::to_underlying(lines));
+        return static_cast<bool>(::LL_EXTI_IsEnabledIT_0_31(::SoC::to_underlying(lines)));
     }
 
     bool ::SoC::exti_line::get_flag_it(exti_line_enum lines) const noexcept
     {
         lines = check_lines(lines);
-        return ::LL_EXTI_IsActiveFlag_0_31(::SoC::to_underlying(lines));
+        return static_cast<bool>(::LL_EXTI_IsActiveFlag_0_31(::SoC::to_underlying(lines)));
     }
 
     void ::SoC::exti_line::clear_flag_it(exti_line_enum lines) const noexcept

@@ -39,7 +39,7 @@ namespace SoC
 
     ::SoC::dma::~dma() noexcept
     {
-        if(dma_ptr) [[likely]] { disable(); }
+        if(dma_ptr != nullptr) [[likely]] { disable(); }
     }
 
     ::SoC::dma::dma(dma&& other) noexcept : dma_ptr{::std::exchange(other.dma_ptr, nullptr)} {}
@@ -50,7 +50,7 @@ namespace SoC
 
     bool ::SoC::dma::is_enabled() const noexcept
     {
-        return ::LL_AHB1_GRP1_IsEnabledClock(::SoC::dma_enum2grp1_periph(get_dma_enum()));
+        return static_cast<bool>(::LL_AHB1_GRP1_IsEnabledClock(::SoC::dma_enum2grp1_periph(get_dma_enum())));
     }
 }  // namespace SoC
 
@@ -116,7 +116,7 @@ namespace SoC
 
     ::SoC::dma_stream::~dma_stream() noexcept
     {
-        if(dma_ptr) [[likely]]
+        if(dma_ptr != nullptr) [[likely]]
         {
             clear_flag_tc();
             disable();
@@ -190,7 +190,7 @@ namespace SoC
 
     bool ::SoC::dma_stream::is_enabled() const noexcept
     {
-        return ::LL_DMA_IsEnabledStream(dma_ptr, ::SoC::to_underlying(stream));
+        return static_cast<bool>(::LL_DMA_IsEnabledStream(dma_ptr, ::SoC::to_underlying(stream)));
     }
 
     void ::SoC::dma_stream::disable() const noexcept { ::LL_DMA_DisableStream(dma_ptr, ::SoC::to_underlying(stream)); }
@@ -366,7 +366,10 @@ namespace SoC
         }
     }
 
-    bool ::SoC::dma_stream::get_it_tc() const noexcept { return ::LL_DMA_IsEnabledIT_TC(dma_ptr, ::SoC::to_underlying(stream)); }
+    bool ::SoC::dma_stream::get_it_tc() const noexcept
+    {
+        return static_cast<bool>(::LL_DMA_IsEnabledIT_TC(dma_ptr, ::SoC::to_underlying(stream)));
+    }
 
     bool ::SoC::dma_stream::is_it_tc() const noexcept { return get_flag_tc() && get_it_tc(); }
 
@@ -379,7 +382,10 @@ namespace SoC
         }
     }
 
-    bool ::SoC::dma_stream::get_it_ht() const noexcept { return ::LL_DMA_IsEnabledIT_HT(dma_ptr, ::SoC::to_underlying(stream)); }
+    bool ::SoC::dma_stream::get_it_ht() const noexcept
+    {
+        return static_cast<bool>(::LL_DMA_IsEnabledIT_HT(dma_ptr, ::SoC::to_underlying(stream)));
+    }
 
     bool ::SoC::dma_stream::is_it_ht() const noexcept { return get_flag_ht() && get_it_ht(); }
 }  // namespace SoC

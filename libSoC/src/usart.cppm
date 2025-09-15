@@ -204,9 +204,9 @@ namespace SoC
         }
     }
 
-    bool ::SoC::usart::get_it_txe() const noexcept { return ::LL_USART_IsEnabledIT_TXE(usart_ptr); }
+    bool ::SoC::usart::get_it_txe() const noexcept { return static_cast<bool>(::LL_USART_IsEnabledIT_TXE(usart_ptr)); }
 
-    bool ::SoC::usart::get_flag_txe() const noexcept { return ::LL_USART_IsActiveFlag_TXE(usart_ptr); }
+    bool ::SoC::usart::get_flag_txe() const noexcept { return static_cast<bool>(::LL_USART_IsActiveFlag_TXE(usart_ptr)); }
 
     bool ::SoC::usart::is_it_txe() const noexcept { return get_flag_txe() && get_it_txe(); }
 
@@ -219,9 +219,9 @@ namespace SoC
         }
     }
 
-    bool ::SoC::usart::get_it_rxne() const noexcept { return ::LL_USART_IsEnabledIT_RXNE(usart_ptr); }
+    bool ::SoC::usart::get_it_rxne() const noexcept { return static_cast<bool>(::LL_USART_IsEnabledIT_RXNE(usart_ptr)); }
 
-    bool ::SoC::usart::get_flag_rxne() const noexcept { return ::LL_USART_IsActiveFlag_RXNE(usart_ptr); }
+    bool ::SoC::usart::get_flag_rxne() const noexcept { return static_cast<bool>(::LL_USART_IsActiveFlag_RXNE(usart_ptr)); }
 
     bool ::SoC::usart::is_it_rxne() const noexcept { return get_flag_rxne() && get_it_rxne(); }
 
@@ -234,15 +234,15 @@ namespace SoC
         }
     }
 
-    bool ::SoC::usart::get_it_idle() const noexcept { return ::LL_USART_IsEnabledIT_IDLE(usart_ptr); }
+    bool ::SoC::usart::get_it_idle() const noexcept { return static_cast<bool>(::LL_USART_IsEnabledIT_IDLE(usart_ptr)); }
 
-    bool ::SoC::usart::get_flag_idle() const noexcept { return ::LL_USART_IsActiveFlag_IDLE(usart_ptr); }
+    bool ::SoC::usart::get_flag_idle() const noexcept { return static_cast<bool>(::LL_USART_IsActiveFlag_IDLE(usart_ptr)); }
 
     bool ::SoC::usart::is_it_idle() const noexcept { return get_flag_idle() && get_it_idle(); }
 
     void ::SoC::usart::clear_flag_idle() const noexcept { ::LL_USART_ClearFlag_IDLE(usart_ptr); }
 
-    bool ::SoC::usart::get_flag_tc() const noexcept { return ::LL_USART_IsActiveFlag_TC(usart_ptr); }
+    bool ::SoC::usart::get_flag_tc() const noexcept { return static_cast<bool>(::LL_USART_IsActiveFlag_TC(usart_ptr)); }
 
     void ::SoC::usart::clear_flag_tc() const noexcept { ::LL_USART_ClearFlag_TC(usart_ptr); }
 
@@ -255,7 +255,7 @@ namespace SoC
         }
     }
 
-    bool ::SoC::usart::get_it_tc() const noexcept { return ::LL_USART_IsEnabledIT_TC(usart_ptr); }
+    bool ::SoC::usart::get_it_tc() const noexcept { return static_cast<bool>(::LL_USART_IsEnabledIT_TC(usart_ptr)); }
 
     bool ::SoC::usart::is_it_tc() const noexcept { return get_flag_tc() && get_it_tc(); }
 
@@ -267,7 +267,7 @@ namespace SoC
         ::LL_USART_Disable(usart_ptr);
     }
 
-    bool ::SoC::usart::is_enabled() const noexcept { return ::LL_USART_IsEnabled(usart_ptr); }
+    bool ::SoC::usart::is_enabled() const noexcept { return static_cast<bool>(::LL_USART_IsEnabled(usart_ptr)); }
 
     void ::SoC::usart::assert_dma(::SoC::dma& dma, ::SoC::dma::dma_enum dma_enum) noexcept
     {
@@ -338,5 +338,5 @@ namespace SoC
 
     void ::SoC::usart::disable_dma_write() const noexcept { ::LL_USART_DisableDMAReq_TX(usart_ptr); }
 
-    bool ::SoC::usart::is_dma_write_enabled() const noexcept { return ::LL_USART_IsEnabledDMAReq_TX(usart_ptr); }
+    bool ::SoC::usart::is_dma_write_enabled() const noexcept { return static_cast<bool>(::LL_USART_IsEnabledDMAReq_TX(usart_ptr)); }
 }  // namespace SoC

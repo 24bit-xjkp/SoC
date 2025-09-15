@@ -227,9 +227,9 @@ namespace SoC
         ::LL_TIM_DisableCounter(tim_ptr);
     }
 
-    bool ::SoC::tim::is_enabled() const noexcept { return ::LL_TIM_IsEnabledCounter(tim_ptr); }
+    bool ::SoC::tim::is_enabled() const noexcept { return static_cast<bool>(::LL_TIM_IsEnabledCounter(tim_ptr)); }
 
-    bool ::SoC::tim::is_output_enabled() const noexcept { return ::LL_TIM_IsEnabledAllOutputs(tim_ptr); }
+    bool ::SoC::tim::is_output_enabled() const noexcept { return static_cast<bool>(::LL_TIM_IsEnabledAllOutputs(tim_ptr)); }
 
     void ::SoC::tim::enable_arr_preload() const noexcept { ::LL_TIM_EnableARRPreload(tim_ptr); }
 
@@ -304,7 +304,7 @@ namespace SoC
     bool ::SoC::tim::get_it_brk() const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
-        return ::LL_TIM_IsEnabledIT_BRK(tim_ptr);
+        return static_cast<bool>(::LL_TIM_IsEnabledIT_BRK(tim_ptr));
     }
 
     void ::SoC::tim::set_it_trig(bool enable) const noexcept
@@ -316,7 +316,7 @@ namespace SoC
         }
     }
 
-    bool ::SoC::tim::get_it_trig() const noexcept { return ::LL_TIM_IsEnabledIT_TRIG(tim_ptr); }
+    bool ::SoC::tim::get_it_trig() const noexcept { return static_cast<bool>(::LL_TIM_IsEnabledIT_TRIG(tim_ptr)); }
 
     void ::SoC::tim::set_it_com(bool enable) const noexcept
     {
@@ -331,7 +331,7 @@ namespace SoC
     bool ::SoC::tim::get_it_com() const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
-        return ::LL_TIM_IsEnabledIT_COM(tim_ptr);
+        return static_cast<bool>(::LL_TIM_IsEnabledIT_COM(tim_ptr));
     }
 
     void ::SoC::tim::set_it_update(bool enable) const noexcept
@@ -343,7 +343,7 @@ namespace SoC
         }
     }
 
-    bool ::SoC::tim::get_it_update() const noexcept { return ::LL_TIM_IsEnabledIT_UPDATE(tim_ptr); }
+    bool ::SoC::tim::get_it_update() const noexcept { return static_cast<bool>(::LL_TIM_IsEnabledIT_UPDATE(tim_ptr)); }
 
     ::IRQn_Type(::SoC::tim::get_irqn)(::SoC::tim_irq irq) const noexcept
     {
@@ -404,7 +404,7 @@ namespace SoC
     bool ::SoC::tim::get_flag_brk() const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
-        return ::LL_TIM_IsActiveFlag_BRK(tim_ptr);
+        return static_cast<bool>(::LL_TIM_IsActiveFlag_BRK(tim_ptr));
     }
 
     void ::SoC::tim::clear_flag_brk() const noexcept
@@ -413,14 +413,14 @@ namespace SoC
         ::LL_TIM_ClearFlag_BRK(tim_ptr);
     }
 
-    bool ::SoC::tim::get_flag_trig() const noexcept { return ::LL_TIM_IsActiveFlag_TRIG(tim_ptr); }
+    bool ::SoC::tim::get_flag_trig() const noexcept { return static_cast<bool>(::LL_TIM_IsActiveFlag_TRIG(tim_ptr)); }
 
     void ::SoC::tim::clear_flag_trig() const noexcept { ::LL_TIM_ClearFlag_TRIG(tim_ptr); }
 
     bool ::SoC::tim::get_flag_com() const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_advanced_tim(); }
-        return ::LL_TIM_IsActiveFlag_COM(tim_ptr);
+        return static_cast<bool>(::LL_TIM_IsActiveFlag_COM(tim_ptr));
     }
 
     void ::SoC::tim::clear_flag_com() const noexcept
@@ -429,7 +429,7 @@ namespace SoC
         ::LL_TIM_ClearFlag_COM(tim_ptr);
     }
 
-    bool ::SoC::tim::get_flag_update() const noexcept { return ::LL_TIM_IsActiveFlag_UPDATE(tim_ptr); }
+    bool ::SoC::tim::get_flag_update() const noexcept { return static_cast<bool>(::LL_TIM_IsActiveFlag_UPDATE(tim_ptr)); }
 
     void ::SoC::tim::clear_flag_update() const noexcept { ::LL_TIM_ClearFlag_UPDATE(tim_ptr); }
 
@@ -467,7 +467,7 @@ namespace SoC
 
     ::SoC::tim_channel::~tim_channel() noexcept
     {
-        if(tim_ptr) { disable(); }
+        if(tim_ptr != nullptr) { disable(); }
     }
 
     void ::SoC::tim_channel::enable() const noexcept
@@ -484,12 +484,13 @@ namespace SoC
 
     bool ::SoC::tim_channel::is_enabled() const noexcept
     {
-        return ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::SoC::to_underlying(channel));
+        return static_cast<bool>(::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::SoC::to_underlying(channel)));
     }
 
     bool ::SoC::tim_channel::is_compl_enabled() const noexcept
     {
-        return has_compl_channel() && ::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::SoC::to_underlying(compl_channel));
+        return has_compl_channel() &&
+               static_cast<bool>(::LL_TIM_CC_IsEnabledChannel(tim_ptr, ::SoC::to_underlying(compl_channel)));
     }
 
     void ::SoC::tim_channel::check_mode_oc(::std::source_location location) const noexcept

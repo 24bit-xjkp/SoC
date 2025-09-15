@@ -5,6 +5,8 @@
     - performance-*
     - readability-*
     - clang-analyzer-*
+    - modernize-*
+    - cert-*
 Hover:
   ShowAKA: Yes
 Documentation:
