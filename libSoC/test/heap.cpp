@@ -100,17 +100,19 @@ TEST_SUITE("heap")
         /// 堆结束地址未对齐到页大小
         SUBCASE("unaligned_heap_end")
         {
-            REQUIRE_THROWS_AS_MESSAGE((::SoC::test::heap{begin, end + 1}),
-                                      ::SoC::assert_failed_exception,
-                                      "堆结束地址未对齐到页大小的情况下应触发断言失败");
+            REQUIRE_THROWS_WITH_AS_MESSAGE((::SoC::test::heap{begin, end + 1}),
+                                           ::doctest::Contains{"堆结束地址必须对齐到页边界"},
+                                           ::SoC::assert_failed_exception,
+                                           "堆结束地址未对齐到页大小的情况下应触发断言失败");
         }
 
         /// 堆大小不足一页
         SUBCASE("heap_too_small")
         {
-            REQUIRE_THROWS_AS_MESSAGE((::SoC::test::heap{begin, begin + 1}),
-                                      ::SoC::assert_failed_exception,
-                                      "堆大小不足一页的情况下应触发断言失败");
+            REQUIRE_THROWS_WITH_AS_MESSAGE((::SoC::test::heap{begin, begin}),
+                                           ::doctest::Contains{"堆大小必须大于一页"},
+                                           ::SoC::assert_failed_exception,
+                                           "堆大小不足一页的情况下应触发断言失败");
         }
     }
 
@@ -215,5 +217,99 @@ TEST_SUITE("heap")
         auto heap{heap_fixture.get_heap()};
         auto [_, page_ptr]{make_heap_for_insert_block_into_page_list_test(heap)};
         do_insert_block_into_page_list_test(heap, page_ptr);
+    }
+
+    TEST_CASE("page_gc")
+    {
+        auto heap{heap_fixture.get_heap()};
+        // 将空闲页链表中的页插入index处的空闲块链表
+        auto insert_block_into_page_list{
+            [&heap](::std::size_t index, bool is_free = true) noexcept
+            {
+                auto&& free_page_list{heap.free_page_list.back()};
+                auto old_free_page_head{::std::exchange(free_page_list, free_page_list->next_page)};
+                auto old_free_block_head{::std::exchange(heap.free_page_list[index], old_free_page_head)};
+                old_free_page_head->next_page = old_free_block_head;
+                old_free_page_head->used_block = !is_free;
+                return old_free_page_head;
+            }};
+
+        // 16字节块链表保持空
+        heap.free_page_list[0] = nullptr;
+        // 32字节块链表插入1个空闲块
+        auto page_ptr32{insert_block_into_page_list(1)};
+        // 64字节块链表插入1个非空闲块
+        auto page_ptr64{insert_block_into_page_list(2, false)};
+        // 128字节块链表插入1个空闲块1个非空闲块
+        auto page_ptr128_1{insert_block_into_page_list(3)};
+        auto page_ptr128_2{insert_block_into_page_list(3, false)};
+        // 256字节块链表交替插入2个空闲块和2个非空闲块
+        auto page_ptr256_1{insert_block_into_page_list(4)};
+        auto page_ptr256_2{insert_block_into_page_list(4, false)};
+        auto page_ptr256_3{insert_block_into_page_list(4)};
+        auto page_ptr256_4{insert_block_into_page_list(4, false)};
+        auto origin_free_page_list_head{heap.free_page_list.back()};
+
+        SUBCASE("prepare")
+        {
+            constexpr auto&& message{"块插入失败"};
+            REQUIRE_MESSAGE(page_ptr32->next_page == nullptr, message);
+            REQUIRE_MESSAGE(page_ptr32 == heap.free_page_list[1], message);
+
+            REQUIRE_MESSAGE(page_ptr64->next_page == nullptr, message);
+            REQUIRE_MESSAGE(page_ptr64 == heap.free_page_list[2], message);
+
+            REQUIRE_MESSAGE(page_ptr128_1->next_page == nullptr, message);
+            REQUIRE_MESSAGE(page_ptr128_2->next_page == page_ptr128_1, message);
+            REQUIRE_MESSAGE(page_ptr128_2 == heap.free_page_list[3], message);
+
+            REQUIRE_MESSAGE(page_ptr256_1->next_page == nullptr, message);
+            REQUIRE_MESSAGE(page_ptr256_2->next_page == page_ptr256_1, message);
+            REQUIRE_MESSAGE(page_ptr256_3->next_page == page_ptr256_2, message);
+            REQUIRE_MESSAGE(page_ptr256_4->next_page == page_ptr256_3, message);
+            REQUIRE_MESSAGE(page_ptr256_4 == heap.free_page_list[4], message);
+        }
+
+        SUBCASE("with_free_block")
+        {
+            metadata_t* current_free_page_list_head{};
+            REQUIRE_NOTHROW_MESSAGE(current_free_page_list_head = heap.page_gc(true), "堆含有空闲块，不应出现空间不足错误");
+            // 检查空闲页链表的头指针是否正确
+            CHECK_EQ(current_free_page_list_head, page_ptr256_1);
+            // 检查16字节块链表是否保持空
+            CHECK_EQ(heap.free_page_list[0], nullptr);
+            // 检查32字节块链表是否为空，即空闲块被回收
+            CHECK_EQ(heap.free_page_list[1], nullptr);
+            // 检查64字节块链表是否为原链表头，即非空闲块未被回收
+            CHECK_EQ(heap.free_page_list[2], page_ptr64);
+            CHECK_EQ(heap.free_page_list[2]->next_page, nullptr);
+            // 检查128字节块链表是否为非空闲块，即空闲块被回收而非空闲块未被回收
+            CHECK_EQ(heap.free_page_list[3], page_ptr128_2);
+            CHECK_EQ(heap.free_page_list[3]->next_page, nullptr);
+            // 检查256字节块链表是否为非空闲块，即穿插在非空闲块内的空闲块是否被回收
+            CHECK_EQ(heap.free_page_list[4], page_ptr256_4);
+            CHECK_EQ(heap.free_page_list[4]->next_page, page_ptr256_2);
+            CHECK_EQ(heap.free_page_list[4]->next_page->next_page, nullptr);
+
+            metadata_t* free_page_list_gt[]{page_ptr256_1, page_ptr256_3, page_ptr128_1, page_ptr32, origin_free_page_list_head};
+            for(auto page_ptr{heap.free_page_list.back()};
+                auto&& [index_in_free_page_list_gt, page_ptr_gt]: ::std::views::zip(::std::views::iota(0), free_page_list_gt))
+            {
+                CAPTURE(index_in_free_page_list_gt);
+                CHECK_EQ(page_ptr, page_ptr_gt);
+                page_ptr = page_ptr->next_page;
+            }
+        }
+
+        SUBCASE("without_free_block")
+        {
+            for(auto&& free_page_list{heap.free_page_list}; auto&& free_page: free_page_list) { free_page = nullptr; }
+            // 启用断言的情况下，应当断言失败
+            CHECK_THROWS_WITH_AS_MESSAGE(heap.page_gc(true),
+                                         ::doctest::Contains{"剩余堆空间不足"},
+                                         ::SoC::assert_failed_exception,
+                                         "剩余堆空间不足，应该断言失败");
+            CHECK_NOTHROW_MESSAGE(heap.page_gc(false), "禁用断言时，剩余堆空间不足不应该产生断言失败");
+        }
     }
 }
