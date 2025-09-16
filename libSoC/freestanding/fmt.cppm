@@ -157,9 +157,9 @@ export namespace SoC
                     ::std::span placehold_list{*optional};
                     if(placehold_list.empty()) { return fmt.size() == 0 ? 0 : 1; }
 
-                    auto ptr{placehold_list.front()};
+                    const auto *ptr{placehold_list.front()};
                     ::std::size_t cnt{ptr != fmt.begin()};
-                    for(auto placehold: placehold_list.subspan(1))
+                    for(const auto* placehold: placehold_list.subspan(1))
                     {
                         if(ptr + 2 != placehold) { ++cnt; }
                         ptr = placehold;
@@ -198,14 +198,14 @@ export namespace SoC
                         return ::std::optional{array};
                     }
                     auto i{0zu};
-                    auto ptr{placehold_list.front()};
+                    const auto *ptr{placehold_list.front()};
                     if(ptr == fmt.begin()) { array[i++] = true; }
                     else
                     {
                         array[i++] = false;
                         array[i++] = true;
                     }
-                    for(auto placehold: placehold_list.subspan(1))
+                    for(const auto* placehold: placehold_list.subspan(1))
                     {
                         if(ptr + 2 != placehold)
                         {
@@ -241,7 +241,7 @@ export namespace SoC
             auto ptr{fmt.begin()};
             if(ptr == placehold_view.front()) { placehold_view = placehold_view.subspan(1); }
             auto i{0zu};
-            for(auto placehold: placehold_view)
+            for(const auto* placehold: placehold_view)
             {
                 if(ptr == fmt.begin())
                 {

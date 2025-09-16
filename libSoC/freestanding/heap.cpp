@@ -22,8 +22,8 @@ namespace SoC
         auto bytes{(end - begin) * ptr_size};
         auto pages{bytes / (page_size + sizeof(::SoC::detail::heap_page_metadata))};
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(pages > 0, "堆大小必须大于一页"sv); }
-        auto metadata_begin{reinterpret_cast<::SoC::detail::heap_page_metadata*>(begin)};
-        auto metadata_end{metadata_begin + pages};
+        auto* metadata_begin{reinterpret_cast<::SoC::detail::heap_page_metadata*>(begin)};
+        auto* metadata_end{metadata_begin + pages};
         metadata = ::std::ranges::subrange{metadata_begin, metadata_end};
 
         auto ptr{reinterpret_cast<::std::uintptr_t>(metadata_end)};
@@ -56,12 +56,12 @@ namespace SoC
         auto&& free_page{free_page_list.back()};
         if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
         // 空闲页基址
-        auto page_begin{free_page->free_block_list};
+        auto* page_begin{free_page->free_block_list};
         // 从空闲页表里取出一页
         free_page = free_page->next_page;
 
         auto heap_block_size{1zu << (free_list_index + min_block_shift)};
-        auto page_ptr{page_begin};
+        auto* page_ptr{page_begin};
         auto step{heap_block_size / ptr_size};
 #pragma GCC unroll(0)
         while(page_ptr != page_begin + page_size / ptr_size)
@@ -87,11 +87,11 @@ namespace SoC
     ::SoC::detail::heap_page_metadata* ::SoC::heap::insert_block_into_page_list(
         ::SoC::detail::heap_page_metadata* page_metadata) noexcept
     {
-        auto old_head{::std::exchange(page_metadata, page_metadata->next_page)};
+        auto* old_head{::std::exchange(page_metadata, page_metadata->next_page)};
         // 将空闲块指针指向数据区，对于页来说，完成了空闲链表的重新初始化
         // 对于其他大小的块，需要使用make_block_in_page函数重新初始化空闲链表
         old_head->free_block_list = ((old_head - metadata.begin()) * page_size / ptr_size) + data;
-        auto old_page_head{::std::exchange(free_page_list.back(), old_head)};
+        auto* old_page_head{::std::exchange(free_page_list.back(), old_head)};
         old_head->next_page = old_page_head;
         return page_metadata;
     }
@@ -101,10 +101,10 @@ namespace SoC
 #pragma GCC unroll(0)
         for(auto&& block_list: ::std::ranges::subrange{free_page_list.begin(), free_page_list.end() - 1})
         {
-            auto block_list_cursor{block_list};
+            auto* block_list_cursor{block_list};
             if(block_list_cursor == nullptr) { continue; }
             // 删除除了第一个块以外的所有空闲块
-            for(auto block_list_next{block_list_cursor->next_page}; block_list_next != nullptr;
+            for(auto* block_list_next{block_list_cursor->next_page}; block_list_next != nullptr;
                 block_list_next = block_list_cursor->next_page)
             {
                 if(block_list_next->used_block == 0)
@@ -119,7 +119,7 @@ namespace SoC
             // 若第一个块也空闲，则插入到空闲页链表
             if(block_list->used_block == 0) { block_list = insert_block_into_page_list(block_list); }
         }
-        auto free_page{free_page_list.back()};
+        auto* free_page{free_page_list.back()};
         if(assert) { ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv); }
         return free_page;
     }
@@ -129,10 +129,10 @@ namespace SoC
     {
         auto&& head{free_page_list.back()};
         // 移除除了head外所有范围内的页
-        for(auto ptr{head}; ptr->next_page != nullptr;)
+        for(auto* ptr{head}; ptr->next_page != nullptr;)
         {
             auto&& next_page{ptr->next_page};
-            if(auto page_ptr{next_page->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
+            if(auto* page_ptr{next_page->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
             {
                 next_page->used_block = 1;
                 next_page = next_page->next_page;
@@ -143,7 +143,7 @@ namespace SoC
             }
         }
         // 若head也在范围内则删除
-        if(auto page_ptr{head->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
+        if(auto* page_ptr{head->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
         {
             head->used_block = 1;
             head = head->next_page;
@@ -156,7 +156,7 @@ namespace SoC
         // 分配一个页的快速路径
         if(page_cnt == 1) [[likely]]
         {
-            auto free_page{free_page_list.back()};
+            auto* free_page{free_page_list.back()};
             if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
             free_page_list.back() = free_page->next_page;
             free_page->used_block = 1;
@@ -172,8 +172,8 @@ namespace SoC
                 {
                     ::std::size_t continuous_page_cnt{1};
                     // 闭区间[range_begin, range_end]表示连续页范围
-                    auto range_begin = metadata_ptr->free_block_list;
-                    auto range_end = metadata_ptr->free_block_list;
+                    auto* range_begin = metadata_ptr->free_block_list;
+                    auto* range_end = metadata_ptr->free_block_list;
                     // 向后搜索
                     for(auto&& [_, free_block_list, used_block]: ::std::ranges::subrange{metadata_ptr + 1, metadata.end()})
                     {
@@ -236,7 +236,7 @@ namespace SoC
         {
             auto step{actual_size / ptr_size};
             auto&& free_list{free_page_list[free_page_list_index]};
-            auto page_begin{make_block_in_page(free_page_list_index)};
+            auto* page_begin{make_block_in_page(free_page_list_index)};
             free_list->free_block_list = free_list->free_block_list + step;
             ++free_list->used_block;
             return page_begin;
@@ -290,7 +290,7 @@ namespace SoC
 
     void ::SoC::heap::deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
     {
-        auto page_ptr{static_cast<::SoC::detail::free_block_list_t*>(ptr)};
+        auto* page_ptr{static_cast<::SoC::detail::free_block_list_t*>(ptr)};
         auto actual_size{get_actual_allocate_size(size)};
         auto size_align{::std::countr_zero(actual_size)};
         if constexpr(::SoC::use_full_assert)
@@ -307,7 +307,7 @@ namespace SoC
         auto metadata_index{get_metadata_index(page_ptr)};
         auto&& metadata_ref{metadata[metadata_index]};
         auto&& [next_page, free_block_list, used_block]{metadata_ref};
-        auto old_head{::std::exchange(free_block_list, page_ptr)};
+        auto* old_head{::std::exchange(free_block_list, page_ptr)};
         *page_ptr = ::SoC::detail::free_block_list_t{old_head};
         --used_block;
         if(old_head == nullptr) [[unlikely]]

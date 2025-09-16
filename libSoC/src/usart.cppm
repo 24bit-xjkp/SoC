@@ -165,7 +165,7 @@ namespace SoC
 
     [[gnu::noinline]] void* ::SoC::usart::read(void* begin, void* end) const noexcept
     {
-        auto ptr{static_cast<::std::uint8_t*>(begin)};
+        auto *ptr{static_cast<::std::uint8_t*>(begin)};
 #pragma GCC unroll 0
         while(ptr != end && !get_flag_idle()) { *ptr++ = read(); }
         clear_flag_idle();
@@ -174,7 +174,7 @@ namespace SoC
 
     [[gnu::noinline]] ::std::uint16_t* ::SoC::usart::read(::std::uint16_t* begin, ::std::uint16_t* end) const noexcept
     {
-        auto ptr{begin};
+        auto *ptr{begin};
 #pragma GCC unroll 0
         while(ptr != end && !get_flag_idle()) { *ptr++ = read9(); }
         clear_flag_idle();

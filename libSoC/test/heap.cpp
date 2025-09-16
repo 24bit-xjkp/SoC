@@ -143,7 +143,7 @@ TEST_SUITE("heap")
             for(auto&& metadata: heap.metadata)
             {
                 // 除了最后一页，其他页的next_page都指向后一页的metadata
-                auto next_page{&metadata != &heap.metadata.back() ? &metadata + 1 : nullptr};
+                auto* next_page{&metadata != &heap.metadata.back() ? &metadata + 1 : nullptr};
                 REQUIRE_EQ(metadata.next_page, next_page);
                 // 每一页的free_block_list都指向当前页的首地址
                 REQUIRE_EQ(metadata.free_block_list, ::std::bit_cast<free_block_list_t*>(current_page_address));
@@ -166,8 +166,8 @@ TEST_SUITE("heap")
     ::std::array<metadata_t*, 2> make_heap_for_insert_block_into_page_list_test(::SoC::test::heap & heap)
     {
         auto&& free_page_list{heap.free_page_list.back()};
-        auto first_page{free_page_list};
-        auto second_page{first_page->next_page};
+        auto* first_page{free_page_list};
+        auto* second_page{first_page->next_page};
         // 将空闲页链表的头指针指向第三页，将第一页插入空闲块链表
         // 即将空闲页链表的前两页放入空闲块链表
         heap.free_page_list.front() = ::std::exchange(free_page_list, second_page->next_page);
@@ -186,10 +186,10 @@ TEST_SUITE("heap")
     {
         auto&& free_page_list{heap.free_page_list.back()};
         // 记录空闲页链表的头指针的期望值
-        auto free_page_list_head_gt{free_page_list};
+        auto* free_page_list_head_gt{free_page_list};
         // 记录下一个页的元数据指针的期望值
-        auto next_page_gt{page_ptr->next_page};
-        auto next_page{heap.insert_block_into_page_list(page_ptr)};
+        auto* next_page_gt{page_ptr->next_page};
+        auto* next_page{heap.insert_block_into_page_list(page_ptr)};
 
         // 检查返回值是否正确，即下一个页的元数据指针
         CHECK_EQ(next_page, next_page_gt);
@@ -230,8 +230,8 @@ TEST_SUITE("heap")
             [&heap](::std::size_t index, bool is_free = true) noexcept
             {
                 auto&& free_page_list{heap.free_page_list.back()};
-                auto old_free_page_head{::std::exchange(free_page_list, free_page_list->next_page)};
-                auto old_free_block_head{::std::exchange(heap.free_page_list[index], old_free_page_head)};
+                auto* old_free_page_head{::std::exchange(free_page_list, free_page_list->next_page)};
+                auto* old_free_block_head{::std::exchange(heap.free_page_list[index], old_free_page_head)};
                 old_free_page_head->next_page = old_free_block_head;
                 old_free_page_head->used_block = !is_free;
                 return old_free_page_head;
@@ -240,18 +240,18 @@ TEST_SUITE("heap")
         // 16字节块链表保持空
         heap.free_page_list[0] = nullptr;
         // 32字节块链表插入1个空闲块
-        auto page_ptr32{insert_block_into_page_list(1)};
+        auto* page_ptr32{insert_block_into_page_list(1)};
         // 64字节块链表插入1个非空闲块
-        auto page_ptr64{insert_block_into_page_list(2, false)};
+        auto* page_ptr64{insert_block_into_page_list(2, false)};
         // 128字节块链表插入1个空闲块1个非空闲块
-        auto page_ptr128_1{insert_block_into_page_list(3)};
-        auto page_ptr128_2{insert_block_into_page_list(3, false)};
+        auto* page_ptr128_1{insert_block_into_page_list(3)};
+        auto* page_ptr128_2{insert_block_into_page_list(3, false)};
         // 256字节块链表交替插入2个空闲块和2个非空闲块
-        auto page_ptr256_1{insert_block_into_page_list(4)};
-        auto page_ptr256_2{insert_block_into_page_list(4, false)};
-        auto page_ptr256_3{insert_block_into_page_list(4)};
-        auto page_ptr256_4{insert_block_into_page_list(4, false)};
-        auto origin_free_page_list_head{heap.free_page_list.back()};
+        auto* page_ptr256_1{insert_block_into_page_list(4)};
+        auto* page_ptr256_2{insert_block_into_page_list(4, false)};
+        auto* page_ptr256_3{insert_block_into_page_list(4)};
+        auto* page_ptr256_4{insert_block_into_page_list(4, false)};
+        auto* origin_free_page_list_head{heap.free_page_list.back()};
 
         SUBCASE("prepare")
         {
@@ -295,7 +295,7 @@ TEST_SUITE("heap")
             CHECK_EQ(heap.free_page_list[4]->next_page->next_page, nullptr);
 
             ::std::array free_page_list_gt{page_ptr256_1, page_ptr256_3, page_ptr128_1, page_ptr32, origin_free_page_list_head};
-            for(auto page_ptr{heap.free_page_list.back()};
+            for(auto* page_ptr{heap.free_page_list.back()};
                 auto&& [index_in_free_page_list_gt, page_ptr_gt]: ::std::views::zip(::std::views::iota(0), free_page_list_gt))
             {
                 CAPTURE(index_in_free_page_list_gt);

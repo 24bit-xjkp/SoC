@@ -21,7 +21,6 @@ Checks: >
   -readability-enum-initial-value,
   -readability-redundant-declaration,
   -readability-redundant-member-init,
-  -readability-qualified-auto,
   -readability-named-parameter,
   -readability-redundant-inline-specifier,
   -readability-math-missing-parentheses,
