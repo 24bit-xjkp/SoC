@@ -509,7 +509,7 @@ namespace SoC
             check_mode_oc();
             ::SoC::assert(channel != ::SoC::tim_channel::ch4, "定时器的通道4不具有互补通道"sv);
         }
-        compl_channel = static_cast<::SoC::detail::tim_channel>(::SoC::to_underlying(channel) << 2);
+        compl_channel = static_cast<::SoC::detail::tim_channel>(::SoC::to_underlying(channel) << 2zu);
         ::LL_TIM_OC_SetPolarity(tim_ptr, ::SoC::to_underlying(compl_channel), ::SoC::to_underlying(polarity));
     }
 
@@ -554,7 +554,7 @@ namespace SoC
 
     ::std::size_t(::SoC::tim_channel::get_it_flag_mask)() const noexcept
     {
-        auto shift{::std::countr_zero(::SoC::to_underlying(channel))};
+        auto shift{static_cast<::std::size_t>(::std::countr_zero(::SoC::to_underlying(channel)))};
         [[assume(shift <= 12)]];
         shift /= 3;
         return 1zu << shift;

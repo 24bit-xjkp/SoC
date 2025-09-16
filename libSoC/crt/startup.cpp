@@ -23,7 +23,11 @@ namespace SoC
         extern ::SoC::cursor _eccmram;
         extern ::SoC::cursor _siccmram;
 
-        [[gnu::naked, noreturn]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b SoC_startup\n"); }
+        [[gnu::naked, noreturn]] void Reset_Handler() noexcept
+        {
+            // NOLINTNEXTLINE(hicpp-no-assembler)
+            asm volatile("ldr sp, =_estack\n" "b SoC_startup\n");
+        }
     }
 
     using no_optimize_cursor = volatile ::std::size_t*;

@@ -256,7 +256,7 @@ export namespace SoC
      */
     template <::std::size_t shift>
         requires (shift < 32)
-    constexpr inline ::std::size_t mask_single_one{1 << shift};
+    constexpr inline ::std::size_t mask_single_one{1zu << shift};
 
     /**
      * @brief 掩码，低ones位为1，其余为0
@@ -476,9 +476,9 @@ export namespace SoC
                                    auto i{n};
                                    while(i != 0)
                                    {
-                                       result *= (i & 1) == 1 ? temp : 1.f;
+                                       result *= (i & 1zu) == 1zu ? temp : 1.f;
                                        temp *= temp;
-                                       i >>= 1;
+                                       i >>= 1zu;
                                    }
                                    return result;
                                }()};
@@ -556,7 +556,7 @@ export namespace SoC
 
         constexpr inline auto&& operator* (this auto&& self) noexcept { return *self.ptr; }
 
-        constexpr inline operator bool() const noexcept { return ptr != nullptr; }
+        constexpr inline explicit operator bool() const noexcept { return ptr != nullptr; }
 
         constexpr inline auto operator->(this auto&& self) noexcept { return self.ptr; }
 
@@ -643,7 +643,25 @@ export namespace SoC
 
         constexpr inline moveable_value() noexcept = default;
 
-        constexpr inline moveable_value(value_type value) noexcept : value{value} {}
+        /**
+         * @brief 构造函数，将储存的值初始化为value
+         *
+         * @param value 要存储的值
+         */
+        constexpr inline explicit moveable_value(value_type value) noexcept : value{value} {}
+
+
+        /**
+         * @brief 赋值运算符，将储存的值赋值为value
+         *
+         * @param value 要赋值的值
+         * @return 赋值后对象的引用
+         */
+        constexpr inline moveable_value& operator= (value_type value) noexcept
+        {
+            this->value = value;
+            return *this;
+        }
 
         /**
          * @brief 移动构造函数，自动将other.value清空

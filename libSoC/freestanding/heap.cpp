@@ -27,7 +27,7 @@ namespace SoC
         metadata = ::std::ranges::subrange{metadata_begin, metadata_end};
 
         auto ptr{reinterpret_cast<::std::uintptr_t>(metadata_end)};
-        constexpr auto shift{::std::countr_zero(page_size)};
+        constexpr auto shift{static_cast<::std::size_t>(::std::countr_zero(page_size))};
         ptr = (ptr + page_size - 1) & (-1zu << shift);
         data = reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr);
 

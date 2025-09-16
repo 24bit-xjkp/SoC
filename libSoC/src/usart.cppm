@@ -76,7 +76,7 @@ namespace SoC
         ::LL_USART_SetTransferDirection(usart_ptr, ::SoC::to_underlying(direction));
         ::LL_USART_SetHWFlowCtrl(usart_ptr, ::SoC::to_underlying(control));
 
-        usart_ptr->BRR = static_cast<::std::uint16_t>(clk / (baud_rate << ::SoC::to_underlying(oversampling) >> 4));
+        usart_ptr->BRR = static_cast<::std::uint16_t>(clk / (baud_rate << ::SoC::to_underlying(oversampling) >> 4zu));
 
         switch(mode)
         {

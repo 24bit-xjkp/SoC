@@ -24,8 +24,8 @@ namespace SoC
     [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
         i2c_enum2grp1_periph(::SoC::i2c::i2c_enum i2c) noexcept
     {
-        auto shift{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10};
-        return 1zu << (shift + 21);
+        auto shift{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10zu};
+        return 1zu << (shift + 21zu);
     }
 
     static_assert(i2c_enum2grp1_periph(::SoC::i2c::i2c1) == LL_APB1_GRP1_PERIPH_I2C1);
@@ -108,7 +108,7 @@ namespace SoC
 
     void ::SoC::i2c::write_address(::std::size_t address) const noexcept
     {
-        write(address << 1);
+        write(address << 1zu);
         ::SoC::wait_until([this] noexcept { return this->get_flag_addr(); });
         clear_flag_addr();
     }
@@ -146,7 +146,7 @@ namespace SoC
     [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
         i2c_enum2dma_stream_channel(::SoC::i2c::i2c_enum i2c) noexcept
     {
-        auto index{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10};
+        auto index{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10zu};
         using enum ::SoC::dma_channel;
         using enum ::SoC::dma_stream::dma_stream_enum;
         constexpr ::std::array table{

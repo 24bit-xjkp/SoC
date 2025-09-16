@@ -50,11 +50,11 @@ namespace SoC
     void ::SoC::oled::flush() noexcept
     {
 #pragma GCC unroll(0)
-        for(auto&& [page, page_index]: ::std::views::zip(buffer, ::std::views::iota(0)))
+        for(auto&& [page, page_index]: ::std::views::zip(buffer, ::std::views::iota(0zu)))
         {
-            write_command(0xb0 | page_index);
-            write_command(0x00 | 0);  // NOLINT(misc-redundant-expression)
-            write_command(0x10 | 0);
+            write_command(0xb0zu | page_index);
+            write_command(0x00zu | 0zu);  // NOLINT(misc-redundant-expression)
+            write_command(0x10zu | 0zu);
 
             auto _{i2c.get_condition_guard()};
             i2c.write_address(slave_address);

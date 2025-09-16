@@ -16,7 +16,7 @@ namespace SoC
 
     ::std::uint64_t(::SoC::systick_t::operator++)() noexcept
     {
-        auto new_index{index.load(::std::memory_order_relaxed) ^ 1};
+        auto new_index{index.load(::std::memory_order_relaxed) ^ 1zu};
         auto result{systick[new_index] += 2};
         ::std::atomic_signal_fence(::std::memory_order_release);
         index.store(new_index, ::std::memory_order_relaxed);
@@ -33,7 +33,8 @@ namespace SoC::detail
         if(cycles.rep <= 1) { return; }
         else
         {
-            auto cnt{cycles.rep >> 1};
+            auto cnt{cycles.rep >> 1zu};
+            // NOLINTNEXTLINE(hicpp-no-assembler)
             asm volatile (
                 "SoC_detail_wait_for_loop:\n"
                 "subs %[counter], #1\n"

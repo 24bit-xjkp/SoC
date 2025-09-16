@@ -54,7 +54,7 @@ namespace SoC
     ::std::pair<::std::size_t, ::std::size_t> decode_priority(::std::size_t encoded_priority) noexcept
     {
         auto&& [_, sub_bit]{::SoC::get_priority_bit()};
-        return {encoded_priority >> sub_bit, encoded_priority & ((1 << sub_bit) - 1)};
+        return {encoded_priority >> sub_bit, encoded_priority & ((1zu << sub_bit) - 1zu)};
     }
 
     void set_priority(::IRQn_Type irqn, ::std::size_t encoded_priority) noexcept { ::NVIC_SetPriority(irqn, encoded_priority); }

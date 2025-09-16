@@ -21,7 +21,7 @@ namespace SoC
         ::LL_RCC_HSE_Enable();
         ::SoC::wait_until(::LL_RCC_HSE_IsReady);
         // PLL = HSE * N / M / R
-        constexpr auto pll_pr{(::SoC::rcc::pll_pr - 2) / 2 << 16};
+        constexpr auto pll_pr{(::SoC::rcc::pll_pr - 2) / 2 << 16zu};
         ::LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, ::SoC::rcc::pll_m, ::SoC::rcc::pll_n, pll_pr);
         ::LL_RCC_PLL_Enable();
         ::SoC::wait_until(::LL_RCC_PLL_IsReady);

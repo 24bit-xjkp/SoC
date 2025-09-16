@@ -24,8 +24,8 @@ namespace SoC
         dma_enum2grp1_periph(::SoC::dma::dma_enum dma_enum) noexcept
     {
         auto value{::SoC::to_underlying(dma_enum)};
-        constexpr auto base{::SoC::to_underlying(::SoC::dma::dma_enum::dma1) - (1zu << 10)};
-        return (value - base) << 11;
+        constexpr auto base{::SoC::to_underlying(::SoC::dma::dma_enum::dma1) - (1zu << 10zu)};
+        return (value - base) << 11zu;
     }
 
     static_assert(dma_enum2grp1_periph(::SoC::dma::dma_enum::dma1) == LL_AHB1_GRP1_PERIPH_DMA1);
@@ -94,7 +94,7 @@ namespace SoC
         auto stream_v{::SoC::to_underlying(stream)};
         ::LL_DMA_ConfigTransfer(dma_ptr,
                                 stream_v,
-                                ::SoC::to_underlying(direction) | ::SoC::to_underlying(mode) |
+                                ::SoC::to_underlying(direction) | static_cast<::std::size_t>(::SoC::to_underlying(mode)) |
                                     (pf_increase ? LL_DMA_PERIPH_INCREMENT : LL_DMA_PERIPH_NOINCREMENT) |
                                     (mem_increase ? LL_DMA_MEMORY_INCREMENT : LL_DMA_MEMORY_NOINCREMENT) |
                                     ::SoC::to_underlying(pf_data_size) | ::SoC::to_underlying(mem_data_size) |
@@ -213,7 +213,9 @@ namespace SoC
     void ::SoC::dma_stream::set_data_item(::std::size_t size, ::std::size_t item_size) const noexcept
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(check_aligned(size), "缓冲区大小不满足对齐要求"sv); }
-        ::LL_DMA_SetDataLength(dma_ptr, ::SoC::to_underlying(stream), size >> ::std::countr_zero(item_size));
+        ::LL_DMA_SetDataLength(dma_ptr,
+                               ::SoC::to_underlying(stream),
+                               size >> static_cast<::std::size_t>(::std::countr_zero(item_size)));
     }
 
     void ::SoC::dma_stream::write(const void* begin, const void* end) noexcept

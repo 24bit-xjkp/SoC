@@ -47,7 +47,11 @@ Checks: >
   -misc-const-correctness,
   performance-*,
   -performance-no-int-to-ptr,
-  boost-use-ranges
+  boost-use-ranges,
+  hicpp-*,
+  -hicpp-uppercase-literal-suffix,
+  -hicpp-named-parameter,
+  -hicpp-explicit-conversions
 WarningsAsErrors: ''
 UseColor: true
 HeaderFilterRegex: '^(?!.*\.(h)$).*' # 过滤.h文件，避免第三方库产生大量警告

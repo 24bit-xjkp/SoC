@@ -37,7 +37,7 @@ namespace SoC
     {
     }
 
-    ::std::size_t(::SoC::gpio_port::get_periph)() const noexcept { return 1 << ::SoC::to_underlying(port); }
+    ::std::size_t(::SoC::gpio_port::get_periph)() const noexcept { return 1zu << ::SoC::to_underlying(port); }
 
     void ::SoC::gpio_port::enable() const noexcept { ::LL_AHB1_GRP1_EnableClock(get_periph()); }
 
@@ -88,8 +88,8 @@ namespace SoC
         auto pin_mask{::SoC::to_underlying(pin)};
         while(pin_mask != 0)
         {
-            auto pin_pos{::std::countr_zero(pin_mask)};
-            auto current_pin{pin_mask & 1 << pin_pos};
+            auto pin_pos{static_cast<::std::size_t>(::std::countr_zero(pin_mask))};
+            auto current_pin{pin_mask & 1zu << pin_pos};
             if(mode == ::SoC::gpio_mode::output || mode == ::SoC::gpio_mode::alternate)
             {
                 ::LL_GPIO_SetPinSpeed(gpio, current_pin, ::SoC::to_underlying(speed));

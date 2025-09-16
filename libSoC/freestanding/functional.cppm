@@ -45,9 +45,9 @@ namespace SoC::detail
      */
     template <typename callable_t, typename return_t, typename... args_t>
         requires (!::std::is_reference_v<callable_t>)
-    inline return_t function_wrapper(void* ptr,
-                                     args_t... args) noexcept(function_wrapper_noexcept<callable_t, return_t, args_t...>() ||
-                                                              ::SoC::optional_noexcept)
+    constexpr inline return_t
+        function_wrapper(void* ptr, args_t... args) noexcept(function_wrapper_noexcept<callable_t, return_t, args_t...>() ||
+                                                             ::SoC::optional_noexcept)
     {
         if constexpr(::std::is_pointer_v<callable_t>)
         {
@@ -71,7 +71,7 @@ namespace SoC::detail
      */
     template <typename callable_t>
         requires (!::std::is_reference_v<callable_t>)
-    inline ::std::size_t function_destroy_callback(void* ptr) noexcept
+    constexpr inline ::std::size_t function_destroy_callback(void* ptr) noexcept
     {
         static_cast<callable_t*>(ptr)->~callable_t();
         constexpr auto allocated_size{::std::max(sizeof(callable_t), alignof(callable_t))};
@@ -118,7 +118,7 @@ export namespace SoC
          * @brief 析构函数对象并释放内存
          *
          */
-        void destroy() noexcept(::SoC::optional_noexcept)
+        constexpr inline void destroy() noexcept(::SoC::optional_noexcept)
         {
             if(destroy_callback != nullptr) { allocator.deallocate(ptr, destroy_callback(ptr)); }
         }
@@ -129,7 +129,7 @@ export namespace SoC
          *
          * @param allocator 分配器
          */
-        inline basic_smart_function(allocator_t allocator = allocator_t{}) noexcept : allocator{allocator} {}
+        constexpr inline basic_smart_function(allocator_t allocator = allocator_t{}) noexcept : allocator{allocator} {}
 
         /**
          * @brief 将函数绑定到可调用对象
@@ -140,7 +140,7 @@ export namespace SoC
          */
         template <::SoC::detail::invocable_r<return_t, args_t...> callable_t>
             requires (::std::is_move_constructible_v<::std::remove_reference_t<callable_t>>)
-        inline basic_smart_function(callable_t&& callable, allocator_t allocator = allocator_t{}) noexcept :
+        constexpr explicit inline basic_smart_function(callable_t&& callable, allocator_t allocator = allocator_t{}) noexcept :
             func{::SoC::detail::function_wrapper<::std::remove_reference_t<callable_t>, return_t, args_t...>},
             allocator{allocator}
         {
@@ -148,7 +148,7 @@ export namespace SoC
             if constexpr(::std::is_lvalue_reference_v<callable_t>)
             {
                 // 对于左值采用引用语义
-                ptr = const_cast<void*>(static_cast<const void*>(&callable)); // NOLINT(*-const-cast)
+                ptr = const_cast<void*>(static_cast<const void*>(&callable));  // NOLINT(*-const-cast)
             }
             else if constexpr(::std::is_pointer_v<no_ref_callable_t>)
             {
@@ -180,7 +180,7 @@ export namespace SoC
          */
         template <::SoC::detail::invocable_r<return_t, args_t...> callable_t>
             requires (::std::is_move_constructible_v<::std::remove_reference_t<callable_t>>)
-        inline basic_smart_function& operator= (callable_t&& callable) noexcept
+        constexpr inline basic_smart_function& operator= (callable_t&& callable) noexcept
         {
             basic_smart_function temp{::std::forward<callable_t>(callable), allocator};
             ::std::swap(*this, temp);
@@ -191,14 +191,14 @@ export namespace SoC
          * @brief 析构函数，根据情况释放内存
          *
          */
-        inline ~basic_smart_function() noexcept { destroy(); }
+        constexpr inline ~basic_smart_function() noexcept { destroy(); }
 
         /**
          * @brief 移动构造函数
          *
          * @param other 其他对象
          */
-        inline basic_smart_function(basic_smart_function&& other) noexcept :
+        constexpr inline basic_smart_function(basic_smart_function&& other) noexcept :
             ptr{::std::exchange(other.ptr, nullptr)}, func{::std::exchange(other.func, nullptr)}, allocator{other.allocator},
             destroy_callback{::std::exchange(other.destroy_callback, nullptr)}
         {
@@ -210,7 +210,7 @@ export namespace SoC
          * @param other 其他对象
          * @return 当前对象引用
          */
-        inline basic_smart_function& operator= (basic_smart_function&& other) noexcept
+        constexpr inline basic_smart_function& operator= (basic_smart_function&& other) noexcept
         {
             auto temp{::std::move(other)};
             ::std::swap(*this, temp);
@@ -239,7 +239,7 @@ export namespace SoC
          * @param args 参数列表
          * @return 返回值
          */
-        inline return_t operator() (args_t... args) noexcept(::SoC::optional_noexcept)
+        constexpr inline return_t operator() (args_t... args) noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
             ::SoC::always_check(func, "未绑定到可调用对象"sv);
@@ -251,28 +251,28 @@ export namespace SoC
          *
          * @return 是否绑定到可调用对象
          */
-        inline operator bool() const noexcept { return func != nullptr; }
+        constexpr inline operator bool() const noexcept { return func != nullptr; }
 
         /**
          * @brief 设置分配器
          *
          * @param allocator 分配器
          */
-        inline void set_allocator(allocator_t allocator) noexcept { this->allocator = allocator; }
+        constexpr inline void set_allocator(allocator_t allocator) noexcept { this->allocator = allocator; }
 
         /**
          * @brief 获取分配器
          *
          * @return 分配器
          */
-        inline allocator_t get_allocator() const noexcept { return allocator; }
+        constexpr inline allocator_t get_allocator() const noexcept { return allocator; }
 
         /**
          * @brief 清空函数引用绑定的可调用对象
          *
          * @return 函数引用
          */
-        inline basic_smart_function& operator= (::std::nullptr_t) noexcept
+        constexpr inline basic_smart_function& operator= (::std::nullptr_t) noexcept
         {
             destroy();
             ptr = nullptr;

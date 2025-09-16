@@ -23,7 +23,7 @@ namespace SoC
     [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
         adc_enum2grp1_periph(::SoC::detail::adc adc) noexcept
     {
-        auto shift{(::SoC::to_underlying(adc) - ::SoC::to_underlying(::SoC::detail::adc::adc1)) >> 8};
+        auto shift{(::SoC::to_underlying(adc) - ::SoC::to_underlying(::SoC::detail::adc::adc1)) >> 8zu};
         return 1zu << (shift + 8);
     }
 
@@ -148,7 +148,7 @@ namespace SoC
         if(seq_discont == ::SoC::adc_regular_seq_discont::disable) [[likely]] { return 0; }
         else
         {
-            return (::SoC::to_underlying(seq_discont) >> 13) + 1;
+            return (::SoC::to_underlying(seq_discont) >> 13zu) + 1zu;
         }
     }
 
@@ -405,7 +405,7 @@ namespace SoC
             // 计算实际温度
             temp = (temp_cal - b) / k;
         }
-        constexpr auto max_adc_value{(1zu << 12) - 1};
+        constexpr auto max_adc_value{(1zu << 12zu) - 1};
         constexpr float lsb{1.f / max_adc_value};
         return ::std::pair{actual_vref * lsb, temp};
     }
