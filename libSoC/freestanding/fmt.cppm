@@ -158,7 +158,7 @@ export namespace SoC
                     ::std::span placehold_list{*optional};
                     if(placehold_list.empty()) { return fmt.size() == 0 ? 0 : 1; }
 
-                    const auto *ptr{placehold_list.front()};
+                    const auto* ptr{placehold_list.front()};
                     ::std::size_t cnt{ptr != fmt.begin()};
                     for(const auto* placehold: placehold_list.subspan(1))
                     {
@@ -199,7 +199,7 @@ export namespace SoC
                         return ::std::optional{array};
                     }
                     auto i{0zu};
-                    const auto *ptr{placehold_list.front()};
+                    const auto* ptr{placehold_list.front()};
                     if(ptr == fmt.begin()) { array[i++] = true; }
                     else
                     {
@@ -280,11 +280,13 @@ export namespace SoC
         /**
          * @brief 获取不含占位符的字符串数组构成的元组
          *
-         * @tparam indexes 索引包
+         * @tparam indexes 索引参数包
+         * @param index_sequence 索引序列，用于产生索引参数包
          * @return 不含占位符的字符串数组构成的元组
          */
         template <::std::size_t... indexes>
-        constexpr inline static auto get_split_string_tuple_impl(::std::index_sequence<indexes...>) noexcept
+        constexpr inline static auto get_split_string_tuple_impl(::std::index_sequence<indexes...> index_sequence
+                                                                 [[maybe_unused]]) noexcept
         {
             constexpr auto string_and_size_array{get_split_string_and_size_array()};
             return ::std::tuple{get_split_string<::std::get<indexes>(string_and_size_array).second>(

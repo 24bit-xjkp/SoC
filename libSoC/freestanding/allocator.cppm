@@ -137,7 +137,9 @@ export namespace SoC
          * @return 分配内存区域首指针
          */
         constexpr inline type* allocate(::std::size_t n) noexcept(is_allocate_noexcept)
-        { return allocator.template allocate<type>(n).ptr; }
+        {
+            return allocator.template allocate<type>(n).ptr;
+        }
 
         /**
          * @brief 分配至少n个对象的内存
@@ -147,7 +149,9 @@ export namespace SoC
          */
         constexpr inline auto allocate_at_least(::std::size_t n) noexcept(is_allocate_noexcept)
             requires (::SoC::std_allocation_result_available)
-        { return allocator.template allocate<type>(n); }
+        {
+            return allocator.template allocate<type>(n);
+        }
 
         /**
          * @brief 释放内存
@@ -156,7 +160,9 @@ export namespace SoC
          * @param n 分配对象个数
          */
         constexpr inline void deallocate(type* ptr, ::std::size_t n) noexcept(is_deallocate_noexcept)
-        { return allocator.deallocate(ptr, n); }
+        {
+            return allocator.deallocate(ptr, n);
+        }
 
         /**
          * @brief 比较两个分配器对象是否相等
@@ -164,7 +170,9 @@ export namespace SoC
          */
         constexpr inline friend bool operator== (::SoC::allocator_wrapper<allocator_t, type> lhs,
                                                  ::SoC::allocator_wrapper<allocator_t, type> rhs) noexcept
-        { return lhs.allocator == rhs.allocator; }
+        {
+            return lhs.allocator == rhs.allocator;
+        }
     };
 
     /**
@@ -181,7 +189,9 @@ export namespace SoC
          */
         template <typename type>
         consteval inline auto allocate() const noexcept
-        { return ::SoC::detail::constexpr_allocator<type>.allocate(1); }
+        {
+            return ::SoC::detail::constexpr_allocator<type>.allocate(1);
+        }
 
         /**
          * @brief 在常量表达式中分配内存
@@ -212,13 +222,20 @@ export namespace SoC
          */
         template <typename type>
         consteval inline void deallocate(type* ptr, ::std::size_t n = 1) const noexcept
-        { ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n); }
+        {
+            ::SoC::detail::constexpr_allocator<type>.deallocate(ptr, n);
+        }
 
         /**
          * @brief 比较两个分配器对象是否相等
          *
+         * @param self 当前分配器
+         * @param other 其他分配器
          */
-        constexpr inline friend bool operator== (::SoC::constexpr_allocator_t, ::SoC::constexpr_allocator_t) noexcept
-        { return true; }
+        constexpr inline friend bool operator== (::SoC::constexpr_allocator_t self [[maybe_unused]],
+                                                 ::SoC::constexpr_allocator_t other [[maybe_unused]]) noexcept
+        {
+            return true;
+        }
     } inline constexpr constexpr_allocator;
 }  // namespace SoC

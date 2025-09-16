@@ -127,7 +127,8 @@ export namespace SoC
          * @param ptr 块指针
          * @param actual_size 要释放的大小
          */
-        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
+        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr,
+                                                            ::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 分配冷路径
@@ -311,9 +312,14 @@ export namespace SoC
             /**
              * @brief 比较两个分配器对象是否相同
              *
+             * @param self 当前分配器
+             * @param other 其他分配器
              * @return 分配器对象是否相同
              */
-            constexpr inline bool operator== (this auto, wrapper) noexcept { return true; }
+            constexpr inline bool operator== (this auto self [[maybe_unused]], wrapper other [[maybe_unused]]) noexcept
+            {
+                return true;
+            }
 
             /**
              * @brief 将堆对象绑定到分配器

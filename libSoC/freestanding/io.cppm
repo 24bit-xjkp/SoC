@@ -394,7 +394,7 @@ namespace SoC::detail
         using allocator_t = void;
 
         /// 缓冲区数组，可退化为首指针
-        alignas(::SoC::detail::get_buffer_align(buffer_size)) value_type begin[buffer_size]; // NOLINT(*-avoid-c-arrays)
+        alignas(::SoC::detail::get_buffer_align(buffer_size)) value_type begin[buffer_size];  // NOLINT(*-avoid-c-arrays)
 
         constexpr inline buffer_impl() noexcept = default;
     };
@@ -1406,11 +1406,13 @@ namespace SoC::detail
          * @brief 获取根据格式串交错的参数
          *
          * @tparam index 格式串索引
+         * @param arg 参数
          * @return std::string_view 字符串参数
          */
         template <::std::size_t index>
             requires (index < no_placehold_num)
-        [[using gnu: always_inline, artificial]] constexpr inline ::std::string_view get_fmt_arg(auto&&) const noexcept
+        [[using gnu: always_inline, artificial]] constexpr inline ::std::string_view get_fmt_arg(auto&& arg
+                                                                                                 [[maybe_unused]]) const noexcept
         {
             auto&& array{::std::get<index>(tuple)};
             return {array.begin(), array.end()};
@@ -1436,12 +1438,16 @@ namespace SoC::detail
      *
      * @tparam parser_t 格式串解析器类型
      * @tparam output_t 可进行输出操作的类型
+     * @tparam indexes 索引参数包
      * @tparam args_t 参数类型列表
      * @param output 可进行输出操作的对象
+     * @param index_sequence 索引序列，用于生成索引参数包
      * @param args 参数列表
      */
     template <::SoC::detail::is_fmt_parser parser_t, typename output_t, ::std::size_t... indexes, typename... args_t>
-    constexpr inline void print_wrapper(output_t& output, ::std::index_sequence<indexes...>, args_t&&... args) noexcept
+    constexpr inline void print_wrapper(output_t& output,
+                                        ::std::index_sequence<indexes...> index_sequence [[maybe_unused]],
+                                        args_t&&... args) noexcept
     {
         constexpr auto placehold_num{parser_t::get_placehold_num()};
         static_assert(placehold_num == sizeof...(args), "占位符个数和参数个数不同");
