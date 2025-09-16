@@ -7,6 +7,7 @@
     - clang-analyzer-*
     - modernize-*
     - cert-*
+    - portability-*
 Hover:
   ShowAKA: Yes
 Documentation:

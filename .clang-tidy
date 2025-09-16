@@ -10,6 +10,7 @@ Checks: >
   -modernize-use-trailing-return-type,
   -modernize-use-designated-initializers,
   google-readability-casting,
+  google-runtime-*,
   readability-*,
   -readability-non-const-parameter,
   -readability-function-cognitive-complexity,
@@ -49,7 +50,9 @@ Checks: >
   boost-use-ranges,
   hicpp-*,
   -hicpp-uppercase-literal-suffix,
-  -hicpp-explicit-conversions
+  -hicpp-explicit-conversions,
+  portability-*,
+  -portability-avoid-pragma-once
 WarningsAsErrors: ''
 UseColor: true
 HeaderFilterRegex: '^(?!.*\.(h)$).*' # 过滤.h文件，避免第三方库产生大量警告
