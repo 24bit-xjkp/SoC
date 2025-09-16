@@ -194,6 +194,47 @@ TEST_SUITE("heap")
         }
     }
 
+    /// @test 测试堆的页状态统计系列函数能否正常工作
+    REGISTER_TEST_CASE("page_status_cnt")
+    {
+        auto heap{heap_fixture.get_heap()};
+        auto total_page_cnt_gt{heap.metadata.size()};
+
+        SUBCASE("get_total_pages") { CHECK_EQ(heap.get_total_pages(), total_page_cnt_gt); }
+
+        constexpr auto using_page_cnt_gt{10zu};
+        ::std::uniform_int_distribution<::std::ptrdiff_t> page_index_range{0,
+                                                                           static_cast<::std::ptrdiff_t>(total_page_cnt_gt - 1)};
+        auto seed{::doctest::getContextOptions()->rand_seed};
+        CAPTURE(seed);
+        ::std::default_random_engine random_engine{seed};
+        for(auto _: ::std::views::iota(0zu, using_page_cnt_gt)) { ++heap.metadata[page_index_range(random_engine)].used_block; }
+
+        SUBCASE("get_using_pages") { CHECK_EQ(heap.get_using_pages(), using_page_cnt_gt); }
+
+        SUBCASE("get_free_pages") { CHECK_EQ(heap.get_free_pages(), total_page_cnt_gt - using_page_cnt_gt); }
+    }
+
+    /// @test 测试堆的获取元数据索引函数能否正常工作
+    REGISTER_TEST_CASE("get_metadata_index")
+    {
+        auto heap{heap_fixture.get_heap()};
+        auto total_page_cnt_gt{heap.metadata.size()};
+        ::std::uniform_int_distribution<::std::ptrdiff_t> page_index_range{0,
+                                                                           static_cast<::std::ptrdiff_t>(total_page_cnt_gt - 1)};
+        auto seed{::doctest::getContextOptions()->rand_seed};
+        CAPTURE(seed);
+        ::std::default_random_engine random_engine{seed};
+        auto page_index{page_index_range(random_engine)};
+        constexpr auto block_size{64zu};
+        for(auto base_address{::std::bit_cast<::std::uintptr_t>(heap.metadata[page_index].free_block_list)}, offset{0zu};
+            offset < ::SoC::heap::page_size;
+            offset += block_size)
+        {
+            CHECK_EQ(heap.get_metadata_index(::std::bit_cast<free_block_list_t*>(base_address + offset)), page_index);
+        }
+    }
+
     /**
      * @brief 为测试堆的插入块函数准备堆
      *
