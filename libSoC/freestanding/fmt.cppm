@@ -20,6 +20,7 @@ export namespace SoC
         static_assert(n != 1zu, "格式串不能为空");
         ::std::array<char, n - 1> buffer;
 
+        // NOLINTNEXTLINE(*-avoid-c-arrays)
         constexpr inline fmt_string(const char (&string)[n]) noexcept { ::std::ranges::copy_n(string, n - 1, buffer.begin()); }
 
         constexpr inline auto begin() const noexcept { return buffer.cbegin(); }

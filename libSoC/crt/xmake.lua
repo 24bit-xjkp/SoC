@@ -1,5 +1,6 @@
 target("SoC.crt")
     set_kind("object")
+    add_deps("SoC.std")
     add_files("*.cppm", {public = true})
     add_files("*.cpp")
     if is_mode("debug") then

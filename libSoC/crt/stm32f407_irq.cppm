@@ -104,7 +104,7 @@ export namespace SoC
         [[gnu::weak]] void FPU_IRQHandler() noexcept;
     }
 
-    [[using gnu: section(".isr_vector"), used]] constexpr inline ::SoC::isr_t isr_table[]{
+    [[using gnu: section(".isr_vector"), used]] constexpr inline auto isr_table{::std::to_array<::SoC::isr_t>({
         ::SoC::_estack,
         ::SoC::Reset_Handler,
         ::SoC::NMI_Handler,
@@ -203,5 +203,5 @@ export namespace SoC
         nullptr,
         ::SoC::HASH_RNG_IRQHandler,
         ::SoC::FPU_IRQHandler,
-    };
+    })};
 }  // namespace SoC

@@ -246,7 +246,7 @@ namespace SoC
 
     auto ::SoC::dma_stream::get_tc_mask() const noexcept
     {
-        constexpr ::std::size_t dma_tc_mask_table[]{DMA_LISR_TCIF0, DMA_LISR_TCIF1, DMA_LISR_TCIF2, DMA_LISR_TCIF3};
+        constexpr ::std::array dma_tc_mask_table{DMA_LISR_TCIF0, DMA_LISR_TCIF1, DMA_LISR_TCIF2, DMA_LISR_TCIF3};
         auto mask{dma_tc_mask_table[::SoC::to_underlying(stream) & ::SoC::mask_all_one<2>]};
         return mask;
     }
@@ -266,7 +266,7 @@ namespace SoC
 
     auto ::SoC::dma_stream::get_ht_mask() const noexcept
     {
-        constexpr ::std::size_t dma_ht_mask_table[]{DMA_LISR_HTIF0, DMA_LISR_HTIF1, DMA_LISR_HTIF2, DMA_LISR_HTIF3};
+        constexpr ::std::array dma_ht_mask_table{DMA_LISR_HTIF0, DMA_LISR_HTIF1, DMA_LISR_HTIF2, DMA_LISR_HTIF3};
         auto mask{dma_ht_mask_table[::SoC::to_underlying(stream) & ::SoC::mask_all_one<2>]};
         return mask;
     }

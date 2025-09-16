@@ -31,14 +31,14 @@ namespace SoC
 
     void ::SoC::oled::write_command(::std::uint8_t command) const noexcept
     {
-        ::std::uint8_t buffer[]{command_prefix, command};
-        i2c.write(slave_address, auto(buffer), auto(buffer) + 2);
+        ::std::array buffer{command_prefix, command};
+        i2c.write(slave_address, buffer.begin(), buffer.begin() + 2);
     }
 
     void ::SoC::oled::write_data(::std::uint8_t data) const noexcept
     {
-        ::std::uint8_t buffer[]{data_prefix, data};
-        i2c.write(slave_address, auto(buffer), auto(buffer) + 2);
+        ::std::array buffer{data_prefix, data};
+        i2c.write(slave_address, buffer.begin(), buffer.begin() + 2);
     }
 
     void ::SoC::oled::set_cursor(::std::uint8_t page, ::std::uint8_t column) noexcept
@@ -53,7 +53,7 @@ namespace SoC
         for(auto&& [page, page_index]: ::std::views::zip(buffer, ::std::views::iota(0)))
         {
             write_command(0xb0 | page_index);
-            write_command(0x00 | 0); // NOLINT(misc-redundant-expression)
+            write_command(0x00 | 0);  // NOLINT(misc-redundant-expression)
             write_command(0x10 | 0);
 
             auto _{i2c.get_condition_guard()};
@@ -74,8 +74,9 @@ namespace SoC
 
     void ::SoC::oled::init() noexcept
     {
-        constexpr ::std::uint8_t commands[]{0xae, 0xd5, 0x80, 0xa8, 0x3f, 0xd3, 0x00, 0x40, 0x8d, 0x14, 0x20, 0x02, 0xa1,
-                                            0xc8, 0xda, 0x12, 0x81, 0xcf, 0xd9, 0xf1, 0xdb, 0x40, 0xa4, 0xa6, 0xaf};
+        constexpr ::std::array commands{
+            ::std::to_array<::std::uint8_t>({0xae, 0xd5, 0x80, 0xa8, 0x3f, 0xd3, 0x00, 0x40, 0x8d, 0x14, 0x20, 0x02, 0xa1,
+                                             0xc8, 0xda, 0x12, 0x81, 0xcf, 0xd9, 0xf1, 0xdb, 0x40, 0xa4, 0xa6, 0xaf})};
 #pragma GCC unroll(0)
         for(auto command: commands) { write_command(command); }
 

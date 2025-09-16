@@ -73,7 +73,7 @@ export namespace SoC
     {
     private:
         ::std::atomic_uint32_t index{};
-        ::std::uint64_t systick[2]{0, 1};
+        ::std::array<::std::uint64_t, 2> systick{0, 1};
 
     public:
         /**

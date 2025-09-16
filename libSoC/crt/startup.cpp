@@ -9,7 +9,7 @@ import :common;
 
 namespace SoC
 {
-    using cursor = ::SoC::cursor_t<::size_t>;
+    using cursor = ::SoC::cursor_t<::std::size_t>;
     extern "C"
     {
         extern ::SoC::cursor _sdata;
@@ -26,7 +26,7 @@ namespace SoC
         [[gnu::naked, noreturn]] void Reset_Handler() noexcept { asm volatile("ldr sp, =_estack\n" "b SoC_startup\n"); }
     }
 
-    using no_optimize_cursor = volatile ::size_t*;
+    using no_optimize_cursor = volatile ::std::size_t*;
 
     void copy(::SoC::no_optimize_cursor begin, ::SoC::no_optimize_cursor end, ::SoC::no_optimize_cursor from) noexcept
     {

@@ -21,7 +21,7 @@ namespace SoC
         using size_t = ::std::size_t;
 
     private:
-        ::SoC::union_wrapper<type> buffer[buffer_size];
+        ::std::array<::SoC::union_wrapper<type>, buffer_size> buffer{}; 
         ::std::size_t tail{};
         [[no_unique_address]] compare comp{};
 

@@ -148,7 +148,7 @@ export namespace SoC
             if constexpr(::std::is_lvalue_reference_v<callable_t>)
             {
                 // 对于左值采用引用语义
-                ptr = const_cast<void*>(static_cast<const void*>(&callable));
+                ptr = const_cast<void*>(static_cast<const void*>(&callable)); // NOLINT(*-const-cast)
             }
             else if constexpr(::std::is_pointer_v<no_ref_callable_t>)
             {

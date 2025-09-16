@@ -28,7 +28,7 @@ export namespace SoC
 
     private:
         /// 缓冲区元素数组
-        ::SoC::union_wrapper<type> buffer[buffer_size];
+        ::std::array<::SoC::union_wrapper<type>, buffer_size> buffer{}; 
         ::std::size_t head{};
         ::std::size_t tail{};
         /// 缓冲区容量掩码

@@ -53,22 +53,22 @@ namespace SoC
     }
 
     /// 外部线中断触发源枚举到中断号枚举的映射表
-    constexpr inline ::IRQn_Type irqn_table_0_15[]{::IRQn_Type::EXTI0_IRQn,
-                                                   ::IRQn_Type::EXTI1_IRQn,
-                                                   ::IRQn_Type::EXTI2_IRQn,
-                                                   ::IRQn_Type::EXTI3_IRQn,
-                                                   ::IRQn_Type::EXTI4_IRQn,
-                                                   ::IRQn_Type::EXTI9_5_IRQn,
-                                                   ::IRQn_Type::EXTI9_5_IRQn,
-                                                   ::IRQn_Type::EXTI9_5_IRQn,
-                                                   ::IRQn_Type::EXTI9_5_IRQn,
-                                                   ::IRQn_Type::EXTI9_5_IRQn,
-                                                   ::IRQn_Type::EXTI15_10_IRQn,
-                                                   ::IRQn_Type::EXTI15_10_IRQn,
-                                                   ::IRQn_Type::EXTI15_10_IRQn,
-                                                   ::IRQn_Type::EXTI15_10_IRQn,
-                                                   ::IRQn_Type::EXTI15_10_IRQn,
-                                                   ::IRQn_Type::EXTI15_10_IRQn};
+    constexpr inline ::std::array irqn_table_0_15{::IRQn_Type::EXTI0_IRQn,
+                                                  ::IRQn_Type::EXTI1_IRQn,
+                                                  ::IRQn_Type::EXTI2_IRQn,
+                                                  ::IRQn_Type::EXTI3_IRQn,
+                                                  ::IRQn_Type::EXTI4_IRQn,
+                                                  ::IRQn_Type::EXTI9_5_IRQn,
+                                                  ::IRQn_Type::EXTI9_5_IRQn,
+                                                  ::IRQn_Type::EXTI9_5_IRQn,
+                                                  ::IRQn_Type::EXTI9_5_IRQn,
+                                                  ::IRQn_Type::EXTI9_5_IRQn,
+                                                  ::IRQn_Type::EXTI15_10_IRQn,
+                                                  ::IRQn_Type::EXTI15_10_IRQn,
+                                                  ::IRQn_Type::EXTI15_10_IRQn,
+                                                  ::IRQn_Type::EXTI15_10_IRQn,
+                                                  ::IRQn_Type::EXTI15_10_IRQn,
+                                                  ::IRQn_Type::EXTI15_10_IRQn};
 
     /**
      * @brief 外部线中断触发源枚举到中断号枚举的映射

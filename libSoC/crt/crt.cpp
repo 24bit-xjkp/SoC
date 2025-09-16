@@ -13,9 +13,9 @@ namespace SoC
     using cxa_atexit_callback_arg_t = void*;
     using init_fini_callback_t = void (*)();
 
-    ::SoC::cxa_atexit_callback_t cxa_at_exit_callback_array[::SoC::max_cxa_at_exit_callback];
-    ::SoC::cxa_atexit_callback_arg_t cxa_at_exit_callback_arg_array[::SoC::max_cxa_at_exit_callback];
-    constinit ::size_t cxa_at_exit_callback_index{};
+    constinit ::std::array<::SoC::cxa_atexit_callback_t, ::SoC::max_cxa_at_exit_callback> cxa_at_exit_callback_array{};
+    constinit ::std::array<::SoC::cxa_atexit_callback_arg_t, ::SoC::max_cxa_at_exit_callback> cxa_at_exit_callback_arg_array{};
+    constinit ::std::size_t cxa_at_exit_callback_index{};
     using cursor = ::SoC::cursor_t<::SoC::init_fini_callback_t>;
 
     /**

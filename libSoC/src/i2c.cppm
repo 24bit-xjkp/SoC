@@ -149,10 +149,10 @@ namespace SoC
         auto index{(::SoC::to_underlying(i2c) - ::SoC::to_underlying(::SoC::i2c::i2c1)) >> 10};
         using enum ::SoC::dma_channel;
         using enum ::SoC::dma_stream::dma_stream_enum;
-        constexpr ::std::pair<::SoC::dma_stream::dma_stream_enum, ::SoC::dma_channel> table[]{
-            {st6, ch1},
-            {st7, ch7},
-            {st4, ch3}
+        constexpr ::std::array table{
+            ::std::pair{st6, ch1},
+            ::std::pair{st7, ch7},
+            ::std::pair{st4, ch3}
         };
         return table[index];
     }

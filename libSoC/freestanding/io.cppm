@@ -394,7 +394,7 @@ namespace SoC::detail
         using allocator_t = void;
 
         /// 缓冲区数组，可退化为首指针
-        alignas(::SoC::detail::get_buffer_align(buffer_size)) value_type begin[buffer_size];
+        alignas(::SoC::detail::get_buffer_align(buffer_size)) value_type begin[buffer_size]; // NOLINT(*-avoid-c-arrays)
 
         constexpr inline buffer_impl() noexcept = default;
     };
@@ -1485,7 +1485,7 @@ namespace SoC::detail
         constexpr auto endl_string{::SoC::detail::get_endl<endl>()};
         constexpr auto fmt_string{fmt.get_fmt_string()};
         // fmt_string要求输入是空结尾的字符串，因此填充1位
-        char buffer[fmt_string.size() + endl_string.size() + 1]{};
+        char buffer[fmt_string.size() + endl_string.size() + 1]{};  // NOLINT(*-avoid-c-arrays)
         ::std::ranges::copy(fmt_string, buffer);
         ::std::ranges::copy(endl_string, buffer + fmt_string.size());
         return ::SoC::fmt_string{buffer};

@@ -45,7 +45,8 @@ TEST_SUITE("heap")
         struct heap_test_fixture
         {
         private:
-            std::unique_ptr<::std::uintptr_t[]> origin_ptr{};
+            // NOLINTNEXTLINE(*-avoid-c-arrays)
+            ::std::unique_ptr<::std::uintptr_t[]> origin_ptr{};
             /// 内存区域[begin, end)，已对齐到页大小
             ::std::uintptr_t* begin{};
             ::std::uintptr_t* end{};
@@ -59,6 +60,7 @@ TEST_SUITE("heap")
                 if(begin == nullptr) [[unlikely]]
                 {
                     auto size{256 * 1024zu};
+                    // NOLINTNEXTLINE(*-avoid-c-arrays)
                     origin_ptr = ::std::make_unique<::std::uintptr_t[]>(size / sizeof(::std::uintptr_t));
                     void* ptr{origin_ptr.get()};
                     REQUIRE_NE(ptr, nullptr);

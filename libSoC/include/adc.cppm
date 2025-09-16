@@ -491,7 +491,7 @@ export namespace SoC
         ::SoC::adc_regular_dma_mode dma_mode{};
 
         /// adc通道转换顺序表
-        constexpr inline static ::std::uint16_t rank_table[]{
+        constexpr inline static auto rank_table{::std::to_array<::std::uint16_t>({
             LL_ADC_REG_RANK_1,
             LL_ADC_REG_RANK_2,
             LL_ADC_REG_RANK_3,
@@ -508,10 +508,10 @@ export namespace SoC
             LL_ADC_REG_RANK_14,
             LL_ADC_REG_RANK_15,
             LL_ADC_REG_RANK_16,
-        };
+        })};
 
         /// adc通道数对应配置表
-        constexpr inline static ::std::size_t scan_ranks_table[]{
+        constexpr inline static ::std::array scan_ranks_table{
             LL_ADC_REG_SEQ_SCAN_DISABLE,
             LL_ADC_REG_SEQ_SCAN_ENABLE_2RANKS,
             LL_ADC_REG_SEQ_SCAN_ENABLE_3RANKS,
