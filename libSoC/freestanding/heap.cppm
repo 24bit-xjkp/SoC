@@ -125,16 +125,16 @@ export namespace SoC
          * @brief 释放一个或多个，慢速路径
          *
          * @param ptr 块指针
-         * @param size 要释放的大小
+         * @param actual_size 要释放的大小
          */
-        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept);
+        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 分配冷路径
          *
-         * @param size 要分配的大小
+         * @param actual_size 要分配的大小
          */
-        [[using gnu: noinline, cold]] void* allocate_cold_path(::std::size_t size) noexcept(::SoC::optional_noexcept);
+        [[using gnu: noinline, cold]] void* allocate_cold_path(::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
 
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
@@ -171,7 +171,10 @@ export namespace SoC
         [[using gnu: always_inline, artificial, hot]] constexpr inline static ::std::size_t
             get_actual_allocate_size(::std::size_t size) noexcept
         {
-            return ::std::max(::std::bit_ceil(size), min_block_size);
+            auto ceiled_size{::std::max(::std::bit_ceil(size), min_block_size)};
+            // 不超过页大小时对齐到下一个2^N块边界
+            // 超过页大小时对齐到下一个页边界
+            return ceiled_size > page_size ? (size + page_size - 1) / page_size * page_size : ceiled_size;
         }
 
         /**
@@ -277,8 +280,7 @@ export namespace SoC
                 auto actual_size{::SoC::heap::get_actual_allocate_size(total_size)};
                 // 当分配大小超过页大小时转为对齐到整数页
                 if(actual_size >= page_size) [[unlikely]] { actual_size = (total_size + page_size - 1) / page_size * page_size; }
-                return ::SoC::allocation_result<type*>{static_cast<type*>(wrapper::heap->allocate(size * n)),
-                                                       actual_size / size};
+                return ::SoC::allocation_result<type*>{static_cast<type*>(wrapper::heap->allocate(size * n)), actual_size / size};
             }
 
             /**

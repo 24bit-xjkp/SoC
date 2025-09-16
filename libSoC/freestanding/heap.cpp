@@ -205,10 +205,10 @@ namespace SoC
         }
     }
 
-    void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept)
+    void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept(::SoC::optional_noexcept)
     {
         // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
-        auto page_cnt{static_cast<::std::ptrdiff_t>((size + page_size - 1) / page_size)};
+        auto page_cnt{static_cast<::std::ptrdiff_t>(actual_size / page_size)};
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % page_size == 0, "释放范围首指针不满足页对齐"sv);
@@ -227,11 +227,10 @@ namespace SoC
         // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
 
-    void* ::SoC::heap::allocate_cold_path(::std::size_t size) noexcept(::SoC::optional_noexcept)
+    void* ::SoC::heap::allocate_cold_path(::std::size_t actual_size) noexcept(::SoC::optional_noexcept)
     {
-        auto actual_size{get_actual_allocate_size(size)};
         auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
-        if(actual_size >= page_size) { return allocate_pages((size + page_size - 1) / page_size); }
+        if(actual_size >= page_size) { return allocate_pages(actual_size / page_size); }
         else
         {
             auto step{actual_size / ptr_size};
@@ -284,7 +283,7 @@ namespace SoC
         }
         else
         {
-            return allocate_cold_path(size);
+            return allocate_cold_path(actual_size);
         }
     }
 
@@ -301,7 +300,7 @@ namespace SoC
         }
         if(actual_size >= page_size) [[unlikely]]
         {
-            deallocate_pages(ptr, size);
+            deallocate_pages(ptr, actual_size);
             return;
         }
         auto metadata_index{get_metadata_index(page_ptr)};
