@@ -157,6 +157,40 @@ TEST_SUITE("heap")
         SUBCASE("free_page_list") { REQUIRE_EQ(heap.free_page_list.back(), heap.metadata.begin()); }
     }
 
+    /// @test 测试堆的获取实际分配大小函数能否正常工作
+    TEST_CASE("get_actual_allocate_size")
+    {
+        // 该函数
+        auto&& fun{SoC::heap::get_actual_allocate_size};
+        constexpr auto min_block_size{::SoC::heap::min_block_size};
+        constexpr auto page_size{::SoC::heap::page_size};
+
+        SUBCASE("less_than_min_block_size")
+        {
+            CHECK_EQ(fun(0), min_block_size);
+            CHECK_EQ(fun(1), min_block_size);
+            CHECK_EQ(fun(min_block_size - 1), min_block_size);
+        }
+
+        SUBCASE("equal_min_block_size") { CHECK_EQ(fun(min_block_size), min_block_size); }
+
+        SUBCASE("greater_than_min_block_size")
+        {
+            CHECK_EQ(fun(min_block_size + 1), min_block_size * 2);
+            CHECK_EQ(fun(min_block_size * 2), min_block_size * 2);
+            CHECK_EQ(fun(min_block_size * 2 + 1), min_block_size * 4);
+            CHECK_EQ(fun(min_block_size * 3), min_block_size * 4);
+        }
+
+        SUBCASE("allocate_pages")
+        {
+            CHECK_EQ(fun(page_size - 1), page_size);
+            CHECK_EQ(fun(page_size), page_size);
+            CHECK_EQ(fun(page_size + 1), page_size * 2);
+            CHECK_EQ(fun(page_size * 2 + 1), page_size * 3);
+        }
+    }
+
     /**
      * @brief 为测试堆的插入块函数准备堆
      *
