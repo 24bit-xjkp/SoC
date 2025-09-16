@@ -28,6 +28,9 @@ namespace SoC::test
     };
 }  // namespace SoC::test
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define REGISTER_TEST_CASE(NAME) TEST_CASE("heap/" NAME)
+
 TEST_SUITE("heap")
 {
     namespace
@@ -93,7 +96,7 @@ TEST_SUITE("heap")
     }  // namespace
 
     /// @test 测试堆的构造函数能否检出输入内存范围错误
-    TEST_CASE("invalid_initialize")
+    REGISTER_TEST_CASE("invalid_initialize")
     {
         auto [begin, end]{heap_fixture.get_memory()};
 
@@ -120,7 +123,7 @@ TEST_SUITE("heap")
     using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
 
     /// @test 测试堆的构造函数能否正常工作
-    TEST_CASE("initialize")
+    REGISTER_TEST_CASE("initialize")
     {
         auto heap{heap_fixture.get_heap()};
 
@@ -158,7 +161,7 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的获取实际分配大小函数能否正常工作
-    TEST_CASE("get_actual_allocate_size")
+    REGISTER_TEST_CASE("get_actual_allocate_size")
     {
         // 该函数
         auto&& fun{SoC::heap::get_actual_allocate_size};
@@ -238,7 +241,7 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
-    TEST_CASE("insert_block_into_page_list")
+    REGISTER_TEST_CASE("insert_block_into_page_list")
     {
         SUBCASE("first_element")
         {
@@ -256,7 +259,7 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的页回收函数能否正常工作
-    TEST_CASE("page_gc")
+    REGISTER_TEST_CASE("page_gc")
     {
         auto heap{heap_fixture.get_heap()};
         // 将空闲页链表中的页插入index处的空闲块链表
