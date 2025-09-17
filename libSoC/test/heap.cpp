@@ -31,7 +31,8 @@ namespace SoC::test
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define REGISTER_TEST_CASE(NAME) TEST_CASE("heap/" NAME)
 
-TEST_SUITE("heap")
+/// @test SoC::heap单元测试
+TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 {
     namespace
     {
@@ -74,7 +75,7 @@ TEST_SUITE("heap")
             /**
              * @brief 获取内存区域
              *
-             * @return ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> 内存区域[begin, end)
+             * @return 内存区域[begin, end)
              */
             ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> get_memory()
             {
@@ -85,7 +86,7 @@ TEST_SUITE("heap")
             /**
              * @brief 获取堆对象
              *
-             * @return SoC::test::heap
+             * @return 堆对象
              */
             ::SoC::test::heap get_heap()
             {
@@ -98,12 +99,12 @@ TEST_SUITE("heap")
     }  // namespace
 
     /// @test 测试堆的构造函数能否检出输入内存范围错误
-    REGISTER_TEST_CASE("invalid_initialize")
+    REGISTER_TEST_CASE("invalid_initialize" * ::doctest::description{"测试堆的构造函数能否检出输入内存范围错误"})
     {
         auto [begin, end]{heap_fixture.get_memory()};
 
         /// 堆结束地址未对齐到页大小
-        SUBCASE("unaligned_heap_end")
+        SUBCASE("unaligned heap end")
         {
             REQUIRE_THROWS_WITH_AS_MESSAGE((::SoC::test::heap{begin, end + 1}),
                                            ::doctest::Contains{"堆结束地址必须对齐到页边界"},
@@ -112,7 +113,7 @@ TEST_SUITE("heap")
         }
 
         /// 堆大小不足一页
-        SUBCASE("heap_too_small")
+        SUBCASE("heap too small")
         {
             REQUIRE_THROWS_WITH_AS_MESSAGE((::SoC::test::heap{begin, begin}),
                                            ::doctest::Contains{"堆大小必须大于一页"},
@@ -125,14 +126,14 @@ TEST_SUITE("heap")
     using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
 
     /// @test 测试堆的构造函数能否正常工作
-    REGISTER_TEST_CASE("initialize")
+    REGISTER_TEST_CASE("initialize" * ::doctest::description{"测试堆的构造函数能否正常工作"})
     {
         auto heap{heap_fixture.get_heap()};
 
         auto page_num{heap.metadata.size()};
 
         /// 测试页数量是否正确
-        SUBCASE("page_num")
+        SUBCASE("page num")
         {
             constexpr auto size_per_page{::SoC::test::heap::page_size + sizeof(metadata_t)};
             REQUIRE_EQ(page_num, heap_size / size_per_page);
@@ -163,23 +164,23 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的获取实际分配大小函数能否正常工作
-    REGISTER_TEST_CASE("get_actual_allocate_size")
+    REGISTER_TEST_CASE("get_actual_allocate_size" * ::doctest::description{"测试堆的获取实际分配大小函数能否正常工作"})
     {
         // 该函数
         auto&& fun{SoC::heap::get_actual_allocate_size};
         constexpr auto min_block_size{::SoC::heap::min_block_size};
         constexpr auto page_size{::SoC::heap::page_size};
 
-        SUBCASE("less_than_min_block_size")
+        SUBCASE("less than min block size")
         {
             CHECK_EQ(fun(0), min_block_size);
             CHECK_EQ(fun(1), min_block_size);
             CHECK_EQ(fun(min_block_size - 1), min_block_size);
         }
 
-        SUBCASE("equal_min_block_size") { CHECK_EQ(fun(min_block_size), min_block_size); }
+        SUBCASE("equal min block size") { CHECK_EQ(fun(min_block_size), min_block_size); }
 
-        SUBCASE("greater_than_min_block_size")
+        SUBCASE("greater than min block size")
         {
             CHECK_EQ(fun(min_block_size + 1), min_block_size * 2);
             CHECK_EQ(fun(min_block_size * 2), min_block_size * 2);
@@ -187,7 +188,7 @@ TEST_SUITE("heap")
             CHECK_EQ(fun(min_block_size * 3), min_block_size * 4);
         }
 
-        SUBCASE("allocate_pages")
+        SUBCASE("allocate pages")
         {
             CHECK_EQ(fun(page_size - 1), page_size);
             CHECK_EQ(fun(page_size), page_size);
@@ -197,7 +198,7 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的页状态统计系列函数能否正常工作
-    REGISTER_TEST_CASE("page_status_cnt")
+    REGISTER_TEST_CASE("page_status_cnt" * ::doctest::description{"测试堆的页状态统计系列函数能否正常工作"})
     {
         auto heap{heap_fixture.get_heap()};
         auto total_page_cnt_gt{heap.metadata.size()};
@@ -218,7 +219,7 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的获取元数据索引函数能否正常工作
-    REGISTER_TEST_CASE("get_metadata_index")
+    REGISTER_TEST_CASE("get_metadata_index" * ::doctest::description{"测试堆的获取元数据索引函数能否正常工作"})
     {
         auto heap{heap_fixture.get_heap()};
         auto total_page_cnt_gt{heap.metadata.size()};
@@ -284,16 +285,17 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
-    REGISTER_TEST_CASE("insert_block_into_page_list")
+    REGISTER_TEST_CASE("insert_block_into_page_list" *
+                       ::doctest::description{"测试堆的插入块函数能否在链表元素数大于1时正常工作"})
     {
-        SUBCASE("first_element")
+        SUBCASE("first element")
         {
             auto heap{heap_fixture.get_heap()};
             auto [page_ptr, _]{make_heap_for_insert_block_into_page_list_test(heap)};
             do_insert_block_into_page_list_test(heap, page_ptr);
         }
 
-        SUBCASE("last_element")
+        SUBCASE("last element")
         {
             auto heap{heap_fixture.get_heap()};
             auto [_, page_ptr]{make_heap_for_insert_block_into_page_list_test(heap)};
@@ -302,7 +304,7 @@ TEST_SUITE("heap")
     }
 
     /// @test 测试堆的页回收函数能否正常工作
-    REGISTER_TEST_CASE("page_gc")
+    REGISTER_TEST_CASE("page_gc" * ::doctest::description{"测试堆的页回收函数能否正常工作"})
     {
         auto heap{heap_fixture.get_heap()};
         // 将空闲页链表中的页插入index处的空闲块链表
@@ -353,7 +355,7 @@ TEST_SUITE("heap")
             REQUIRE_MESSAGE(page_ptr256_4 == heap.free_page_list[4], message);
         }
 
-        SUBCASE("with_free_block")
+        SUBCASE("with free block")
         {
             metadata_t* current_free_page_list_head{};
             REQUIRE_NOTHROW_MESSAGE(current_free_page_list_head = heap.page_gc(true), "堆含有空闲块，不应出现空间不足错误");
@@ -384,7 +386,7 @@ TEST_SUITE("heap")
             }
         }
 
-        SUBCASE("without_free_block")
+        SUBCASE("without free block")
         {
             for(auto&& free_page_list{heap.free_page_list}; auto&& free_page: free_page_list) { free_page = nullptr; }
             // 启用断言的情况下，应当断言失败
@@ -393,6 +395,82 @@ TEST_SUITE("heap")
                                          ::SoC::assert_failed_exception,
                                          "剩余堆空间不足，应该断言失败");
             CHECK_NOTHROW_MESSAGE(heap.page_gc(false), "禁用断言时，剩余堆空间不足不应该产生断言失败");
+        }
+    }
+
+    /// @test 测试对空闲页进行分块
+    REGISTER_TEST_CASE("make_block_in_page" * ::doctest::description{"测试对空闲页进行分块"})
+    {
+        SUBCASE("free_block_list not empty")
+        {
+            auto heap{heap_fixture.get_heap()};
+            // 模拟空闲页链表非空
+            heap.free_page_list.front() = heap.free_page_list.back();
+            CHECK_THROWS_WITH_AS_MESSAGE(heap.make_block_in_page(0),
+                                         ::doctest::Contains{"仅在块空闲链表为空时调用此函数"},
+                                         ::SoC::assert_failed_exception,
+                                         "空闲页链表非空，应该断言失败");
+        }
+
+        SUBCASE("free_page_list not empty")
+        {
+            auto heap{heap_fixture.get_heap()};
+            auto* current_page{heap.free_page_list.back()};
+            auto* next_page{current_page->next_page};
+            REQUIRE_MESSAGE(current_page != nullptr, "空闲页链表不应为空");
+            auto page_begin{::std::bit_cast<::std::uintptr_t>(current_page->free_block_list)};
+            constexpr auto block_index{0zu};
+            constexpr auto block_size{1zu << (::SoC::test::heap::min_block_shift + block_index)};
+            free_block_list_t* free_block_ptr{};
+            REQUIRE_NOTHROW_MESSAGE(free_block_ptr = heap.make_block_in_page(block_index), "空闲页链表非空，应该能够成功分块");
+
+            // 首个空闲块地址应当是页起始地址
+            CHECK_EQ(free_block_ptr, ::std::bit_cast<void*>(page_begin));
+            // 空闲页链表头应该移到下一页
+            CHECK_EQ(heap.free_page_list.back(), next_page);
+            // 空闲块链表头应该是当前页
+            CHECK_EQ(heap.free_page_list[block_index], current_page);
+            // 分块后的页是该块大小对应的空闲链表中唯一的一项，因此next_page为nullptr
+            CHECK_EQ(current_page->next_page, nullptr);
+            constexpr auto page_size{::SoC::heap::page_size};
+            // 检查空闲块链表中每个节点是否正确
+            for(auto offset{0zu}; offset != page_size;)
+            {
+                auto next_offset{offset += block_size};
+                auto* free_block_ptr_gt{
+                    ::std::bit_cast<free_block_list_t*>(next_offset == page_size ? 0zu : page_begin + next_offset)};
+                auto* next_block{free_block_ptr->next};
+                CAPTURE(offset);
+                CHECK_EQ(next_block, free_block_ptr_gt);
+                free_block_ptr = next_block;
+            }
+        }
+
+        SUBCASE("free_page_list empty")
+        {
+            auto heap{heap_fixture.get_heap()};
+            auto current_page{::std::exchange(heap.free_page_list.back(), nullptr)};
+            // 将堆设置为只有1页，因此next_page为nullptr
+            current_page->next_page = nullptr;
+            heap.free_page_list.front() = current_page;
+            constexpr auto block_index{1zu};
+
+            SUBCASE("no free block")
+            {
+                current_page->used_block = 1;
+                CHECK_THROWS_AS_MESSAGE(heap.make_block_in_page(block_index),
+                                        ::SoC::assert_failed_exception,
+                                        "无空闲块且空闲链表为空，page_gc应该断言失败");
+            }
+
+            SUBCASE("with free block")
+            {
+                current_page->used_block = 0;
+                CHECK_NOTHROW_MESSAGE(heap.make_block_in_page(block_index), "空闲页链表为空且有空闲块，应该能够成功分块");
+                CHECK_EQ(heap.free_page_list.back(), nullptr);
+                CHECK_EQ(heap.free_page_list[block_index], current_page);
+                CHECK_EQ(current_page->next_page, nullptr);
+            }
         }
     }
 }
