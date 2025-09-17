@@ -53,12 +53,14 @@ namespace SoC
         auto&& block_metadata_ptr{free_page_list[free_list_index]};
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(block_metadata_ptr == nullptr, "仅在块空闲链表为空时调用此函数"sv); }
 
-        auto&& free_page{free_page_list.back()};
-        if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
+        auto&& free_page_list_head{free_page_list.back()};
+        if(free_page_list_head == nullptr) [[unlikely]] { free_page_list_head = page_gc(true); }
+        // 空闲页元数据指针
+        auto* free_page_ptr{free_page_list_head};
         // 空闲页基址
-        auto* page_begin{free_page->free_block_list};
+        auto* page_begin{free_page_ptr->free_block_list};
         // 从空闲页表里取出一页
-        free_page = free_page->next_page;
+        free_page_list_head = ::std::exchange(free_page_list_head->next_page, nullptr);
 
         auto heap_block_size{1zu << (free_list_index + min_block_shift)};
         auto* page_ptr{page_begin};
@@ -75,12 +77,8 @@ namespace SoC
         }
         // 最后一个块的next指针设为nullptr
         *(page_ptr - step) = ::SoC::detail::free_block_list_t{};
-
-        auto metadata_index{get_metadata_index(page_begin)};
-        metadata[metadata_index].next_page = nullptr;
-        metadata[metadata_index].free_block_list = page_begin;
         // 从空闲链表里取出的页使用计数为0，不需要设置
-        block_metadata_ptr = &metadata[metadata_index];
+        block_metadata_ptr = free_page_ptr;
         return page_begin;
     }
 
