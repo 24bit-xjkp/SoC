@@ -31,77 +31,79 @@ namespace SoC::test
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define REGISTER_TEST_CASE(NAME) TEST_CASE("heap/" NAME)
 
+namespace
+{
+    /// 测试使用堆空间的大小
+    constexpr auto heap_size{128 * 1024zu};
+
+    /**
+     * @brief 堆测试用例的夹具，用于提供共用内存
+     *
+     */
+    struct test_fixture
+    {
+    private:
+        // NOLINTNEXTLINE(*-avoid-c-arrays)
+        inline static constinit ::std::unique_ptr<::std::uintptr_t[]> origin_ptr{};
+        /// 内存区域[begin, end)，已对齐到页大小
+        inline static constinit ::std::uintptr_t* begin{};
+        inline static constinit ::std::uintptr_t* end{};
+
+        /**
+         * @brief 分配共用内存，避免测试用例间重复分配
+         *
+         */
+        static void allocate_once()
+        {
+            if(begin == nullptr) [[unlikely]]
+            {
+                auto size{256 * 1024zu};
+                // NOLINTNEXTLINE(*-avoid-c-arrays)
+                origin_ptr = ::std::make_unique<::std::uintptr_t[]>(size / sizeof(::std::uintptr_t));
+                void* ptr{origin_ptr.get()};
+                REQUIRE_NE(ptr, nullptr);
+                REQUIRE_NE(::std::align(::SoC::heap::page_size, ::heap_size, ptr, size), nullptr);
+                begin = static_cast<::std::uintptr_t*>(ptr);
+                end = begin + (::heap_size / sizeof(::std::uintptr_t));
+            }
+        }
+
+    public:
+        /**
+         * @brief 获取内存区域
+         *
+         * @return 内存区域[begin, end)
+         */
+        static ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> get_memory()
+        {
+            allocate_once();
+            return ::std::pair{begin, end};
+        }
+
+        /**
+         * @brief 获取堆对象
+         *
+         * @return 堆对象
+         */
+        static ::SoC::test::heap get_heap()
+        {
+            allocate_once();
+            return ::SoC::test::heap{begin, end};
+        }
+    };
+
+    using metadata_t = ::std::remove_reference_t<decltype(::SoC::test::heap::metadata.front())>;
+    using free_block_list_t = ::std::remove_pointer_t<decltype(::metadata_t::free_block_list)>;
+}  // namespace
+
 /// @test SoC::heap单元测试
 TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 {
-    namespace
-    {
-        /// 测试使用堆空间的大小
-        constexpr auto heap_size{128 * 1024zu};
-
-        /**
-         * @brief 堆测试用例的夹具，用于提供共用内存
-         *
-         */
-        struct heap_test_fixture
-        {
-        private:
-            // NOLINTNEXTLINE(*-avoid-c-arrays)
-            ::std::unique_ptr<::std::uintptr_t[]> origin_ptr{};
-            /// 内存区域[begin, end)，已对齐到页大小
-            ::std::uintptr_t* begin{};
-            ::std::uintptr_t* end{};
-
-            /**
-             * @brief 分配共用内存，避免测试用例间重复分配
-             *
-             */
-            void allocate_once()
-            {
-                if(begin == nullptr) [[unlikely]]
-                {
-                    auto size{256 * 1024zu};
-                    // NOLINTNEXTLINE(*-avoid-c-arrays)
-                    origin_ptr = ::std::make_unique<::std::uintptr_t[]>(size / sizeof(::std::uintptr_t));
-                    void* ptr{origin_ptr.get()};
-                    REQUIRE_NE(ptr, nullptr);
-                    REQUIRE_NE(::std::align(::SoC::heap::page_size, heap_size, ptr, size), nullptr);
-                    begin = static_cast<::std::uintptr_t*>(ptr);
-                    end = begin + (heap_size / sizeof(::std::uintptr_t));
-                }
-            }
-
-        public:
-            /**
-             * @brief 获取内存区域
-             *
-             * @return 内存区域[begin, end)
-             */
-            ::std::pair<::std::uintptr_t*, ::std::uintptr_t*> get_memory()
-            {
-                allocate_once();
-                return ::std::pair{begin, end};
-            }
-
-            /**
-             * @brief 获取堆对象
-             *
-             * @return 堆对象
-             */
-            ::SoC::test::heap get_heap()
-            {
-                allocate_once();
-                return ::SoC::test::heap{begin, end};
-            }
-        }
-        /// 测试夹具，用于提供共用内存
-        constinit heap_fixture{};
-    }  // namespace
 
     /// @test 测试堆的构造函数能否检出输入内存范围错误
     REGISTER_TEST_CASE("invalid_initialize" * ::doctest::description{"测试堆的构造函数能否检出输入内存范围错误"})
     {
-        auto [begin, end]{heap_fixture.get_memory()};
+        auto [begin, end]{::test_fixture::get_memory()};
 
         /// 堆结束地址未对齐到页大小
         SUBCASE("unaligned heap end")
@@ -122,20 +124,17 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         }
     }
 
-    using metadata_t = ::std::remove_reference_t<decltype(::SoC::test::heap::metadata.front())>;
-    using free_block_list_t = ::std::remove_pointer_t<decltype(metadata_t::free_block_list)>;
-
     /// @test 测试堆的构造函数能否正常工作
     REGISTER_TEST_CASE("initialize" * ::doctest::description{"测试堆的构造函数能否正常工作"})
     {
-        auto heap{heap_fixture.get_heap()};
+        auto heap{::test_fixture::get_heap()};
 
         auto page_num{heap.metadata.size()};
 
         /// 测试页数量是否正确
         SUBCASE("page num")
         {
-            constexpr auto size_per_page{::SoC::test::heap::page_size + sizeof(metadata_t)};
+            constexpr auto size_per_page{::SoC::test::heap::page_size + sizeof(::metadata_t)};
             REQUIRE_EQ(page_num, heap_size / size_per_page);
         }
 
@@ -143,7 +142,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         SUBCASE("metadata")
         {
             void* page_begin{heap.metadata.end()};
-            auto space_left{heap_size - page_num * sizeof(metadata_t)};
+            auto space_left{heap_size - page_num * sizeof(::metadata_t)};
             REQUIRE_NE(::std::align(heap.page_size, page_num * heap.page_size, page_begin, space_left), nullptr);
             auto current_page_address{::std::bit_cast<::std::uintptr_t>(page_begin)};
             for(auto&& metadata: heap.metadata)
@@ -152,7 +151,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                 auto* next_page{&metadata != &heap.metadata.back() ? &metadata + 1 : nullptr};
                 REQUIRE_EQ(metadata.next_page, next_page);
                 // 每一页的free_block_list都指向当前页的首地址
-                REQUIRE_EQ(metadata.free_block_list, ::std::bit_cast<free_block_list_t*>(current_page_address));
+                REQUIRE_EQ(metadata.free_block_list, ::std::bit_cast<::free_block_list_t*>(current_page_address));
                 // 页为空，因此每一页的used_block都为0
                 REQUIRE_EQ(metadata.used_block, 0);
                 current_page_address += heap.page_size;
@@ -167,7 +166,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     REGISTER_TEST_CASE("get_actual_allocate_size" * ::doctest::description{"测试堆的获取实际分配大小函数能否正常工作"})
     {
         // 该函数
-        auto&& fun{SoC::heap::get_actual_allocate_size};
+        auto&& fun{::SoC::heap::get_actual_allocate_size};
         constexpr auto min_block_size{::SoC::heap::min_block_size};
         constexpr auto page_size{::SoC::heap::page_size};
 
@@ -200,7 +199,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     /// @test 测试堆的页状态统计系列函数能否正常工作
     REGISTER_TEST_CASE("page_status_cnt" * ::doctest::description{"测试堆的页状态统计系列函数能否正常工作"})
     {
-        auto heap{heap_fixture.get_heap()};
+        auto heap{::test_fixture::get_heap()};
         auto total_page_cnt_gt{heap.metadata.size()};
 
         SUBCASE("get_total_pages") { CHECK_EQ(heap.get_total_pages(), total_page_cnt_gt); }
@@ -221,7 +220,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     /// @test 测试堆的获取元数据索引函数能否正常工作
     REGISTER_TEST_CASE("get_metadata_index" * ::doctest::description{"测试堆的获取元数据索引函数能否正常工作"})
     {
-        auto heap{heap_fixture.get_heap()};
+        auto heap{::test_fixture::get_heap()};
         auto total_page_cnt_gt{heap.metadata.size()};
         ::std::uniform_int_distribution<::std::ptrdiff_t> page_index_range{0,
                                                                            static_cast<::std::ptrdiff_t>(total_page_cnt_gt - 1)};
@@ -234,7 +233,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             offset < ::SoC::heap::page_size;
             offset += block_size)
         {
-            CHECK_EQ(heap.get_metadata_index(::std::bit_cast<free_block_list_t*>(base_address + offset)), page_index);
+            CHECK_EQ(heap.get_metadata_index(::std::bit_cast<::free_block_list_t*>(base_address + offset)), page_index);
         }
     }
 
@@ -244,7 +243,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
      * @param heap 堆对象
      * @return std::array<metadata_t*, 2> 空闲页链表的第一页、第二页
      */
-    ::std::array<metadata_t*, 2> make_heap_for_insert_block_into_page_list_test(::SoC::test::heap & heap)
+    ::std::array<::metadata_t*, 2> make_heap_for_insert_block_into_page_list_test(::SoC::test::heap & heap)
     {
         auto&& free_page_list{heap.free_page_list.back()};
         auto* first_page{free_page_list};
@@ -263,7 +262,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
      * @param heap 堆对象
      * @param page_ptr 要插入的页的元数据指针
      */
-    void do_insert_block_into_page_list_test(::SoC::test::heap & heap, metadata_t * page_ptr)
+    void do_insert_block_into_page_list_test(::SoC::test::heap & heap, ::metadata_t * page_ptr)
     {
         auto&& free_page_list{heap.free_page_list.back()};
         // 记录空闲页链表的头指针的期望值
@@ -281,7 +280,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         auto metadata_index{::std::distance(heap.metadata.begin(), page_ptr)};
         auto data_address{::std::bit_cast<::std::uintptr_t>(heap.data) + metadata_index * heap.page_size};
         // 检查页的空闲块指针是否指向数据块首地址，即完成对于页操作的初始化
-        CHECK_EQ(page_ptr->free_block_list, ::std::bit_cast<free_block_list_t*>(data_address));
+        CHECK_EQ(page_ptr->free_block_list, ::std::bit_cast<::free_block_list_t*>(data_address));
     }
 
     /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
@@ -290,14 +289,14 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     {
         SUBCASE("first element")
         {
-            auto heap{heap_fixture.get_heap()};
+            auto heap{::test_fixture::get_heap()};
             auto [page_ptr, _]{make_heap_for_insert_block_into_page_list_test(heap)};
             do_insert_block_into_page_list_test(heap, page_ptr);
         }
 
         SUBCASE("last element")
         {
-            auto heap{heap_fixture.get_heap()};
+            auto heap{::test_fixture::get_heap()};
             auto [_, page_ptr]{make_heap_for_insert_block_into_page_list_test(heap)};
             do_insert_block_into_page_list_test(heap, page_ptr);
         }
@@ -306,7 +305,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     /// @test 测试堆的页回收函数能否正常工作
     REGISTER_TEST_CASE("page_gc" * ::doctest::description{"测试堆的页回收函数能否正常工作"})
     {
-        auto heap{heap_fixture.get_heap()};
+        auto heap{::test_fixture::get_heap()};
         // 将空闲页链表中的页插入index处的空闲块链表
         auto insert_block_into_page_list{
             [&heap](::std::size_t index, bool is_free = true) noexcept
@@ -337,7 +336,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 
         SUBCASE("prepare")
         {
-            constexpr auto&& message{"块插入失败"};
+            constexpr auto* message{"块插入失败"};
             REQUIRE_MESSAGE(page_ptr32->next_page == nullptr, message);
             REQUIRE_MESSAGE(page_ptr32 == heap.free_page_list[1], message);
 
@@ -357,7 +356,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 
         SUBCASE("with free block")
         {
-            metadata_t* current_free_page_list_head{};
+            ::metadata_t* current_free_page_list_head{};
             REQUIRE_NOTHROW_MESSAGE(current_free_page_list_head = heap.page_gc(true), "堆含有空闲块，不应出现空间不足错误");
             // 检查空闲页链表的头指针是否正确
             CHECK_EQ(current_free_page_list_head, page_ptr256_1);
@@ -403,7 +402,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     {
         SUBCASE("free_block_list not empty")
         {
-            auto heap{heap_fixture.get_heap()};
+            auto heap{::test_fixture::get_heap()};
             // 模拟空闲页链表非空
             heap.free_page_list.front() = heap.free_page_list.back();
             CHECK_THROWS_WITH_AS_MESSAGE(heap.make_block_in_page(0),
@@ -414,14 +413,14 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 
         SUBCASE("free_page_list not empty")
         {
-            auto heap{heap_fixture.get_heap()};
+            auto heap{::test_fixture::get_heap()};
             auto* current_page{heap.free_page_list.back()};
             auto* next_page{current_page->next_page};
             REQUIRE_MESSAGE(current_page != nullptr, "空闲页链表不应为空");
             auto page_begin{::std::bit_cast<::std::uintptr_t>(current_page->free_block_list)};
             constexpr auto block_index{0zu};
             constexpr auto block_size{1zu << (::SoC::test::heap::min_block_shift + block_index)};
-            free_block_list_t* free_block_ptr{};
+            ::free_block_list_t* free_block_ptr{};
             REQUIRE_NOTHROW_MESSAGE(free_block_ptr = heap.make_block_in_page(block_index), "空闲页链表非空，应该能够成功分块");
 
             // 首个空闲块地址应当是页起始地址
@@ -438,7 +437,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             {
                 auto next_offset{offset += block_size};
                 auto* free_block_ptr_gt{
-                    ::std::bit_cast<free_block_list_t*>(next_offset == page_size ? 0zu : page_begin + next_offset)};
+                    ::std::bit_cast<::free_block_list_t*>(next_offset == page_size ? 0zu : page_begin + next_offset)};
                 auto* next_block{free_block_ptr->next};
                 CAPTURE(offset);
                 CHECK_EQ(next_block, free_block_ptr_gt);
@@ -448,8 +447,8 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 
         SUBCASE("free_page_list empty")
         {
-            auto heap{heap_fixture.get_heap()};
-            auto current_page{::std::exchange(heap.free_page_list.back(), nullptr)};
+            auto heap{::test_fixture::get_heap()};
+            auto* current_page{::std::exchange(heap.free_page_list.back(), nullptr)};
             // 将堆设置为只有1页，因此next_page为nullptr
             current_page->next_page = nullptr;
             heap.free_page_list.front() = current_page;
