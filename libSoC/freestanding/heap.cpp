@@ -174,7 +174,7 @@ namespace SoC
             {
                 if(metadata_ptr->used_block == 0)
                 {
-                    ::std::size_t continuous_page_cnt{1};
+                    auto continuous_page_cnt{1zu};
                     // 闭区间[range_begin, range_end]表示连续页范围
                     auto* range_begin = metadata_ptr->free_block_list;
                     auto* range_end = metadata_ptr->free_block_list;
