@@ -1317,11 +1317,11 @@ export namespace SoC
     enum class end_line_sequence : ::std::uint8_t
     {
         /// 回车
-        cr,
+        cr = 0,
         /// 换行
-        lf,
+        lf = 1,
         /// 回车换行
-        crlf,
+        crlf = 2,
         /// 默认换行符
         default_endl = crlf
     };

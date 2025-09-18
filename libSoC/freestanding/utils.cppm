@@ -15,10 +15,10 @@ export namespace SoC
      */
     enum class build_mode : ::std::uint8_t
     {
-        debug,
-        release,
-        releasedbg,
-        minsizerel,
+        debug = 0,
+        release = 1,
+        releasedbg = 2,
+        minsizerel = 3,
 
 #ifdef SOC_BUILD_MODE_DEBUG
         current = debug

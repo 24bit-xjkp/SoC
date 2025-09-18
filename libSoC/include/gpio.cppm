@@ -17,14 +17,23 @@ namespace SoC::detail
      */
     enum class gpio_port : ::std::uint8_t
     {
+        /// 端口A
         pa,
+        /// 端口B
         pb,
+        /// 端口C
         pc,
+        /// 端口D
         pd,
+        /// 端口E
         pe,
+        /// 端口F
         pf,
+        /// 端口G
         pg,
+        /// 端口H
         ph,
+        /// 端口I
         pi
     };
 
@@ -34,23 +43,42 @@ namespace SoC::detail
      */
     enum class gpio_pin : ::std::uint16_t
     {
-        p0 = ::SoC::mask_single_one<0>,
-        p1 = ::SoC::mask_single_one<1>,
-        p2 = ::SoC::mask_single_one<2>,
-        p3 = ::SoC::mask_single_one<3>,
-        p4 = ::SoC::mask_single_one<4>,
-        p5 = ::SoC::mask_single_one<5>,
-        p6 = ::SoC::mask_single_one<6>,
-        p7 = ::SoC::mask_single_one<7>,
-        p8 = ::SoC::mask_single_one<8>,
-        p9 = ::SoC::mask_single_one<9>,
-        p10 = ::SoC::mask_single_one<10>,
-        p11 = ::SoC::mask_single_one<11>,
-        p12 = ::SoC::mask_single_one<12>,
-        p13 = ::SoC::mask_single_one<13>,
-        p14 = ::SoC::mask_single_one<14>,
-        p15 = ::SoC::mask_single_one<15>,
-        all = ::SoC::mask_all_one<16>,
+        /// 无效引脚
+        invalid = 0,
+        /// 引脚0
+        p0 = LL_GPIO_PIN_0,
+        /// 引脚1
+        p1 = LL_GPIO_PIN_1,
+        /// 引脚2
+        p2 = LL_GPIO_PIN_2,
+        /// 引脚3
+        p3 = LL_GPIO_PIN_3,
+        /// 引脚4
+        p4 = LL_GPIO_PIN_4,
+        /// 引脚5
+        p5 = LL_GPIO_PIN_5,
+        /// 引脚6
+        p6 = LL_GPIO_PIN_6,
+        /// 引脚7
+        p7 = LL_GPIO_PIN_7,
+        /// 引脚8
+        p8 = LL_GPIO_PIN_8,
+        /// 引脚9
+        p9 = LL_GPIO_PIN_9,
+        /// 引脚10
+        p10 = LL_GPIO_PIN_10,
+        /// 引脚11
+        p11 = LL_GPIO_PIN_11,
+        /// 引脚12
+        p12 = LL_GPIO_PIN_12,
+        /// 引脚13
+        p13 = LL_GPIO_PIN_13,
+        /// 引脚14
+        p14 = LL_GPIO_PIN_14,
+        /// 引脚15
+        p15 = LL_GPIO_PIN_15,
+        /// 所有引脚
+        all = LL_GPIO_PIN_ALL,
     };
 
     /**
@@ -180,13 +208,13 @@ export namespace SoC
     enum class gpio_speed : ::std::uint8_t
     {
         /// 低速 ~2MHz
-        low,
+        low = 0,
         /// 中速 ~25MHz
-        medium,
+        medium = 1,
         /// 高速 ~50MHz
-        high,
+        high = 2,
         /// 超高速 ~100MHz
-        very_high,
+        very_high = 3,
         /// 默认速度为低速
         default_speed = low
     };
@@ -198,9 +226,9 @@ export namespace SoC
     enum class gpio_output_type : ::std::uint8_t
     {
         /// 推挽输出
-        push_pull,
+        push_pull = 0,
         /// 开漏输出
-        open_drain,
+        open_drain = 1,
         /// 默认输出模式为推挽输出
         default_type = push_pull
     };
@@ -212,11 +240,11 @@ export namespace SoC
     enum class gpio_pull : ::std::uint8_t
     {
         /// 无上下拉电阻
-        no_pull,
+        no_pull = 0,
         /// 上拉电阻
-        pull_up,
+        pull_up = 1,
         /// 下拉电阻
-        pull_down,
+        pull_down = 2,
         /// 默认无上下拉电阻
         default_pull = no_pull
     };
@@ -227,22 +255,38 @@ export namespace SoC
      */
     enum class gpio_af : ::std::size_t
     {
-        af0,
-        af1,
-        af2,
-        af3,
-        af4,
-        af5,
-        af6,
-        af7,
-        af8,
-        af9,
-        af10,
-        af11,
-        af12,
-        af13,
-        af14,
-        af15,
+        /// 复用功能0
+        af0 = LL_GPIO_AF_0,
+        /// 复用功能1
+        af1 = LL_GPIO_AF_1,
+        /// 复用功能2
+        af2 = LL_GPIO_AF_2,
+        /// 复用功能3
+        af3 = LL_GPIO_AF_3,
+        /// 复用功能4
+        af4 = LL_GPIO_AF_4,
+        /// 复用功能5
+        af5 = LL_GPIO_AF_5,
+        /// 复用功能6
+        af6 = LL_GPIO_AF_6,
+        /// 复用功能7
+        af7 = LL_GPIO_AF_7,
+        /// 复用功能8
+        af8 = LL_GPIO_AF_8,
+        /// 复用功能9
+        af9 = LL_GPIO_AF_9,
+        /// 复用功能10
+        af10 = LL_GPIO_AF_10,
+        /// 复用功能11
+        af11 = LL_GPIO_AF_11,
+        /// 复用功能12
+        af12 = LL_GPIO_AF_12,
+        /// 复用功能13
+        af13 = LL_GPIO_AF_13,
+        /// 复用功能14
+        af14 = LL_GPIO_AF_14,
+        /// 复用功能15
+        af15 = LL_GPIO_AF_15,
         /// 默认复用号为非法值，用于检查输入
         default_af = -1zu
     };
