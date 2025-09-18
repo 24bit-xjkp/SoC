@@ -22,7 +22,7 @@ namespace SoC
         auto bytes{(end - begin) * ptr_size};
         auto pages{bytes / (page_size + sizeof(::SoC::detail::heap_page_metadata))};
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(pages > 0, "堆大小必须大于一页"sv); }
-        auto* metadata_begin{reinterpret_cast<::SoC::detail::heap_page_metadata*>(begin)};
+        auto* metadata_begin{::std::launder(reinterpret_cast<::SoC::detail::heap_page_metadata*>(begin))};
         auto* metadata_end{metadata_begin + pages};
         metadata = ::std::ranges::subrange{metadata_begin, metadata_end};
 
