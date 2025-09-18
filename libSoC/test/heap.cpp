@@ -523,4 +523,205 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             }
         }
     }
+
+    /// @test 测试从空闲页链表中移除范围内的页
+    REGISTER_TEST_CASE("remove_pages" * ::doctest::description{"测试从空闲页链表中移除范围内的页"})
+    {
+        auto heap{::test_fixture::get_heap()};
+
+        SUBCASE("remove pages with free_page_list head")
+        {
+            auto* first_page{heap.free_page_list.back()};
+            auto* second_page{first_page->next_page};
+            auto* third_page{second_page->next_page};
+            auto* fourth_page{third_page->next_page};
+
+            // 检查返回值是否为范围内的首个页
+            CHECK_EQ(heap.remove_pages(first_page->free_block_list, third_page->free_block_list), first_page->free_block_list);
+            // 检查空闲页表头是否为第四页
+            CHECK_EQ(heap.free_page_list.back(), third_page->next_page);
+            // 检查范围内的页used_blocks是否为1
+            CHECK_EQ(first_page->used_block, 1);
+            CHECK_EQ(second_page->used_block, 1);
+            CHECK_EQ(third_page->used_block, 1);
+            CHECK_EQ(fourth_page->used_block, 0);
+        }
+
+        SUBCASE("remove pages without free_page_list head")
+        {
+            auto* first_page{heap.free_page_list.back()};
+            auto* second_page{first_page->next_page};
+            auto* third_page{second_page->next_page};
+            auto* fourth_page{third_page->next_page};
+
+            // 检查返回值是否为范围内的首个页
+            CHECK_EQ(heap.remove_pages(second_page->free_block_list, third_page->free_block_list), second_page->free_block_list);
+            // 检查空闲页表头是否为第一页
+            CHECK_EQ(heap.free_page_list.back(), first_page);
+            // 检查范围内的页used_blocks是否为1，不在移除范围内的页used_blocks是否为0
+            CHECK_EQ(first_page->used_block, 0);
+            CHECK_EQ(second_page->used_block, 1);
+            CHECK_EQ(third_page->used_block, 1);
+            CHECK_EQ(fourth_page->used_block, 0);
+        }
+    }
+
+    /// @test 测试页分配函数
+    REGISTER_TEST_CASE("allocate_pages" * ::doctest::description{"测试页分配函数"})
+    {
+        SUBCASE("allocate a page")
+        {
+            auto heap{::test_fixture::get_heap()};
+            void* page_ptr{};
+
+            SUBCASE("free_page_list not empty")
+            {
+                auto* current_page{heap.free_page_list.back()};
+                auto* next_page{current_page->next_page};
+                CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "堆中空闲页充足，分配不应该失败");
+                // 检查分配的页是不是空闲页表头部的页
+                CHECK_EQ(page_ptr, current_page->free_block_list);
+                // 检查分配后的空闲页表头是不是指向下一页
+                CHECK_EQ(heap.free_page_list.back(), next_page);
+                // 检查分配后的空闲页表中该页的used_block是否为1
+                CHECK_EQ(current_page->used_block, 1);
+                CHECK_EQ(next_page->used_block, 0);
+                // 检查分配后的空闲页表中该页的块大小是否为页大小
+                CHECK_EQ(current_page->block_size_shift, heap.page_shift);
+            }
+
+            SUBCASE("free_page_list empty")
+            {
+                auto* current_page{::std::exchange(heap.free_page_list.back(), nullptr)};
+                current_page->next_page = nullptr;
+                heap.free_page_list.front() = current_page;
+
+                CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "可以通过page_gc回收空闲块，分配不应该失败");
+                // 检查分配的页是不是空闲页表头部的页
+                CHECK_EQ(page_ptr, current_page->free_block_list);
+                // 检查分配后的空闲页表头是不是为空
+                CHECK_EQ(heap.free_page_list.back(), nullptr);
+                // 检查分配后的空闲页表中该页的used_block是否为1
+                CHECK_EQ(current_page->used_block, 1);
+                CHECK_EQ(current_page->next_page, nullptr);
+                // 检查分配后的空闲页表中该页的块大小是否为页大小
+                CHECK_EQ(current_page->block_size_shift, heap.page_shift);
+                // 检查空闲块是否被page_gc回收
+                CHECK_EQ(heap.free_page_list.front(), nullptr);
+            }
+
+            SUBCASE("heap empty")
+            {
+                ::std::ranges::fill(heap.free_page_list, nullptr);
+
+                CHECK_THROWS_AS_MESSAGE(page_ptr = heap.allocate_pages(1),
+                                        ::SoC::assert_failed_exception,
+                                        "堆中不存在空闲块和空闲页，page_gc应该断言失败");
+            }
+        }
+
+        SUBCASE("allocate pages")
+        {
+            SUBCASE("with enough free pages")
+            {
+                auto heap{::test_fixture::get_heap()};
+                constexpr auto* message{"堆中空闲页充足，分配不应该失败"};
+
+                SUBCASE("continuous pages at head")
+                {
+                    auto* first_page{heap.free_page_list.back()};
+                    auto* second_page{first_page->next_page};
+                    auto* third_page{second_page->next_page};
+
+                    void* page_ptr{};
+                    CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(2), message);
+                    // 检查分配的页是不是空闲页表头部的页
+                    CHECK_EQ(page_ptr, first_page->free_block_list);
+                    // 检查分配后的空闲页表头是不是指向下一页
+                    CHECK_EQ(heap.free_page_list.back(), third_page);
+                    // 检查分配后的空闲页表中该页的used_block是否为1
+                    CHECK_EQ(first_page->used_block, 1);
+                    CHECK_EQ(second_page->used_block, 1);
+                    CHECK_EQ(third_page->used_block, 0);
+                    // 检查分配后的空闲页表中该页的块大小是否为页大小
+                    CHECK_EQ(first_page->block_size_shift, heap.page_shift);
+                    CHECK_EQ(second_page->block_size_shift, heap.page_shift);
+                }
+
+                SUBCASE("discontinuous pages at head")
+                {
+                    auto* first_page{heap.free_page_list.back()};
+                    auto* second_page{first_page->next_page};
+                    auto* third_page{second_page->next_page};
+                    auto* fourth_page{third_page->next_page};
+                    auto* fifth_page{fourth_page->next_page};
+                    auto* sixth_page{fifth_page->next_page};
+                    auto* seventh_page{sixth_page->next_page};
+                    // 设置第三页不为空，即需要从第四页开始查找连续页
+                    third_page->used_block = 1;
+                    second_page->next_page = fourth_page;
+
+                    void* page_ptr{};
+                    CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(3), message);
+                    // 检查分配的页是不是空闲页表头部的页
+                    CHECK_EQ(page_ptr, fourth_page->free_block_list);
+                    auto* free_page_list{heap.free_page_list.back()};
+                    // 检查分配后的空闲页表头是不是指向第一页，因为该页未被分配
+                    CHECK_EQ(free_page_list, first_page);
+                    free_page_list = free_page_list->next_page;
+                    // 检查后续空闲链表连接是否正确
+                    CHECK_EQ(free_page_list, second_page);
+                    free_page_list = free_page_list->next_page;
+                    CHECK_EQ(free_page_list, seventh_page);
+                    // 检查分配后的空闲页表中该页的used_block是否为1
+                    CHECK_EQ(first_page->used_block, 0);
+                    CHECK_EQ(second_page->used_block, 0);
+                    CHECK_EQ(third_page->used_block, 1);
+                    CHECK_EQ(fourth_page->used_block, 1);
+                    CHECK_EQ(fifth_page->used_block, 1);
+                    CHECK_EQ(sixth_page->used_block, 1);
+                    CHECK_EQ(seventh_page->used_block, 0);
+                    // 检查分配后的空闲页表中该页的块大小是否为页大小
+                    CHECK_EQ(first_page->block_size_shift, heap.page_shift);
+                    CHECK_EQ(second_page->block_size_shift, heap.page_shift);
+                    CHECK_EQ(third_page->block_size_shift, heap.page_shift);
+                    CHECK_EQ(fourth_page->block_size_shift, heap.page_shift);
+                    CHECK_EQ(fifth_page->block_size_shift, heap.page_shift);
+                    CHECK_EQ(sixth_page->block_size_shift, heap.page_shift);
+                }
+            }
+
+            SUBCASE("not enough free pages")
+            {
+                auto heap{::test_fixture::get_heap()};
+                const ::doctest::Contains exception_string{"堆中剩余连续分页数量不足"};
+
+                SUBCASE("not enough continuous page")
+                {
+                    auto* first_page{heap.free_page_list.back()};
+                    auto* second_page{first_page->next_page};
+                    second_page->next_page = nullptr;
+                    ::std::ranges::for_each(
+                        heap.metadata | ::std::views::filter([=](auto&& metadata) noexcept
+                                                             { return &metadata != first_page && &metadata != second_page; }),
+                        [](auto&& metadata) static noexcept { metadata.used_block = 1; });
+
+                    CHECK_THROWS_WITH_AS_MESSAGE(heap.allocate_pages(3),
+                                                 exception_string,
+                                                 ::SoC::assert_failed_exception,
+                                                 "堆内没有足够连续页，allocate_pages应该断言失败");
+                }
+
+                SUBCASE("no free pages")
+                {
+                    for(auto&& metadata: heap.metadata) { metadata.used_block = 1; }
+
+                    CHECK_THROWS_WITH_AS_MESSAGE(heap.allocate_pages(2),
+                                                 exception_string,
+                                                 ::SoC::assert_failed_exception,
+                                                 "堆内没有空闲页，allocate_pages应该断言失败");
+                }
+            }
+        }
+    }
 }
