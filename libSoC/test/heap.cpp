@@ -135,7 +135,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         SUBCASE("page num")
         {
             constexpr auto size_per_page{::SoC::test::heap::page_size + sizeof(::metadata_t)};
-            REQUIRE_EQ(page_num, heap_size / size_per_page);
+            CHECK_EQ(page_num, heap_size / size_per_page);
         }
 
         /// 测试metadata初始化是否正确
@@ -149,17 +149,19 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             {
                 // 除了最后一页，其他页的next_page都指向后一页的metadata
                 auto* next_page{&metadata != &heap.metadata.back() ? &metadata + 1 : nullptr};
-                REQUIRE_EQ(metadata.next_page, next_page);
+                CHECK_EQ(metadata.next_page, next_page);
                 // 每一页的free_block_list都指向当前页的首地址
-                REQUIRE_EQ(metadata.free_block_list, ::std::bit_cast<::free_block_list_t*>(current_page_address));
+                CHECK_EQ(metadata.free_block_list, ::std::bit_cast<::free_block_list_t*>(current_page_address));
                 // 页为空，因此每一页的used_block都为0
-                REQUIRE_EQ(metadata.used_block, 0);
+                CHECK_EQ(metadata.used_block, 0);
                 current_page_address += heap.page_size;
+                // 块大小为页大小
+                CHECK_EQ(metadata.block_size_shift, heap.page_shift);
             }
         }
 
         /// 测试空闲页链表初始化是否正确
-        SUBCASE("free_page_list") { REQUIRE_EQ(heap.free_page_list.back(), heap.metadata.begin()); }
+        SUBCASE("free_page_list") { CHECK_EQ(heap.free_page_list.back(), heap.metadata.begin()); }
     }
 
     /// @test 测试堆的获取实际分配大小函数能否正常工作
@@ -221,19 +223,56 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     REGISTER_TEST_CASE("get_metadata_index" * ::doctest::description{"测试堆的获取元数据索引函数能否正常工作"})
     {
         auto heap{::test_fixture::get_heap()};
-        auto total_page_cnt_gt{heap.metadata.size()};
-        ::std::uniform_int_distribution<::std::ptrdiff_t> page_index_range{0,
-                                                                           static_cast<::std::ptrdiff_t>(total_page_cnt_gt - 1)};
-        auto seed{::doctest::getContextOptions()->rand_seed};
-        CAPTURE(seed);
-        ::std::default_random_engine random_engine{seed};
-        auto page_index{page_index_range(random_engine)};
-        constexpr auto block_size{64zu};
-        for(auto base_address{::std::bit_cast<::std::uintptr_t>(heap.metadata[page_index].free_block_list)}, offset{0zu};
-            offset < ::SoC::heap::page_size;
-            offset += block_size)
+
+        SUBCASE("valid block pointer in page")
         {
-            CHECK_EQ(heap.get_metadata_index(::std::bit_cast<::free_block_list_t*>(base_address + offset)), page_index);
+            auto total_page_cnt_gt{static_cast<::std::ptrdiff_t>(heap.metadata.size())};
+            auto do_check{
+                [&heap](::std::ptrdiff_t page_index_gt)
+                {
+                    constexpr auto block_size{64zu};
+                    for(auto base_address{::std::bit_cast<::std::uintptr_t>(heap.metadata[page_index_gt].free_block_list)},
+                        offset{0zu};
+                        offset < ::SoC::heap::page_size;
+                        offset += block_size)
+                    {
+                        ::std::ptrdiff_t page_index{};
+                        CHECK_NOTHROW_MESSAGE(
+                            page_index = heap.get_metadata_index(::std::bit_cast<::free_block_list_t*>(base_address + offset)),
+                            "块指针合法，不应该断言失败");
+                        CHECK_EQ(page_index, page_index_gt);
+                    }
+                }};
+
+            SUBCASE("first page") { do_check(0); }
+
+            SUBCASE("last page") { do_check(total_page_cnt_gt - 1); }
+
+            SUBCASE("random page index")
+            {
+                ::std::uniform_int_distribution<::std::ptrdiff_t> page_index_range{0, total_page_cnt_gt - 1};
+                auto seed{::doctest::getContextOptions()->rand_seed};
+                CAPTURE(seed);
+                ::std::default_random_engine random_engine{seed};
+                auto page_index{page_index_range(random_engine)};
+                CAPTURE(page_index);
+                do_check(page_index);
+            }
+        }
+
+        SUBCASE("invalid block pointer")
+        {
+            const ::doctest::Contains exception_string{"页指针超出当前堆范围"};
+            CHECK_THROWS_WITH_AS_MESSAGE(heap.get_metadata_index(heap.data - 1),
+                                         exception_string,
+                                         ::SoC::assert_failed_exception,
+                                         "块指针小于堆地址下限，应该断言失败");
+
+            CHECK_THROWS_WITH_AS_MESSAGE(
+                heap.get_metadata_index(heap.data + heap.metadata.size() * heap.page_size / heap.ptr_size),
+                exception_string,
+                ::SoC::assert_failed_exception,
+                "块指针大于堆地址上限，应该断言失败");
         }
     }
 
@@ -253,6 +292,10 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         heap.free_page_list.front() = ::std::exchange(free_page_list, second_page->next_page);
         // 将第二页设为空闲块链表的尾节点
         second_page->next_page = nullptr;
+
+        // 设置块大小
+        first_page->block_size_shift = heap.min_block_shift;
+        second_page->block_size_shift = heap.min_block_shift;
         return {first_page, second_page};
     }
 
@@ -281,6 +324,8 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         auto data_address{::std::bit_cast<::std::uintptr_t>(heap.data) + metadata_index * heap.page_size};
         // 检查页的空闲块指针是否指向数据块首地址，即完成对于页操作的初始化
         CHECK_EQ(page_ptr->free_block_list, ::std::bit_cast<::free_block_list_t*>(data_address));
+        // 检查块大小是否正确设置为页大小
+        CHECK_EQ(page_ptr->block_size_shift, heap.page_shift);
     }
 
     /// @test 测试堆的插入块函数能否在链表元素数大于1时正常工作
@@ -315,6 +360,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                 auto* old_free_block_head{::std::exchange(heap.free_page_list[index], old_free_page_head)};
                 old_free_page_head->next_page = old_free_block_head;
                 old_free_page_head->used_block = !is_free;
+                old_free_page_head->block_size_shift = index + heap.min_block_shift;
                 return old_free_page_head;
             }};
 
@@ -381,6 +427,8 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             {
                 CAPTURE(index_in_free_page_list_gt);
                 CHECK_EQ(page_ptr, page_ptr_gt);
+                // 检查块大小是否正确设置为页大小
+                CHECK_EQ(page_ptr->block_size_shift, heap.page_shift);
                 page_ptr = page_ptr->next_page;
             }
         }
@@ -431,6 +479,8 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             CHECK_EQ(heap.free_page_list[block_index], current_page);
             // 分块后的页是该块大小对应的空闲链表中唯一的一项，因此next_page为nullptr
             CHECK_EQ(current_page->next_page, nullptr);
+            // 检查块大小是否正确设置
+            CHECK_EQ(current_page->block_size_shift, heap.min_block_shift + block_index);
             constexpr auto page_size{::SoC::heap::page_size};
             // 检查空闲块链表中每个节点是否正确
             for(auto offset{0zu}; offset != page_size;)
@@ -469,6 +519,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                 CHECK_EQ(heap.free_page_list.back(), nullptr);
                 CHECK_EQ(heap.free_page_list[block_index], current_page);
                 CHECK_EQ(current_page->next_page, nullptr);
+                CHECK_EQ(current_page->block_size_shift, heap.min_block_shift + block_index);
             }
         }
     }

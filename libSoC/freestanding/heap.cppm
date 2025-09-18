@@ -32,7 +32,9 @@ export namespace SoC
             // 页内空闲块链表的头指针
             ::SoC::detail::free_block_list_t* free_block_list;
             // 已使用块的数量
-            ::std::size_t used_block;
+            ::std::uint16_t used_block;
+            // 块大小的左移量
+            ::std::uint16_t block_size_shift;
         };
     }  // namespace detail
 
@@ -100,9 +102,14 @@ export namespace SoC
          * @return 元数据数组索引
          */
         [[using gnu: always_inline, hot]] inline ::std::ptrdiff_t
-            get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept
+            get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept(::SoC::optional_noexcept)
         {
-            return static_cast<::std::ptrdiff_t>((page_ptr - data) * ptr_size / page_size);
+            constexpr ::std::string_view message{"页指针超出当前堆范围"};
+            ::SoC::always_assert(page_ptr >= data, message);
+            auto page_index{static_cast<::std::ptrdiff_t>((page_ptr - data) * ptr_size / page_size)};
+            auto max_page_index{static_cast<::std::ptrdiff_t>(metadata.size())};
+            ::SoC::always_assert(page_index < max_page_index, message);
+            return page_index;
         }
 
         /**
@@ -198,6 +205,8 @@ export namespace SoC
          * @return 正在使用的页数
          */
         [[nodiscard]] inline ::std::size_t get_using_pages() const noexcept { return get_total_pages() - get_free_pages(); }
+
+        // [[nodiscard]] inline ::std::size_t get_block_size(void* block_ptr_in_page)
 
         /**
          * @brief 分配指定大小的块
