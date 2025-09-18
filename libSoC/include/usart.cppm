@@ -35,8 +35,11 @@ export namespace SoC
      */
     enum class usart_mode : ::std::uint8_t
     {
-        async,
-        sync,
+        /// 异步模式
+        async = 0,
+        /// 同步模式
+        sync = 1,
+        /// 默认工作模式
         default_mode = async
     };
 
@@ -46,8 +49,11 @@ export namespace SoC
      */
     enum class usart_data_width : ::std::uint16_t
     {
-        bit8,
-        bit9 = ::SoC::mask_single_one<12>,
+        /// 8位数据宽度
+        bit8 = LL_USART_DATAWIDTH_8B,
+        /// 9位数据宽度
+        bit9 = LL_USART_DATAWIDTH_9B,
+        /// 默认数据宽度
         default_width = bit8
     };
 
@@ -57,10 +63,15 @@ export namespace SoC
      */
     enum class usart_stop_bit : ::std::uint8_t
     {
-        bit0_5,
-        bit1,
-        bit1_5,
-        bit2,
+        /// 0.5个停止位
+        bit0_5 = 0,
+        /// 1个停止位
+        bit1 = 1,
+        /// 1.5个停止位
+        bit1_5 = 2,
+        /// 2个停止位
+        bit2 = 3,
+        /// 默认停止位数量
         default_bit = bit1
     };
 
@@ -70,9 +81,13 @@ export namespace SoC
      */
     enum class usart_parity : ::std::uint16_t
     {
-        none,
-        even = ::SoC::mask_single_one<10>,
-        odd = ::SoC::mask_single_one<10> | ::SoC::mask_single_one<9>,
+        /// 无校验位
+        none = LL_USART_PARITY_NONE,
+        /// 偶数校验位
+        even = LL_USART_PARITY_EVEN,
+        /// 奇数校验位
+        odd = LL_USART_PARITY_ODD,
+        /// 默认校验位
         default_parity = none
     };
 
@@ -82,10 +97,15 @@ export namespace SoC
      */
     enum class usart_direction : ::std::uint8_t
     {
-        none,
-        rx = ::SoC::mask_single_one<2>,
-        tx = ::SoC::mask_single_one<3>,
-        rx_tx = rx | tx,
+        /// 无方向
+        none = LL_USART_DIRECTION_NONE,
+        /// 接收方向
+        rx = LL_USART_DIRECTION_RX,
+        /// 发送方向
+        tx = LL_USART_DIRECTION_TX,
+        /// 接收发送方向
+        rx_tx = LL_USART_DIRECTION_TX_RX,
+        /// 默认传输方向
         default_direction = rx_tx
     };
 
@@ -95,10 +115,15 @@ export namespace SoC
      */
     enum class usart_hardware_flow_control : ::std::uint16_t
     {
-        none,
-        rts = ::SoC::mask_single_one<8>,
-        cts = ::SoC::mask_single_one<9>,
-        rts_cts = rts | cts,
+        /// 无硬件流量控制
+        none = LL_USART_HWCONTROL_NONE,
+        /// 发送RTS信号
+        rts = LL_USART_HWCONTROL_RTS,
+        /// 接收CTS信号
+        cts = LL_USART_HWCONTROL_CTS,
+        /// 发送RTS信号，接收CTS信号
+        rts_cts = LL_USART_HWCONTROL_RTS_CTS,
+        /// 默认硬件流量控制
         default_control = none
     };
 
@@ -108,8 +133,11 @@ export namespace SoC
      */
     enum class usart_oversampling : ::std::uint8_t
     {
+        /// 16倍过采样
         by16 = 4,
+        /// 8倍过采样
         by8 = 3,
+        /// 默认过采样倍数
         default_oversampling = by16
     };
 

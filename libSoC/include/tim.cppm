@@ -17,19 +17,33 @@ namespace SoC::detail
      */
     enum class tim : ::std::uintptr_t
     {
+        /// 16位高级定时器1
         tim1 = TIM1_BASE,
+        /// 32位通用定时器2
         tim2 = TIM2_BASE,
+        /// 16位通用定时器3
         tim3 = TIM3_BASE,
+        /// 16位通用定时器4
         tim4 = TIM4_BASE,
+        /// 32位通用定时器5
         tim5 = TIM5_BASE,
+        /// 16位基本定时器6
         tim6 = TIM6_BASE,
+        /// 16位基本定时器7
         tim7 = TIM7_BASE,
+        /// 16位高级定时器8
         tim8 = TIM8_BASE,
+        /// 16位通用定时器9
         tim9 = TIM9_BASE,
+        /// 16位通用定时器10
         tim10 = TIM10_BASE,
+        /// 16位通用定时器11
         tim11 = TIM11_BASE,
+        /// 16位通用定时器12
         tim12 = TIM12_BASE,
+        /// 16位通用定时器13
         tim13 = TIM13_BASE,
+        /// 16位通用定时器14
         tim14 = TIM14_BASE,
     };
 
@@ -39,6 +53,8 @@ namespace SoC::detail
      */
     enum class tim_channel : ::std::uint16_t
     {
+        /// 无效主通道
+        invalid = 0,
         /// 主通道1
         ch1 = LL_TIM_CHANNEL_CH1,
         /// 主通道2

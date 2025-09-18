@@ -17,29 +17,55 @@ namespace SoC::detail
      */
     enum class exti_line : ::std::size_t
     {
+        /// 无效外部中断线
+        invalid = 0,
+        /// 外部中断线0
         line0 = LL_EXTI_LINE_0,
+        /// 外部中断线1
         line1 = LL_EXTI_LINE_1,
+        /// 外部中断线2
         line2 = LL_EXTI_LINE_2,
+        /// 外部中断线3
         line3 = LL_EXTI_LINE_3,
+        /// 外部中断线4
         line4 = LL_EXTI_LINE_4,
+        /// 外部中断线5
         line5 = LL_EXTI_LINE_5,
+        /// 外部中断线6
         line6 = LL_EXTI_LINE_6,
+        /// 外部中断线7
         line7 = LL_EXTI_LINE_7,
+        /// 外部中断线8
         line8 = LL_EXTI_LINE_8,
+        /// 外部中断线9
         line9 = LL_EXTI_LINE_9,
+        /// 外部中断线10
         line10 = LL_EXTI_LINE_10,
+        /// 外部中断线11
         line11 = LL_EXTI_LINE_11,
+        /// 外部中断线12
         line12 = LL_EXTI_LINE_12,
+        /// 外部中断线13
         line13 = LL_EXTI_LINE_13,
+        /// 外部中断线14
         line14 = LL_EXTI_LINE_14,
+        /// 外部中断线15
         line15 = LL_EXTI_LINE_15,
+        /// 外部中断线16
         line16 = LL_EXTI_LINE_16,
+        /// 外部中断线17
         line17 = LL_EXTI_LINE_17,
+        /// 外部中断线18
         line18 = LL_EXTI_LINE_18,
+        /// 外部中断线19
         line19 = LL_EXTI_LINE_19,
+        /// 外部中断线20
         line20 = LL_EXTI_LINE_20,
+        /// 外部中断线21
         line21 = LL_EXTI_LINE_21,
+        /// 外部中断线22
         line22 = LL_EXTI_LINE_22,
+        /// 所有外部中断线
         all = LL_EXTI_LINE_ALL_0_31
     };
 

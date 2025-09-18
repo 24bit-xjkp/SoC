@@ -17,7 +17,11 @@ namespace SoC::detail
      */
     enum class dma : ::std::uintptr_t
     {
+        /// 无效dma外设
+        invalid = 0,
+        /// dma1外设
         dma1 = DMA1_BASE,
+        /// dma2外设
         dma2 = DMA2_BASE
     };
 
@@ -27,14 +31,22 @@ namespace SoC::detail
      */
     enum class dma_stream : ::std::uint8_t
     {
-        st0,
-        st1,
-        st2,
-        st3,
-        st4,
-        st5,
-        st6,
-        st7
+        /// DMA数据流0
+        st0 = LL_DMA_STREAM_0,
+        /// DMA数据流1
+        st1 = LL_DMA_STREAM_1,
+        /// DMA数据流2
+        st2 = LL_DMA_STREAM_2,
+        /// DMA数据流3
+        st3 = LL_DMA_STREAM_3,
+        /// DMA数据流4
+        st4 = LL_DMA_STREAM_4,
+        /// DMA数据流5
+        st5 = LL_DMA_STREAM_5,
+        /// DMA数据流6
+        st6 = LL_DMA_STREAM_6,
+        /// DMA数据流7
+        st7 = LL_DMA_STREAM_7
     };
 }  // namespace SoC::detail
 
