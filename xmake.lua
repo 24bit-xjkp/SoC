@@ -1,9 +1,7 @@
 set_project("SoC")
 set_version("0.1.0")
-set_xmakever("2.9.0")
+set_xmakever("3.0.0")
 set_policy("check.auto_ignore_flags", false)
--- 在当前并行度和依赖复杂度下，一阶段编译模型速度更快
-set_policy("build.c++.modules.two_phases", false)
 set_policy("package.requires_lock", true)
 set_encodings("utf-8")
 add_moduledirs("script/toolchains/xmake")
@@ -21,12 +19,17 @@ if build_mode then
 end
 rule("stm32_pc")
     on_load(function(target)
+        local warning_flags = {
+            "-Wno-c23-extensions",
+            "-Wimplicit-fallthrough",
+            "-Wno-unknown-pragmas",
+        }
         if target:is_arch("arm") and target:is_plat("cross") then
             target:set("exceptions", "no-cxx")
             target:set("policy", "build.c++.modules.std", false)
             target:add("options", "assert")
             target:add("defines", "STM32F407xx", "USE_FULL_LL_DRIVER", "HSE_VALUE=8000000u")
-            target:add("cxflags", "-mtune=cortex-m4", "-ffunction-sections", "-fdata-sections", "-Wno-c23-extensions", "-Wimplicit-fallthrough", "-Wno-unknown-pragmas")
+            target:add("cxflags", "-mtune=cortex-m4", "-ffunction-sections", "-fdata-sections", table.unpack(warning_flags))
             target:add("cxxflags", "-fno-rtti", "-Wno-psabi")
             target:add("ldflags", "-Wl,--gc-sections", "-nostartfiles", { force = true })
             target:add("ldflags", "gcc::-Wno-psabi")
@@ -39,6 +42,7 @@ rule("stm32_pc")
             target:set("policy", "build.sanitizer.address", get_config("unit_test_with_asan"))
             target:set("policy", "build.sanitizer.undefined", get_config("unit_test_with_ubsan"))
             target:set("runtimes", get_config("runtimes") == "c++_static" and "c++_shared" or "stdc++_shared")
+            target:set("cxflags", table.unpack(warning_flags))
         end
     end)
 rule_end()
