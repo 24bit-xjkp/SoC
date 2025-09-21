@@ -38,7 +38,9 @@
     "requirePattern": []
   },
   "workspace": {
-    "ignoreDir": [],
+    "ignoreDir": [
+      ".xmake"
+    ],
     "ignoreGlobs": [],
     "library": [],
     "workspaceRoots": [],
