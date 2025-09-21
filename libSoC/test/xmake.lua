@@ -14,8 +14,7 @@ target("unit_test")
     add_files("*.cpp")
     add_deps("unit_test_utils")
     set_kind("binary")
-    add_includedirs(".")
-    set_pcxxheader("doctest_pch.hpp")
+    set_policy("build.c++.modules.fallbackscanner", true)
     set_enabled(get_config("build_unit_test"))
 
     for _, file in ipairs(os.files("*.cpp|main.cpp")) do

@@ -1,4 +1,4 @@
-#include "doctest_pch.hpp"
+import "doctest.hpp";
 import SoC.unit_test;
 
 namespace SoC::test

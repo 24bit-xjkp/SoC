@@ -3,6 +3,8 @@ set_version("0.1.0")
 set_xmakever("3.0.0")
 set_policy("check.auto_ignore_flags", false)
 set_policy("package.requires_lock", true)
+set_policy("build.c++.modules.hide_dependencies", true)
+set_policy("build.c++.modules.non_cascading_changes", true)
 set_encodings("utf-8")
 add_moduledirs("script/toolchains/xmake")
 includes("script/toolchains/xmake/*.lua")
@@ -23,6 +25,7 @@ rule("stm32_pc")
             "-Wno-c23-extensions",
             "-Wimplicit-fallthrough",
             "-Wno-unknown-pragmas",
+            "-Wno-experimental-header-units",
         }
         if target:is_arch("arm") and target:is_plat("cross") then
             target:set("exceptions", "no-cxx")
