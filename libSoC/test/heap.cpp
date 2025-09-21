@@ -101,7 +101,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
 {
 
     /// @test 测试堆的构造函数能否检出输入内存范围错误
-    REGISTER_TEST_CASE("invalid_initialize" * ::doctest::description{"测试堆的构造函数能否检出输入内存范围错误"})
+    REGISTER_TEST_CASE("invalid initialize" * ::doctest::description{"测试堆的构造函数能否检出输入内存范围错误"})
     {
         auto [begin, end]{::test_fixture::get_memory()};
 
@@ -199,7 +199,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
     }
 
     /// @test 测试堆的页状态统计系列函数能否正常工作
-    REGISTER_TEST_CASE("page_status_cnt" * ::doctest::description{"测试堆的页状态统计系列函数能否正常工作"})
+    REGISTER_TEST_CASE("page status counter" * ::doctest::description{"测试堆的页状态统计系列函数能否正常工作"})
     {
         auto heap{::test_fixture::get_heap()};
         auto total_page_cnt_gt{heap.metadata.size()};

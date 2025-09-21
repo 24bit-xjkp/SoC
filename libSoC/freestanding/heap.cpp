@@ -34,10 +34,10 @@ namespace SoC
 #pragma GCC unroll(2)
         for(auto&& page: metadata)
         {
-            page = ::SoC::detail::heap_page_metadata{&page + 1,
-                                                     reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr),
-                                                     0,
-                                                     page_shift};
+            ::new(&page)::SoC::detail::heap_page_metadata{&page + 1,
+                                                          reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr),
+                                                          0,
+                                                          page_shift};
             ptr += page_size;
         }
         metadata.back().next_page = nullptr;
@@ -135,11 +135,11 @@ namespace SoC
         // 移除除了head外所有范围内的页
         for(auto* ptr{head}; ptr->next_page != nullptr;)
         {
-            auto&& next_page{ptr->next_page};
+            auto* next_page{ptr->next_page};
             if(auto* page_ptr{next_page->free_block_list}; page_ptr >= range_begin && page_ptr <= range_end)
             {
                 next_page->used_block = 1;
-                next_page = next_page->next_page;
+                ptr->next_page = next_page->next_page;
             }
             else
             {
@@ -233,11 +233,11 @@ namespace SoC
 
     void* ::SoC::heap::allocate_cold_path(::std::size_t actual_size) noexcept(::SoC::optional_noexcept)
     {
-        auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
         if(actual_size >= page_size) { return allocate_pages(actual_size / page_size); }
         else
         {
             auto step{actual_size / ptr_size};
+            auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
             auto&& free_list{free_page_list[free_page_list_index]};
             auto* page_begin{make_block_in_page(free_page_list_index)};
             free_list->free_block_list = free_list->free_block_list + step;
