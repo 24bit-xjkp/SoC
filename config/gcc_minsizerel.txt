@@ -20,5 +20,6 @@
     unwindlib = "libgcc",
     runtimes = "stdc++_static",
     unit_test_with_asan = true,
-    unit_test_with_ubsan = true
+    unit_test_with_ubsan = true,
+    hse_value = "8000000u"
 }

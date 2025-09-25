@@ -206,7 +206,7 @@ int main()
     ::SoC::text_ofile file{usart1_dma_write};
     ::file = file;
 
-    ::SoC::gpio_port gpio_b{::SoC::gpio_port::pb};
+    /* ::SoC::gpio_port gpio_b{::SoC::gpio_port::pb};
     ::SoC::gpio_pin oled_pin{gpio_b,
                              ::SoC::gpio_pin::p6 | ::SoC::gpio_pin::p7,
                              ::SoC::gpio_mode::alternate,
@@ -218,13 +218,16 @@ int main()
     ::SoC::dma dma1{::SoC::dma::dma1};
     ::SoC::oled oled{oled_i2c, dma1};
     ::oled::oled = oled;
-    oled.init();
+    oled.init(); */
 
-    auto&& [coefficient, _]{adc_calibrator->get_result()};
+    auto&& [coefficient, temperature]{adc_calibrator->get_result()};
     ::pid_controller::coefficient = coefficient;
     adc_calibrator.release();
+    ::SoC::println(file, "Vdd: {}，温度: {}℃"_fmt, ::SoC::round<2>(coefficient * ((1 << 12) - 1)), ::SoC::round<2>(temperature));
 
-    ::SoC::adc_regular_group i_sample{adc1,
+    // ::SoC::print(file, usart1_dma_write);
+
+    /* ::SoC::adc_regular_group i_sample{adc1,
                                       ::SoC::adc_regular_trigger_source::tim8_trgo,
                                       false,
                                       ::SoC::adc_regular_dma_mode::limited,
@@ -285,5 +288,5 @@ int main()
         }
         *ptr++ = 'A';
         oled.write(buffer, buffer + 5);
-    }
+    } */
 }

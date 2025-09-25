@@ -1,9 +1,16 @@
-target("cmsis")
-    set_kind("object")
-    add_includedirs("include", {public = true})
-    add_files("src/*.c")
+includes("script/xmake/config.lua")
+configure(true)
+set_version("1.0.0")
+set_project("cmsis")
 
-    if is_mode("debug") then
+target("cmsis")
+    set_kind("static")
+    add_includedirs("include")
+    add_headerfiles("include/*.h")
+    add_files("src/*.c")
+    add_defines("STM32F407xx")
+
+    if get_config("_custom_mode") == "debug" then
         add_rules("releasedbg")
     end
 

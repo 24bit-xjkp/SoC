@@ -1,10 +1,20 @@
+includes("script/xmake/config.lua")
+configure(true)
+set_version("1.0.0")
+set_project("stm32f4_hal_ll")
+
+add_requires("cmsis", {configs = {_custom_mode = get_config("_custom_mode")}})
 target("stm32f4_hal_ll")
+    add_packages("cmsis")
     set_kind("static")
-    add_deps("cmsis")
-    add_includedirs("include", "include/Legacy", {public = true})
+    add_includedirs("include", "include/Legacy")
+    add_headerfiles("include/*.h")
+    add_headerfiles("include/Legacy/*.h", {prefixdir = "Legacy"})
+    add_defines("USE_FULL_LL_DRIVER")
+    add_options("hse_value")
     add_files("src/*.c")
     set_warnings("none")
-    if is_mode("debug") then
+    if get_config("_custom_mode") == "debug" then
         add_rules("releasedbg")
     end
 

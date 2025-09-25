@@ -1,0 +1,6 @@
+package("cmsis", function()
+    set_description("CMSIS package for ARM Cortex-M micro controllers.")
+    add_defines("STM32F407xx")
+    includes("utils.lua")
+    package_register("cmsis")
+end)

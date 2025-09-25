@@ -9,8 +9,6 @@ option("build_unit_test", function()
     set_description("Whether to build unit test.")
 end)
 
-local option_warning_prefix = "${color.warning}WARNING:${default} "
-
 option("unit_test_with_asan", function()
     set_default(true)
     set_description("Whether to build unit test with address sanitizer.")
@@ -19,4 +17,20 @@ end)
 option("unit_test_with_ubsan", function()
     set_default(true)
     set_description("Whether to build unit test with undefined behavior sanitizer.")
+end)
+
+option("hse_value", function()
+    set_default("8000000u")
+    set_description("The frequency of high speed external crystal oscillator in Hz.")
+
+    after_check(function(option)
+        option:add("defines", "HSE_VALUE=" .. option:value())
+    end)
+end)
+
+option("_custom_mode", function()
+    includes(path.join(os.scriptdir(), "../toolchains/xmake/rule.lua"))
+    set_values(table.unpack(support_rules_table))
+    set_default(get_config("mode"))
+    set_description("The build mode for third party package.")
 end)
