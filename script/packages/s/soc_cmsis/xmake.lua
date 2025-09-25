@@ -1,0 +1,6 @@
+package("soc_cmsis")
+    set_description("CMSIS package for ARM Cortex-M micro controllers.")
+    add_defines("STM32F407xx")
+    includes(path.join(os.scriptdir(), "../utils.lua"))
+    package_register("cmsis")
+package_end()

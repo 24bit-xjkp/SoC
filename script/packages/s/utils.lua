@@ -3,7 +3,7 @@
 ---@param on_load_callback fun(package: table)? 加载回调函数
 ---@param on_install_callback fun(package: table, opt: table)? 安装回调函数
 function package_register(package_name, on_load_callback, on_install_callback)
-    set_sourcedir(path.join(os.scriptdir(), "../../third-party", package_name))
+    set_sourcedir(path.join(os.scriptdir(), "../../../../third-party", package_name))
     add_configs("_custom_mode", { description = "The build mode for third party package.", default = "releasedbg" })
 
     on_load(function(package)

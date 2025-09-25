@@ -1,0 +1,13 @@
+package("soc_stm32f4_hal_ll")
+    set_description("HAL and LL library for STM32F4 micro controllers.")
+    add_includedirs("include", "include/Legacy")
+    add_defines("USE_FULL_LL_DRIVER")
+    add_configs("hse_value",
+        { description = "The frequency of high speed external crystal oscillator in Hz.", default = "8000000u" })
+    add_configs("assert", { description = "Whether to use assert in HAL and LL library.", default = true })
+    includes(path.join(os.scriptdir(), "../utils.lua"))
+    package_register("stm32f4_hal_ll", function(package)
+        package:add("defines", "HSE_VALUE=" .. package:config("hse_value"))
+        package:add("deps", "soc_cmsis", { configs = { _custom_mode = package:config("_custom_mode") }, public = true })
+    end)
+package_end()
