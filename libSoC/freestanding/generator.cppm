@@ -64,35 +64,32 @@ namespace SoC
         {
             handle_t handle{};
 
-            constexpr inline friend iterator& operator++ (iterator& it) noexcept(::SoC::optional_noexcept)
+            constexpr inline iterator& operator++ (this auto&& self) noexcept(::SoC::optional_noexcept)
             {
-                it.handle.resume();
+                self.handle.resume();
                 if constexpr(!::SoC::optional_noexcept)
                 {
-                    if(it.handle.done() && it.handle.promise().exception_ptr)
-                    {
-                        ::std::rethrow_exception(it.handle.promise().exception_ptr);
-                    }
+                    if(auto exception_ptr{self.handle.promise().exception_ptr}) { ::std::rethrow_exception(exception_ptr); }
                 }
-                return it;
+                return self;
             }
 
-            constexpr inline friend iterator operator++ (iterator& it, int) noexcept(::SoC::optional_noexcept)
+            constexpr inline iterator operator++ (this auto&& self, int) noexcept(::SoC::optional_noexcept)
             {
-                iterator tmp = it;
-                ++it;
+                iterator tmp = self;
+                ++self;
                 return tmp;
             }
 
-            constexpr inline friend value_type& operator* (iterator& it) noexcept(::SoC::optional_noexcept)
+            constexpr inline value_type& operator* (this auto&& self) noexcept(::SoC::optional_noexcept)
             {
-                return *it.handle.promise().ptr;
+                return *self.handle.promise().ptr;
             }
         };
 
         struct sentinel
         {
-            constexpr inline friend bool operator== (iterator& it, sentinel _ [[maybe_unused]]) noexcept
+            constexpr inline friend bool operator== (iterator it, sentinel _ [[maybe_unused]]) noexcept
             {
                 return it.handle.done();
             }
@@ -129,7 +126,8 @@ namespace SoC
              *
              * @param value 要生产的值
              */
-            constexpr inline ::std::suspend_always yield_value(::std::convertible_to<value_type&> auto&& value) noexcept
+            constexpr inline ::std::suspend_always yield_value(auto&& value) noexcept
+                requires (::std::convertible_to<value_type&, decltype((value))>)
             {
                 ptr = ::std::addressof(value);
                 return {};
@@ -156,7 +154,10 @@ namespace SoC
          *
          * @param handle 协程句柄
          */
-        constexpr inline explicit generator(handle_t handle) noexcept : handle{handle} {}
+        constexpr inline explicit generator(handle_t handle) noexcept :
+            ::std::ranges::view_interface<generator<value_type, allocator_type>>{}, handle{handle}
+        {
+        }
 
         /**
          * @brief 析构函数
@@ -201,10 +202,7 @@ namespace SoC
             handle.resume();
             if constexpr(!::SoC::optional_noexcept)
             {
-                if(handle.done() && this->handle.promise().exception_ptr)
-                {
-                    ::std::rethrow_exception(this->handle.promise().exception_ptr);
-                }
+                if(auto exception_ptr{this->handle.promise().exception_ptr}) { ::std::rethrow_exception(exception_ptr); }
             }
             return {handle};
         }

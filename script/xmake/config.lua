@@ -24,7 +24,7 @@ rule("stm32_pc", function()
             target:set("policy", "build.sanitizer.address", get_config("unit_test_with_asan"))
             target:set("policy", "build.sanitizer.undefined", get_config("unit_test_with_ubsan"))
             target:set("runtimes", get_config("runtimes") == "c++_static" and "c++_shared" or "stdc++_shared")
-            target:set("cxflags", table.unpack(warning_flags))
+            target:set("cxflags", "-fPIC", table.unpack(warning_flags))
         end
     end)
 end)
