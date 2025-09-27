@@ -66,10 +66,14 @@ namespace
          * @param ptr 分配内存区域首指针
          * @param size 分配内存大小
          */
-        constexpr inline static void deallocate(void* ptr, ::std::size_t size)
+        constexpr inline static void deallocate(void* ptr, ::std::size_t size [[maybe_unused]])
         {
             is_deallocated = true;
+#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
             ::operator delete (ptr, size);
+#else
+            ::operator delete (ptr);
+#endif
         }
     };
 }  // namespace
@@ -90,11 +94,11 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
             auto generator{gen()};
             CHECK(custom_allocator::is_allocated);
             CHECK_FALSE(custom_allocator::is_deallocated);
-            auto it = generator.begin();
+            auto iterator = generator.begin();
             auto end{generator.end()};
             CHECK(custom_allocator::is_allocated);
             CHECK_FALSE(custom_allocator::is_deallocated);
-            while(it != end) { ++it; }
+            while(iterator != end) { ++iterator; }
         }
         CHECK(custom_allocator::is_allocated);
         CHECK(custom_allocator::is_deallocated);
@@ -109,9 +113,9 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
                      {
                          for(int i = 0; i != 3; ++i) { co_yield i; }
                      }};
-            auto gt{0};
-            for(auto&& value: gen()) { CHECK_EQ(value, gt++); }
-            CHECK_EQ(gt, 3);
+            auto result{0};
+            for(auto&& value: gen()) { CHECK_EQ(value, result++); }
+            CHECK_EQ(result, 3);
         }
 
         SUBCASE("cascading generator")
@@ -127,7 +131,7 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
                      }};
 
             constexpr ::std::array table{1, 1, 2, 3, 5, 8, 13, 21, 34, 55};
-            for(auto&& [i, gt]: ::std::views::zip(::std::views::iota(0), table)) { CHECK_EQ(*gen(i).begin(), gt); }
+            for(auto&& [i, result]: ::std::views::zip(::std::views::iota(0), table)) { CHECK_EQ(*gen(i).begin(), result); }
         }
     }
 
@@ -157,9 +161,9 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
                          ::SoC::assert(false, assert_message);
                      }};
             auto generator{gen()};
-            ::generator<int>::iterator it;
-            CHECK_NOTHROW_MESSAGE(it = generator.begin(), "第一次迭代不应该抛出异常");
-            CHECK_THROWS_WITH_AS_MESSAGE(++it,
+            ::generator<int>::iterator iterator;
+            CHECK_NOTHROW_MESSAGE(iterator = generator.begin(), "第一次迭代不应该抛出异常");
+            CHECK_THROWS_WITH_AS_MESSAGE(++iterator,
                                          ::doctest::Contains{assert_message},
                                          ::SoC::assert_failed_exception,
                                          check_message);
@@ -174,9 +178,9 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
                          co_yield 0;
                      }};
             auto generator{gen()};
-            ::generator<int>::iterator it;
-            CHECK_NOTHROW_MESSAGE(it = generator.begin(), "第一次迭代不应该抛出异常");
-            CHECK_THROWS_WITH_AS_MESSAGE(++it,
+            ::generator<int>::iterator iterator;
+            CHECK_NOTHROW_MESSAGE(iterator = generator.begin(), "第一次迭代不应该抛出异常");
+            CHECK_THROWS_WITH_AS_MESSAGE(++iterator,
                                          ::doctest::Contains{assert_message},
                                          ::SoC::assert_failed_exception,
                                          check_message);

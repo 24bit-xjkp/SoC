@@ -61,9 +61,13 @@ export namespace SoC
          * @param n 要释放的对象个数
          */
         template <typename type>
-        constexpr inline static void deallocate(type* ptr, ::std::size_t n = 1)
+        constexpr inline static void deallocate(type* ptr, ::std::size_t n [[maybe_unused]] = 1)
         {
+#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
             ::operator delete (ptr, sizeof(type) * n, ::std::align_val_t{alignof(type)});
+#else
+            ::operator delete (ptr);
+#endif
         }
 
         /**
@@ -72,7 +76,14 @@ export namespace SoC
          * @param ptr 要释放的内存指针
          * @param size 要释放的内存大小
          */
-        constexpr inline static void deallocate(void* ptr, ::std::size_t size) { ::operator delete (ptr, size); }
+        constexpr inline static void deallocate(void* ptr, ::std::size_t size [[maybe_unused]])
+        {
+#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
+            ::operator delete (ptr, size);
+#else
+            ::operator delete (ptr);
+#endif
+        }
 
         /**
          * @brief 判断两个分配器是否相等

@@ -28,11 +28,15 @@ namespace SoC
         template <>
         struct unhandled_exception_impl<true>
         {
+            // NOLINTBEGIN(readability-convert-member-functions-to-static)
+
             /**
              * @brief 处理未捕获异常
              *
              */
             constexpr inline void unhandled_exception() noexcept { ::SoC::fast_fail(); }
+
+            // NOLINTEND(readability-convert-member-functions-to-static)
         };
     }  // namespace detail
 
@@ -89,9 +93,9 @@ namespace SoC
 
         struct sentinel
         {
-            constexpr inline friend bool operator== (iterator it, sentinel _ [[maybe_unused]]) noexcept
+            constexpr inline friend bool operator== (iterator iter, sentinel _ [[maybe_unused]]) noexcept
             {
-                return it.handle.done();
+                return iter.handle.done();
             }
         };
 
@@ -139,12 +143,41 @@ namespace SoC
              */
             constexpr inline void return_void() noexcept {}
 
-            constexpr inline static void* operator new (::std::size_t size) noexcept { return allocator_type{}.allocate(size); }
+            /**
+             * @brief 重载new以使用分配器分配promise
+             *
+             * @param size 分配内存大小
+             * @return 分配的内存指针
+             */
+            constexpr inline static void* operator new (::std::size_t size) noexcept(::SoC::is_noexcept_allocator<allocator_type>)
+            {
+                return allocator_type{}.allocate(size);
+            }
 
-            constexpr inline static void operator delete (void* ptr, ::std::size_t size) noexcept
+#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
+            /**
+             * @brief 重载delete以使用分配器释放promise
+             *
+             * @param ptr 要释放的内存指针
+             * @param size 释放内存大小
+             */
+            constexpr inline static void
+                operator delete (void* ptr, ::std::size_t size) noexcept(::SoC::is_noexcept_allocator<allocator_type>)
             {
                 allocator_type{}.deallocate(ptr, size);
             }
+#else
+            /**
+             * @brief 重载delete以使用分配器释放promise
+             *
+             * @param ptr 要释放的内存指针
+             */
+            constexpr inline static void operator delete (void* ptr) noexcept(::SoC::is_noexcept_allocator<allocator_type>)
+            {
+                // 由于不支持 sized deallocation，所以这里传递 0 作为大小
+                allocator_type{}.deallocate(ptr, 0);
+            }
+#endif
         };
 
         handle_t handle{};
