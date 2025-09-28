@@ -67,18 +67,30 @@ namespace SoC
         auto heap_block_size{1zu << (free_list_index + min_block_shift)};
         auto* page_ptr{page_begin};
         auto step{heap_block_size / ptr_size};
-#pragma GCC unroll(0)
-        while(page_ptr != page_begin + page_size / ptr_size)
+        // 最大分块对应的free_list_index
+        constexpr auto max_block_free_list_index{page_shift - min_block_shift - 1};
+        if(free_list_index == max_block_free_list_index) [[unlikely]]
         {
-            // 利于循环展开
-            for(auto i{0zu}; i != 4; ++i)
-            {
-                *page_ptr = ::SoC::detail::free_block_list_t{page_ptr + step};
-                page_ptr += step;
-            }
+            // 一个页只能分出两个最大分块，不满足循环展开4次的要求，因此单独处理
+            *page_ptr = ::SoC::detail::free_block_list_t{page_ptr + step};
+            page_ptr += step;
+            *page_ptr = ::SoC::detail::free_block_list_t{nullptr};
         }
-        // 最后一个块的next指针设为nullptr
-        *(page_ptr - step) = ::SoC::detail::free_block_list_t{};
+        else
+        {
+#pragma GCC unroll(0)
+            while(page_ptr != page_begin + page_size / ptr_size)
+            {
+                // 连续进行4次填充，利于循环展开
+                for(auto i{0zu}; i != 4; ++i)
+                {
+                    *page_ptr = ::SoC::detail::free_block_list_t{page_ptr + step};
+                    page_ptr += step;
+                }
+            }
+            // 最后一个块的next指针设为nullptr
+            *(page_ptr - step) = ::SoC::detail::free_block_list_t{};
+        }
         // 从空闲链表里取出的页使用计数为0，不需要设置
         block_metadata_ptr = free_page_ptr;
         // 设置块大小的左移量
@@ -240,7 +252,9 @@ namespace SoC
             auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
             auto&& free_list{free_page_list[free_page_list_index]};
             auto* page_begin{make_block_in_page(free_page_list_index)};
-            free_list->free_block_list = free_list->free_block_list + step;
+            // 刚通过make_block_in_page生成的空闲块链表是连续的
+            // 不使用next指针以减少一次内存访问
+            free_list->free_block_list += step;
             ++free_list->used_block;
             return page_begin;
         }
@@ -264,7 +278,7 @@ namespace SoC
         if(actual_size < page_size && free_page_list[free_page_list_index] != nullptr) [[likely]]
         {
             auto&& free_list{free_page_list[free_page_list_index]};
-            auto&& [next_page, free_block_list, used_block, block_size_shift]{*free_list};
+            auto&& [next_page, free_block_list, used_block, _]{*free_list};
             // 由于空页会移除空闲链表，因此free_block_list不为nullptr
             void* result{free_block_list};
             ++used_block;
@@ -280,7 +294,7 @@ namespace SoC
                 {
                     // 进入下一页进行分配
                     free_block_list = next_page->free_block_list;
-                    next_page = next_page->next_page;
+                    free_list = ::std::exchange(next_page, next_page->next_page);
                 }
             }
             return result;
