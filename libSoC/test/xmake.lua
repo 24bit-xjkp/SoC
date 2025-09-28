@@ -1,7 +1,10 @@
-add_requires("doctest", {plat = get_config("host"), arch = os.arch(), configs = {toolchains = get_config("toolchain_host")}})
+local config_table = {toolchains = get_config("toolchain_host")}
+add_requireconfs("*|soc_*", {plat = get_config("host"), arch = os.arch()})
+add_requires("doctest", {configs = config_table})
+add_requires("fakeit", {configs = table.join(config_table, {framework = "doctest"})})
 set_arch(os.arch())
 set_plat(get_config("host"))
-add_packages("doctest")
+add_packages("doctest", "fakeit")
 
 target("unit_test_utils")
     add_files("utils.cppm", {public = true})

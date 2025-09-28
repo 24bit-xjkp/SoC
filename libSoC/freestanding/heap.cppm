@@ -4,6 +4,12 @@
  * @brief 独立的堆分配器接口定义
  */
 
+module;
+#ifdef SOC_IN_UNIT_TEST
+    #define USE_VIRTUAL virtual
+#else
+    #define USE_VIRTUAL
+#endif
 export module SoC.freestanding:heap;
 import :allocator;
 
@@ -77,7 +83,8 @@ export namespace SoC
          * @param free_list_index 空闲链表索引
          * @return 页起始地址
          */
-        ::SoC::detail::free_block_list_t* make_block_in_page(::std::size_t free_list_index) noexcept(::SoC::optional_noexcept);
+        USE_VIRTUAL ::SoC::detail::free_block_list_t*
+            make_block_in_page(::std::size_t free_list_index) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 将已分块的页从块空闲链表头部删除，插入页空闲链表头部
@@ -85,7 +92,8 @@ export namespace SoC
          * @param page 页元数据指针
          * @return 下一个元数据的指针
          */
-        ::SoC::detail::heap_page_metadata* insert_block_into_page_list(::SoC::detail::heap_page_metadata* page_metadata) noexcept;
+        USE_VIRTUAL ::SoC::detail::heap_page_metadata*
+            insert_block_into_page_list(::SoC::detail::heap_page_metadata* page_metadata) noexcept;
 
         /**
          * @brief 从空闲的已分块页中回收页到空闲页链表
@@ -93,7 +101,8 @@ export namespace SoC
          * @param assert 是否断言空闲页链表非空
          * @return 空闲页链表首指针
          */
-        [[using gnu: noinline, cold]] ::SoC::detail::heap_page_metadata* page_gc(bool assert) noexcept(::SoC::optional_noexcept);
+        [[using gnu: noinline, cold]] USE_VIRTUAL ::SoC::detail::heap_page_metadata*
+            page_gc(bool assert) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 获取页内指针所在页对应的元数据数组索引
@@ -101,7 +110,7 @@ export namespace SoC
          * @param page_ptr 页内指针
          * @return 元数据数组索引
          */
-        [[using gnu: always_inline, hot]] inline ::std::ptrdiff_t
+        [[using gnu: always_inline, hot]] USE_VIRTUAL inline ::std::ptrdiff_t
             get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept(::SoC::optional_noexcept)
         {
             constexpr ::std::string_view message{"页指针超出当前堆范围"};
@@ -119,14 +128,15 @@ export namespace SoC
          * @param range_end 页范围尾指针
          * @return void* 页范围首指针
          */
-        void* remove_pages(::SoC::detail::free_block_list_t* range_begin, ::SoC::detail::free_block_list_t* range_end) noexcept;
+        USE_VIRTUAL void* remove_pages(::SoC::detail::free_block_list_t* range_begin,
+                                       ::SoC::detail::free_block_list_t* range_end) noexcept;
 
         /**
          * @brief 分配一个或多个，慢速路径
          *
          * @param page_cnt 要操作的页数量
          */
-        void* allocate_pages(::std::size_t page_cnt) noexcept(::SoC::optional_noexcept);
+        USE_VIRTUAL void* allocate_pages(::std::size_t page_cnt) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 释放一个或多个，慢速路径
@@ -134,15 +144,16 @@ export namespace SoC
          * @param ptr 块指针
          * @param actual_size 要释放的大小
          */
-        [[using gnu: noinline, cold]] void deallocate_pages(void* ptr,
-                                                            ::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
+        [[using gnu: noinline, cold]] USE_VIRTUAL void
+            deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 分配冷路径
          *
          * @param actual_size 要分配的大小
          */
-        [[using gnu: noinline, cold]] void* allocate_cold_path(::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
+        [[using gnu: noinline, cold]] USE_VIRTUAL void*
+            allocate_cold_path(::std::size_t actual_size) noexcept(::SoC::optional_noexcept);
 
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
@@ -163,7 +174,7 @@ export namespace SoC
          */
         explicit heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept(::SoC::optional_noexcept);
 
-        inline ~heap() noexcept = default;
+        USE_VIRTUAL inline ~heap() noexcept = default;
 
         inline heap(const heap&) noexcept = delete;
         inline heap& operator= (const heap&) = delete;
@@ -190,23 +201,24 @@ export namespace SoC
          *
          * @return 总页数
          */
-        [[nodiscard]] inline ::std::size_t get_total_pages() const noexcept { return metadata.size(); }
+        [[nodiscard]] USE_VIRTUAL inline ::std::size_t get_total_pages() const noexcept { return metadata.size(); }
 
         /**
          * @brief 获取当前堆中空闲页数，不论是否分块
          *
          * @return 空闲页数
          */
-        [[nodiscard]] ::std::size_t get_free_pages() const noexcept;
+        [[nodiscard]] USE_VIRTUAL ::std::size_t get_free_pages() const noexcept;
 
         /**
          * @brief 获取当前堆中正在使用的页数，不论是否分块
          *
          * @return 正在使用的页数
          */
-        [[nodiscard]] inline ::std::size_t get_using_pages() const noexcept { return get_total_pages() - get_free_pages(); }
-
-        // [[nodiscard]] inline ::std::size_t get_block_size(void* block_ptr_in_page)
+        [[nodiscard]] USE_VIRTUAL inline ::std::size_t get_using_pages() const noexcept
+        {
+            return get_total_pages() - get_free_pages();
+        }
 
         /**
          * @brief 分配指定大小的块
@@ -214,7 +226,7 @@ export namespace SoC
          * @param size 块大小
          * @return void* 块起始地址
          */
-        void* allocate(::std::size_t size) noexcept(::SoC::optional_noexcept);
+        [[nodiscard]] USE_VIRTUAL void* allocate(::std::size_t size) noexcept(::SoC::optional_noexcept);
 
         /**
          * @brief 释放指定块
@@ -222,7 +234,7 @@ export namespace SoC
          * @param ptr 块起始地址
          * @param size 块大小
          */
-        void deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept);
+        USE_VIRTUAL void deallocate(void* ptr, ::std::size_t size) noexcept(::SoC::optional_noexcept);
     };
 
     namespace detail

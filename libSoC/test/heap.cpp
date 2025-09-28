@@ -1,4 +1,4 @@
-import "doctest.hpp";
+import "test_framework.hpp";
 import SoC.unit_test;
 
 namespace SoC::test
@@ -237,7 +237,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                         offset += block_size)
                     {
                         ::std::ptrdiff_t page_index{};
-                        CHECK_NOTHROW_MESSAGE(
+                        REQUIRE_NOTHROW_MESSAGE(
                             page_index = heap.get_metadata_index(::std::bit_cast<::free_block_list_t*>(base_address + offset)),
                             "块指针合法，不应该断言失败");
                         CHECK_EQ(page_index, page_index_gt);
@@ -515,7 +515,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             SUBCASE("with free block")
             {
                 current_page->used_block = 0;
-                CHECK_NOTHROW_MESSAGE(heap.make_block_in_page(block_index), "空闲页链表为空且有空闲块，应该能够成功分块");
+                REQUIRE_NOTHROW_MESSAGE(heap.make_block_in_page(block_index), "空闲页链表为空且有空闲块，应该能够成功分块");
                 CHECK_EQ(heap.free_page_list.back(), nullptr);
                 CHECK_EQ(heap.free_page_list[block_index], current_page);
                 CHECK_EQ(current_page->next_page, nullptr);
@@ -578,7 +578,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
             {
                 auto* current_page{heap.free_page_list.back()};
                 auto* next_page{current_page->next_page};
-                CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "堆中空闲页充足，分配不应该失败");
+                REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "堆中空闲页充足，分配不应该失败");
                 // 检查分配的页是不是空闲页表头部的页
                 CHECK_EQ(page_ptr, current_page->free_block_list);
                 // 检查分配后的空闲页表头是不是指向下一页
@@ -596,7 +596,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                 current_page->next_page = nullptr;
                 heap.free_page_list.front() = current_page;
 
-                CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "可以通过page_gc回收空闲块，分配不应该失败");
+                REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "可以通过page_gc回收空闲块，分配不应该失败");
                 // 检查分配的页是不是空闲页表头部的页
                 CHECK_EQ(page_ptr, current_page->free_block_list);
                 // 检查分配后的空闲页表头是不是为空
@@ -634,7 +634,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                     auto* third_page{second_page->next_page};
 
                     void* page_ptr{};
-                    CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(2), message);
+                    REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(2), message);
                     // 检查分配的页是不是空闲页表头部的页
                     CHECK_EQ(page_ptr, first_page->free_block_list);
                     // 检查分配后的空闲页表头是不是指向下一页
@@ -662,7 +662,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                     second_page->next_page = fourth_page;
 
                     void* page_ptr{};
-                    CHECK_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(3), message);
+                    REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(3), message);
                     // 检查分配的页是不是空闲页表头部的页
                     CHECK_EQ(page_ptr, fourth_page->free_block_list);
                     auto* free_page_list{heap.free_page_list.back()};
@@ -722,6 +722,162 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
                                                  "堆内没有空闲页，allocate_pages应该断言失败");
                 }
             }
+        }
+    }
+
+    /// @test 测试冷路径下的内存分配
+    REGISTER_TEST_CASE("allocate_cold_path" * ::doctest::description{"测试冷路径下的内存分配"})
+    {
+        auto heap{::test_fixture::get_heap()};
+        SUBCASE("allocate a block")
+        {
+            auto do_check{
+                [&heap](::std::size_t actual_size, ::std::size_t target_free_block_list_index)
+                {
+                    auto&& metadata{*heap.free_page_list.back()};
+                    auto* page_begin{metadata.free_block_list};
+                    auto* next_block{
+                        ::std::bit_cast<::free_block_list_t*>(::std::bit_cast<::std::uintptr_t>(page_begin) + actual_size)};
+
+                    void* result{};
+                    REQUIRE_NOTHROW_MESSAGE(result = heap.allocate_cold_path(actual_size), "空闲表为空，断言不应该失败");
+                    // 检查分配结果是否为页基址
+                    CHECK_EQ(result, page_begin);
+                    // 检查元数据块是否正确插入空闲表
+                    CHECK_EQ(heap.free_page_list[target_free_block_list_index], &metadata);
+                    // 检查分配后的空闲块页表头是否为下一个空闲块
+                    CHECK_EQ(metadata.free_block_list, next_block);
+                    // 检查分配后的元数据中块大小是否为实际分配大小
+                    CHECK_EQ(1zu << metadata.block_size_shift, actual_size);
+                    // 检查分配后的元数据中used_block是否为1
+                    CHECK_EQ(metadata.used_block, 1);
+                }};
+
+            SUBCASE("allocate 16 bytes") { do_check(16, 0); }
+            SUBCASE("allocate 32 bytes") { do_check(32, 1); }
+            SUBCASE("allocate 64 bytes") { do_check(64, 2); }
+            SUBCASE("allocate 128 bytes") { do_check(128, 3); }
+            SUBCASE("allocate 256 bytes") { do_check(256, 4); }
+        }
+
+        // 这些功能在allocate_pages中已经测试过
+        SUBCASE("allocate pages")
+        {
+            ::fakeit::Mock mock{heap};
+            ::fakeit::Fake(Method(mock, allocate_pages));
+            auto&& heap{mock.get()};
+
+            SUBCASE("allocate 1 page") { CHECK_EQ(heap.allocate_cold_path(heap.page_size), nullptr); }
+            SUBCASE("allocate 2 pages") { CHECK_EQ(heap.allocate_cold_path(2 * heap.page_size), nullptr); }
+        }
+    }
+
+    /// @test 测试内存分配函数
+    REGISTER_TEST_CASE("allocate" * ::doctest::description{"测试内存分配函数"})
+    {
+        auto heap{::test_fixture::get_heap()};
+
+        SUBCASE("cold path")
+        {
+            ::fakeit::Mock mock{heap};
+            auto method{Method(mock, allocate_cold_path)};
+            ::fakeit::When(method)
+                .Do(
+                    [&heap](::std::size_t size)
+                    {
+                        heap.allocate_cold_path(size);
+                        return nullptr;
+                    })
+                .AlwaysReturn(nullptr);
+            auto&& heap{mock.get()};
+
+            SUBCASE("allocate blocks")
+            {
+                CHECK_EQ(heap.allocate(16), nullptr);
+                CHECK_EQ(heap.allocate(32), nullptr);
+                CHECK_EQ(heap.allocate(64), nullptr);
+                CHECK_EQ(heap.allocate(128), nullptr);
+                CHECK_EQ(heap.allocate(256), nullptr);
+                ::fakeit::Verify(method).Exactly(5);
+            }
+
+            SUBCASE("allocate pages")
+            {
+                CHECK_EQ(heap.allocate(heap.page_size), nullptr);
+                CHECK_EQ(heap.allocate(2 * heap.page_size), nullptr);
+                ::fakeit::Verify(method).Exactly(2);
+            }
+        }
+
+        SUBCASE("hot path")
+        {
+            // 分配一个块以初始化free_page_list
+            for(auto i{heap.min_block_shift}; i < heap.page_shift; ++i) { auto* _{heap.allocate(1zu << i)}; }
+
+            for(::std::span span{heap.free_page_list};
+                auto&& [index, metadata]: ::std::views::zip(::std::views::iota(0zu), span.subspan(0, span.size() - 1)))
+            {
+                CAPTURE(index);
+                REQUIRE_NE(metadata, nullptr);
+                REQUIRE_NE(metadata->free_block_list, nullptr);
+                REQUIRE_EQ(metadata->used_block, 1);
+            }
+
+            auto do_check{[&heap](::std::size_t size, ::std::size_t target_free_block_list_index, bool free_list_empty = false)
+                          {
+                              auto&& free_list{heap.free_page_list[target_free_block_list_index]};
+                              auto* block_ptr{free_list->free_block_list};
+                              auto* next_block_ptr{block_ptr->next};
+
+                              auto* result{heap.allocate(size)};
+                              CHECK_EQ(result, block_ptr);
+                              if(free_list_empty) [[unlikely]] { CHECK_EQ(free_list, nullptr); }
+                              else
+                              {
+                                  CHECK_EQ(free_list->used_block, 2);
+                                  CHECK_EQ(free_list->free_block_list, next_block_ptr);
+                              }
+                          }};
+
+            SUBCASE("allocate 16 bytes") { do_check(16, 0); }
+            SUBCASE("allocate 32 bytes") { do_check(32, 1); }
+            SUBCASE("allocate 64 bytes") { do_check(64, 2); }
+            SUBCASE("allocate 128 bytes") { do_check(128, 3); }
+            SUBCASE("allocate 256 bytes") { do_check(256, 4, true); }
+        }
+
+        SUBCASE("hot path with blocks cached in free_page_list")
+        {
+            // 256字节块每页数量最少，便于测试
+            constexpr auto block_index{4zu};
+            constexpr auto block_size{256zu};
+            heap.make_block_in_page(block_index);
+            auto&& free_block_list{heap.free_page_list[block_index]};
+            auto* first_page{::std::exchange(free_block_list, nullptr)};
+            auto* first_block{first_page->free_block_list};
+            auto* second_block{first_block->next};
+            // clang-analyzer无法分析这个函数修改了free_block_list，所以需要NOLINTNEXTLINE
+            heap.make_block_in_page(block_index);
+            auto* second_page{::std::exchange(free_block_list, first_page)};
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+            auto* third_block{second_page->free_block_list};
+            auto* fourth_block{third_block->next};
+            first_page->next_page = second_page;
+
+            auto* result{heap.allocate(block_size)};
+            CHECK_EQ(result, first_block);
+            CHECK_EQ(free_block_list->used_block, 1);
+            result = heap.allocate(block_size);
+            CHECK_EQ(result, second_block);
+            // 切换到下一个空闲的页，所以used_block为0
+            CHECK_EQ(free_block_list->used_block, 0);
+            result = heap.allocate(block_size);
+            CHECK_EQ(result, third_block);
+            CHECK_EQ(free_block_list->used_block, 1);
+            result = heap.allocate(block_size);
+            CHECK_EQ(result, fourth_block);
+            // 没有空闲页，所以free_block_list为nullptr
+            CHECK_EQ(free_block_list, nullptr);
         }
     }
 }

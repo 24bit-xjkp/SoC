@@ -8,6 +8,9 @@
     - modernize-*
     - cert-*
     - portability-*
+    - cppcoreguidelines-*
+    - hicpp-*
+    - concurrency-*
 Hover:
   ShowAKA: Yes
 Documentation:
