@@ -19,6 +19,7 @@ export namespace SoC
         release = 1,
         releasedbg = 2,
         minsizerel = 3,
+        coverage = 4,
 
 #ifdef SOC_BUILD_MODE_DEBUG
         current = debug
@@ -28,6 +29,8 @@ export namespace SoC
         current = releasedbg,
 #elifdef SOC_BUILD_MODE_MINSIZEREL
         current = minsizerel
+#elifdef SOC_BUILD_MODE_COVERAGE
+        current = coverage
 #else
     #error Unknown build mode
 #endif
@@ -649,7 +652,6 @@ export namespace SoC
          * @param value 要存储的值
          */
         constexpr inline explicit moveable_value(value_type value) noexcept : value{value} {}
-
 
         /**
          * @brief 赋值运算符，将储存的值赋值为value
