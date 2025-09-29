@@ -19,7 +19,6 @@ task("flash", function()
         }
     }
 end)
-task_end()
 
 task("gdb", function()
     on_run(function()
@@ -42,7 +41,6 @@ task("gdb", function()
         }
     }
 end)
-task_end()
 
 task("erase", function()
     on_run(function()
@@ -60,7 +58,6 @@ task("erase", function()
         }
     }
 end)
-task_end()
 
 task("com", function()
     on_run(function()
