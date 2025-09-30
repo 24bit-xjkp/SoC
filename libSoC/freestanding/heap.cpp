@@ -24,7 +24,7 @@ namespace SoC
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(pages > 0, "堆大小必须大于一页"sv); }
         auto* metadata_begin{::std::launder(reinterpret_cast<::SoC::detail::heap_page_metadata*>(begin))};
         auto* metadata_end{metadata_begin + pages};
-        metadata = ::std::ranges::subrange{metadata_begin, metadata_end};
+        metadata = ::std::span{metadata_begin, metadata_end};
 
         auto ptr{reinterpret_cast<::std::uintptr_t>(metadata_end)};
         ptr = (ptr + page_size - 1) & (-1zu << page_shift);
@@ -44,7 +44,7 @@ namespace SoC
 
         // 空闲链表按块大小排序，最后一项为空闲页链表
         // 将首个空闲页放入空闲页链表
-        free_page_list.back() = metadata.begin();
+        free_page_list.back() = metadata.data();
 
         // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
@@ -104,7 +104,7 @@ namespace SoC
         auto* old_head{::std::exchange(page_metadata, page_metadata->next_page)};
         // 将空闲块指针指向数据区，对于页来说，完成了空闲链表的重新初始化
         // 对于其他大小的块，需要使用make_block_in_page函数重新初始化空闲链表
-        old_head->free_block_list = ((old_head - metadata.begin()) * page_size / ptr_size) + data;
+        old_head->free_block_list = ((old_head - metadata.data()) * page_size / ptr_size) + data;
         auto* old_page_head{::std::exchange(free_page_list.back(), old_head)};
         old_head->next_page = old_page_head;
         // 初始化块大小的左移量为页大小左移量
@@ -115,7 +115,7 @@ namespace SoC
     ::SoC::detail::heap_page_metadata* ::SoC::heap::page_gc(bool assert) noexcept(::SoC::optional_noexcept)
     {
 #pragma GCC unroll(0)
-        for(auto&& block_list: ::std::ranges::subrange{free_page_list.begin(), free_page_list.end() - 1})
+        for(auto&& block_list: ::std::span{free_page_list}.first(block_size_cnt - 1))
         {
             auto* block_list_cursor{block_list};
             if(block_list_cursor == nullptr) { continue; }
@@ -191,7 +191,7 @@ namespace SoC
                     auto* range_begin = metadata_ptr->free_block_list;
                     auto* range_end = metadata_ptr->free_block_list;
                     // 向后搜索
-                    for(auto&& [_, free_block_list, used_block, _]: ::std::ranges::subrange{metadata_ptr + 1, metadata.end()})
+                    for(auto&& [_, free_block_list, used_block, _]: ::std::ranges::subrange{metadata_ptr + 1, metadata_end})
                     {
                         if(used_block == 0)
                         {
@@ -207,7 +207,7 @@ namespace SoC
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                     auto delta{reinterpret_cast<::std::uintptr_t>(range_end) - reinterpret_cast<::std::uintptr_t>(range_begin)};
                     // 转化为连续页数，由于是闭区间，因此+1
-                    auto advance{delta / page_size + 1};
+                    auto advance{static_cast<::std::ptrdiff_t>(delta / page_size + 1)};
                     metadata_ptr += advance;
                 }
                 else
@@ -232,9 +232,14 @@ namespace SoC
         auto metadata_index{get_metadata_index(reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr))};
         auto page_ptr{reinterpret_cast<::std::uintptr_t>(ptr)};
         auto&& head{free_page_list.back()};
-        for(auto&& metadata: ::std::ranges::subrange{&metadata[metadata_index], &metadata[metadata_index + page_cnt]})
+        for(auto&& metadata: metadata.subspan(metadata_index, page_cnt))
         {
-            auto&& [next_page, free_block_list, used_block, _]{metadata};
+            auto&& [next_page, free_block_list, used_block, block_size_shift]{metadata};
+            if(::SoC::use_full_assert)
+            {
+                ::SoC::assert(used_block == 1, "要释放的页使用计数不为1"sv);
+                ::SoC::assert(block_size_shift == page_shift, "释放块大小与申请块大小不匹配"sv);
+            }
             used_block = 0;
             free_block_list = reinterpret_cast<::SoC::detail::free_block_list_t*>(page_ptr);
             page_ptr += page_size;
@@ -309,7 +314,6 @@ namespace SoC
     {
         auto* page_ptr{static_cast<::SoC::detail::free_block_list_t*>(ptr)};
         auto actual_size{get_actual_allocate_size(size)};
-        auto actual_size_shift{static_cast<::std::size_t>(::std::countr_zero(actual_size))};
         if(actual_size >= page_size) [[unlikely]]
         {
             deallocate_pages(ptr, actual_size);
@@ -318,14 +322,18 @@ namespace SoC
         auto metadata_index{get_metadata_index(page_ptr)};
         auto&& metadata_ref{metadata[metadata_index]};
         auto&& [next_page, free_block_list, used_block, block_size_shift]{metadata_ref};
-        ::SoC::always_assert(block_size_shift == actual_size_shift, "释放块大小与申请块大小不匹配"sv);
+        if constexpr(::SoC::use_full_assert)
+        {
+            auto actual_size_shift{static_cast<::std::size_t>(::std::countr_zero(actual_size))};
+            ::SoC::assert(block_size_shift == actual_size_shift, "释放块大小与申请块大小不匹配"sv);
+        }
         auto* old_head{::std::exchange(free_block_list, page_ptr)};
-        *page_ptr = ::SoC::detail::free_block_list_t{old_head};
+        ::new(page_ptr)::SoC::detail::free_block_list_t{old_head};
         --used_block;
         if(old_head == nullptr) [[unlikely]]
         {
             // 原先页是满的，不在空闲链表里，现在将其插入链表
-            auto free_page_list_index{actual_size_shift - min_block_shift};
+            auto free_page_list_index{block_size_shift - min_block_shift};
             next_page = ::std::exchange(free_page_list[free_page_list_index], &metadata_ref);
         }
     }

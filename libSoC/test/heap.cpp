@@ -11,6 +11,7 @@ namespace SoC::test
     {
         using ::SoC::heap::allocate_cold_path;
         using ::SoC::heap::allocate_pages;
+        using ::SoC::heap::block_size_cnt;
         using ::SoC::heap::data;
         using ::SoC::heap::deallocate_pages;
         using ::SoC::heap::free_list_t;
@@ -141,7 +142,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         /// 测试metadata初始化是否正确
         SUBCASE("metadata")
         {
-            void* page_begin{heap.metadata.end()};
+            void* page_begin{heap.data};
             auto space_left{heap_size - page_num * sizeof(::metadata_t)};
             REQUIRE_NE(::std::align(heap.page_size, page_num * heap.page_size, page_begin, space_left), nullptr);
             auto current_page_address{::std::bit_cast<::std::uintptr_t>(page_begin)};
@@ -161,7 +162,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         }
 
         /// 测试空闲页链表初始化是否正确
-        SUBCASE("free_page_list") { CHECK_EQ(heap.free_page_list.back(), heap.metadata.begin()); }
+        SUBCASE("free_page_list") { CHECK_EQ(heap.free_page_list.back(), heap.metadata.data()); }
     }
 
     /// @test 测试堆的获取实际分配大小函数能否正常工作
@@ -320,7 +321,7 @@ TEST_SUITE("heap" * ::doctest::description{"SoC::heap单元测试"})
         CHECK_EQ(page_ptr, free_page_list);
         // 检查新插入的页的next_page是否指向了原空闲页链表的头指针，即是否成功穿成链表
         CHECK_EQ(page_ptr->next_page, free_page_list_head_gt);
-        auto metadata_index{::std::distance(heap.metadata.begin(), page_ptr)};
+        auto metadata_index{::std::distance(heap.metadata.data(), page_ptr)};
         auto data_address{::std::bit_cast<::std::uintptr_t>(heap.data) + metadata_index * heap.page_size};
         // 检查页的空闲块指针是否指向数据块首地址，即完成对于页操作的初始化
         CHECK_EQ(page_ptr->free_block_list, ::std::bit_cast<::free_block_list_t*>(data_address));

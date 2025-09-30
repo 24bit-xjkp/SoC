@@ -61,7 +61,7 @@ export namespace SoC
         friend struct ::SoC::test::heap;
 
         /// 元数据区
-        ::std::ranges::subrange<::SoC::detail::heap_page_metadata*> metadata;
+        ::std::span<::SoC::detail::heap_page_metadata> metadata;
 
         /// 最小块大小的左移量
         constexpr inline static auto min_block_shift{4zu};
@@ -69,7 +69,10 @@ export namespace SoC
         /// 页大小的左移量
         constexpr inline static auto page_shift{9zu};
 
-        using free_list_t = ::std::array<::SoC::detail::heap_page_metadata*, page_shift - min_block_shift + 1>;
+        /// 块大小总数
+        constexpr inline static auto block_size_cnt{page_shift - min_block_shift + 1};
+
+        using free_list_t = ::std::array<::SoC::detail::heap_page_metadata*, block_size_cnt>;
 
         /// 空闲链表
         free_list_t free_page_list{};
@@ -114,10 +117,10 @@ export namespace SoC
             get_metadata_index(::SoC::detail::free_block_list_t* page_ptr) const noexcept(::SoC::optional_noexcept)
         {
             constexpr ::std::string_view message{"页指针超出当前堆范围"};
-            ::SoC::always_assert(page_ptr >= data, message);
+            if constexpr(::SoC::use_full_assert) { ::SoC::assert(page_ptr >= data, message); }
             auto page_index{static_cast<::std::ptrdiff_t>((page_ptr - data) * ptr_size / page_size)};
             auto max_page_index{static_cast<::std::ptrdiff_t>(metadata.size())};
-            ::SoC::always_assert(page_index < max_page_index, message);
+            if constexpr(::SoC::use_full_assert) { ::SoC::assert(page_index < max_page_index, message); }
             return page_index;
         }
 
