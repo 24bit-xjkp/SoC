@@ -223,14 +223,13 @@ namespace SoC
 
     void ::SoC::heap::deallocate_pages(void* ptr, ::std::size_t actual_size) noexcept(::SoC::optional_noexcept)
     {
-        // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
         auto page_cnt{static_cast<::std::ptrdiff_t>(actual_size / page_size)};
         if constexpr(::SoC::use_full_assert)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % page_size == 0, "释放范围首指针不满足页对齐"sv);
         }
-        auto metadata_index{get_metadata_index(reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr))};
-        auto page_ptr{reinterpret_cast<::std::uintptr_t>(ptr)};
+        auto metadata_index{get_metadata_index(static_cast<::SoC::detail::free_block_list_t*>(ptr))};
         auto&& head{free_page_list.back()};
         for(auto&& metadata: metadata.subspan(metadata_index, page_cnt))
         {
@@ -241,11 +240,8 @@ namespace SoC
                 ::SoC::assert(block_size_shift == page_shift, "释放块大小与申请块大小不匹配"sv);
             }
             used_block = 0;
-            free_block_list = reinterpret_cast<::SoC::detail::free_block_list_t*>(page_ptr);
-            page_ptr += page_size;
             next_page = ::std::exchange(head, &metadata);
         }
-        // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
 
     void* ::SoC::heap::allocate_cold_path(::std::size_t actual_size) noexcept(::SoC::optional_noexcept)
@@ -324,8 +320,11 @@ namespace SoC
         auto&& [next_page, free_block_list, used_block, block_size_shift]{metadata_ref};
         if constexpr(::SoC::use_full_assert)
         {
-            auto actual_size_shift{static_cast<::std::size_t>(::std::countr_zero(actual_size))};
-            ::SoC::assert(block_size_shift == actual_size_shift, "释放块大小与申请块大小不匹配"sv);
+            auto block_size{1zu << block_size_shift};
+            ::SoC::assert(block_size == actual_size, "释放块大小与申请块大小不匹配"sv);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % block_size == 0, "释放页指针不满足块对齐"sv);
+            ::SoC::assert(used_block >= 1 && used_block <= block_size, "要释放的块所在页使用计数不在[1, block_size]范围内"sv);
         }
         auto* old_head{::std::exchange(free_block_list, page_ptr)};
         ::new(page_ptr)::SoC::detail::free_block_list_t{old_head};
