@@ -4,6 +4,10 @@
  * @brief 独立的实用工具实现
  */
 
+module;
+#if defined(__cpp_exceptions) && defined(SOC_IN_UNIT_TEST)
+    #define SOC_FAST_FAIL_EXCEPTION
+#endif
 export module SoC.freestanding:utils;
 import SoC.std;
 
@@ -50,6 +54,14 @@ export namespace SoC
 #else
     /// 条件性noexcept，在独立环境下为禁用异常；在宿主环境下支持异常
     constexpr inline auto optional_noexcept{true};
+#endif
+
+#ifdef SOC_IN_UNIT_TEST
+    /// 是否在单元测试中
+    constexpr inline auto in_unit_test{true};
+#else
+    /// 是否在单元测试中
+    constexpr inline auto in_unit_test{false};
 #endif
 }  // namespace SoC
 
@@ -342,11 +354,33 @@ export namespace SoC
         if(!expression) [[unlikely]] { ::SoC::assert_failed(message, location); }
     }
 
+#ifdef SOC_FAST_FAIL_EXCEPTION
+    /**
+     * @brief 快速终止异常
+     *
+     * @note 仅开启异常支持的在单元测试中抛出该异常
+     */
+    struct fast_fail_exception : ::std::runtime_error
+    {
+        using ::std::runtime_error::runtime_error;
+    };
+#endif
+
     /**
      * @brief 快速终止程序
      *
+     * @note 在未开启异常支持或未在单元测试中调用时，该函数会触发快速识别，导致程序立即终止
+     * @throw SoC::fast_fail_exception 仅开启异常支持的在单元测试中通过异常实现以便测试框架捕获
      */
-    [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept { __builtin_trap(); }
+    [[noreturn, gnu::always_inline, gnu::artificial]] inline void fast_fail() noexcept(::SoC::optional_noexcept ||
+                                                                                       !::SoC::in_unit_test)
+    {
+#ifdef SOC_FAST_FAIL_EXCEPTION
+        throw fast_fail_exception{"程序被快速终止"};
+#else
+        __builtin_trap();
+#endif
+    }
 
     /**
      * @brief 基于C++的检查函数，启用断言时使用断言，反之使用快速终止
