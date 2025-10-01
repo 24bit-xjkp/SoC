@@ -187,9 +187,10 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
     /// @test 测试页分配函数
     REGISTER_TEST_CASE("allocate_pages" * ::doctest::description{"测试页分配函数"})
     {
+        auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
+
         SUBCASE("allocate a page")
         {
-            auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
             void* page_ptr{};
 
             SUBCASE("free_page_list not empty")
@@ -242,8 +243,11 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
         {
             SUBCASE("with enough free pages")
             {
-                auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
                 constexpr auto* message{"堆中空闲页充足，分配不应该失败"};
+                ::fakeit::Mock mock{heap};
+                const auto method{Method(mock, page_gc)};
+                ::fakeit::Fake(method);
+                auto&& heap{mock.get()};
 
                 SUBCASE("continuous pages at head")
                 {
@@ -253,6 +257,8 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
 
                     void* page_ptr{};
                     REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(2), message);
+                    // 验证是否进入了多页分配路径
+                    ::fakeit::Verify(method).Exactly(1);
                     // 检查分配的页是不是空闲页表头部的页
                     CHECK_EQ(page_ptr, first_page->free_block_list);
                     // 检查分配后的空闲页表头是不是指向下一页
@@ -281,6 +287,8 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
 
                     void* page_ptr{};
                     REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(3), message);
+                    // 验证是否进入了多页分配路径
+                    ::fakeit::Verify(method).Exactly(1);
                     // 检查分配的页是不是空闲页表头部的页
                     CHECK_EQ(page_ptr, fourth_page->free_block_list);
                     auto* free_page_list{heap.free_page_list.back()};
@@ -311,10 +319,10 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
 
             SUBCASE("not enough free pages")
             {
-                auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
                 const ::doctest::Contains exception_string{"堆中剩余连续分页数量不足"};
+                constexpr auto* no_enough_continuous_page_message{"堆内没有足够连续页，allocate_pages应该断言失败"};
 
-                SUBCASE("not enough continuous page")
+                SUBCASE("no enough continuous page")
                 {
                     auto* first_page{heap.free_page_list.back()};
                     auto* second_page{first_page->next_page};
@@ -327,7 +335,19 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
                     CHECK_THROWS_WITH_AS_MESSAGE(heap.allocate_pages(3),
                                                  exception_string,
                                                  ::SoC::assert_failed_exception,
-                                                 "堆内没有足够连续页，allocate_pages应该断言失败");
+                                                 no_enough_continuous_page_message);
+                }
+
+                SUBCASE("scan reached end of heap")
+                {
+                    // 除最后一页外，其他页都被占用，相当于连续页空间不足
+                    for(auto&& metadata: heap.metadata.first(heap.metadata.size() - 1)) { metadata.used_block = 1; }
+                    heap.free_page_list.back() = &heap.metadata.back();
+
+                    CHECK_THROWS_WITH_AS_MESSAGE(heap.allocate_pages(2),
+                                                 exception_string,
+                                                 ::SoC::assert_failed_exception,
+                                                 no_enough_continuous_page_message);
                 }
 
                 SUBCASE("no free pages")

@@ -70,6 +70,12 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
 
         /// 测试空闲页链表初始化是否正确
         SUBCASE("free_page_list") { CHECK_EQ(heap.free_page_list.back(), heap.metadata.data()); }
+
+        /// 显式使用析构函数以便在生成覆盖率报告时检测到析构函数的调用
+        SUBCASE("destructor")
+        {
+            ::SoC::unit_test::heap::test_fixture::get_heap();
+        }
     }
 
     /// @test 测试堆的获取实际分配大小函数能否正常工作
@@ -260,14 +266,14 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
     REGISTER_TEST_CASE("remove_pages" * ::doctest::description{"测试从空闲页链表中移除范围内的页"})
     {
         auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
+        auto&& free_page_list{heap.free_page_list.back()};
+        auto* first_page{free_page_list};
+        auto* second_page{first_page->next_page};
+        auto* third_page{second_page->next_page};
+        auto* fourth_page{third_page->next_page};
 
         SUBCASE("remove pages with free_page_list head")
         {
-            auto* first_page{heap.free_page_list.back()};
-            auto* second_page{first_page->next_page};
-            auto* third_page{second_page->next_page};
-            auto* fourth_page{third_page->next_page};
-
             // 检查返回值是否为范围内的首个页
             CHECK_EQ(heap.remove_pages(first_page->free_block_list, third_page->free_block_list), first_page->free_block_list);
             // 检查空闲页表头是否为第四页
@@ -281,20 +287,33 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
 
         SUBCASE("remove pages without free_page_list head")
         {
-            auto* first_page{heap.free_page_list.back()};
-            auto* second_page{first_page->next_page};
-            auto* third_page{second_page->next_page};
-            auto* fourth_page{third_page->next_page};
+            auto do_check{[&]
+                          {
+                              // 检查返回值是否为范围内的首个页
+                              CHECK_EQ(heap.remove_pages(second_page->free_block_list, third_page->free_block_list),
+                                       second_page->free_block_list);
+                              // 检查空闲页表头是否为第一页
+                              CHECK_EQ(heap.free_page_list.back(), first_page);
+                              // 检查范围内的页used_blocks是否为1，不在移除范围内的页used_blocks是否为0
+                              CHECK_EQ(first_page->used_block, 0);
+                              CHECK_EQ(second_page->used_block, 1);
+                              CHECK_EQ(third_page->used_block, 1);
+                              CHECK_EQ(fourth_page->used_block, 0);
+                          }};
 
-            // 检查返回值是否为范围内的首个页
-            CHECK_EQ(heap.remove_pages(second_page->free_block_list, third_page->free_block_list), second_page->free_block_list);
-            // 检查空闲页表头是否为第一页
-            CHECK_EQ(heap.free_page_list.back(), first_page);
-            // 检查范围内的页used_blocks是否为1，不在移除范围内的页used_blocks是否为0
-            CHECK_EQ(first_page->used_block, 0);
-            CHECK_EQ(second_page->used_block, 1);
-            CHECK_EQ(third_page->used_block, 1);
-            CHECK_EQ(fourth_page->used_block, 0);
+            SUBCASE("in order") { do_check(); }
+
+            SUBCASE("out of order")
+            {
+                // 交换first_page和fourth_page以测试链表穿插的情况
+                first_page->next_page = fourth_page->next_page;
+                fourth_page->next_page = second_page;
+                third_page->next_page = first_page;
+                ::std::ranges::swap(first_page, fourth_page);
+                free_page_list = first_page;
+
+                do_check();
+            }
         }
     }
 }
