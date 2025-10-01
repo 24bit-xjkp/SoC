@@ -21,87 +21,37 @@ namespace SoC::test
 
 namespace
 {
-    template <typename type>
-    using generator = ::SoC::test::generator<type, ::SoC::std_allocator>;
-
-    /**
-     * @brief 自定义分配器，用于测试分配器适配
-     *
-     */
-    struct custom_allocator : ::SoC::std_allocator
-    {
-        /// 记录是否分配了内存
-        inline static bool is_allocated{};
-        /// 记录是否释放了内存
-        inline static bool is_deallocated{};
-
-        using ::SoC::std_allocator::allocate;
-        using ::SoC::std_allocator::deallocate;
-
-        /**
-         * @brief 重置分配器状态
-         *
-         */
-        constexpr inline static void reset() noexcept
-        {
-            is_allocated = false;
-            is_deallocated = false;
-        }
-
-        /**
-         * @brief 分配内存
-         *
-         * @param size 分配内存大小
-         * @return 分配内存区域首指针
-         */
-        constexpr inline static void* allocate(::std::size_t size)
-        {
-            is_allocated = true;
-            return ::operator new (size);
-        }
-
-        /**
-         * @brief 释放内存
-         *
-         * @param ptr 分配内存区域首指针
-         * @param size 分配内存大小
-         */
-        constexpr inline static void deallocate(void* ptr, ::std::size_t size [[maybe_unused]])
-        {
-            is_deallocated = true;
-#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
-            ::operator delete (ptr, size);
-#else
-            ::operator delete (ptr);
-#endif
-        }
-    };
+    using generator = ::SoC::test::generator<::std::size_t, ::SoC::std_allocator>;
 }  // namespace
 
+/// @test SoC::generator单元测试
 TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
 {
     /// @test 测试自定义分配器是否能正常工作
     REGISTER_TEST_CASE("custom_allocator" * ::doctest::description{"测试自定义分配器是否能正常工作"})
     {
-        custom_allocator::reset();
+        ::SoC::std_allocator::reset();
+        auto&& allocate_cnt{::SoC::std_allocator::allocate_cnt};
+        auto&& deallocate_cnt{::SoC::std_allocator::deallocate_cnt};
+
         {
-            auto gen{[] static -> ::SoC::test::generator<int, ::custom_allocator>
+            auto gen{[] static -> ::generator
                      {
-                         for(int i = 0; i != 3; ++i) { co_yield i; }
+                         for(auto i{0zu}; i != 3; ++i) { co_yield i; }
                      }};
-            REQUIRE_FALSE(custom_allocator::is_allocated);
-            REQUIRE_FALSE(custom_allocator::is_deallocated);
+            REQUIRE_EQ(allocate_cnt, 0);
+            REQUIRE_EQ(deallocate_cnt, 0);
             auto generator{gen()};
-            CHECK(custom_allocator::is_allocated);
-            CHECK_FALSE(custom_allocator::is_deallocated);
+            CHECK_EQ(allocate_cnt, 1);
+            CHECK_EQ(deallocate_cnt, 0);
             auto iterator = generator.begin();
-            auto end{generator.end()};
-            CHECK(custom_allocator::is_allocated);
-            CHECK_FALSE(custom_allocator::is_deallocated);
-            while(iterator != end) { ++iterator; }
+            auto sentinel{generator.end()};
+            CHECK_EQ(allocate_cnt, 1);
+            CHECK_EQ(deallocate_cnt, 0);
+            while(iterator != sentinel) { ++iterator; }
         }
-        CHECK(custom_allocator::is_allocated);
-        CHECK(custom_allocator::is_deallocated);
+        CHECK_EQ(allocate_cnt, 1);
+        CHECK_EQ(deallocate_cnt, 1);
     }
 
     /// @test 测试co_yield能否正常工作
@@ -109,9 +59,9 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
     {
         SUBCASE("single generator")
         {
-            auto gen{[] static -> ::generator<int>
+            auto gen{[] static -> ::generator
                      {
-                         for(int i = 0; i != 3; ++i) { co_yield i; }
+                         for(auto i{0zu}; i != 3; ++i) { co_yield i; }
                      }};
             auto result{0};
             for(auto&& value: gen()) { CHECK_EQ(value, result++); }
@@ -121,9 +71,9 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
         SUBCASE("cascading generator")
         {
             // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters, misc-no-recursion)
-            auto gen{[](this auto&& self, int i) -> ::generator<int>
+            auto gen{[](this auto&& self, int i) -> ::generator
                      {
-                         if(i == 0 || i == 1) { co_yield 1; }
+                         if(i == 0 || i == 1) { co_yield 1zu; }
                          else
                          {
                              co_yield *self(i - 1).begin() + *self(i - 2).begin();
@@ -142,10 +92,10 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
         constexpr auto* check_message{"异常传播失败"};
         SUBCASE("exception before yield")
         {
-            auto gen{[] static -> ::generator<int>
+            auto gen{[] static -> ::generator
                      {
                          ::SoC::assert(false, assert_message);
-                         co_yield 0;
+                         co_yield 0zu;
                      }};
             CHECK_THROWS_WITH_AS_MESSAGE(gen().begin(),
                                          ::doctest::Contains{assert_message},
@@ -155,13 +105,13 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
 
         SUBCASE("exception after yield")
         {
-            auto gen{[] static -> ::generator<int>
+            auto gen{[] static -> ::generator
                      {
-                         co_yield 0;
+                         co_yield 0zu;
                          ::SoC::assert(false, assert_message);
                      }};
             auto generator{gen()};
-            ::generator<int>::iterator iterator;
+            ::generator::iterator iterator;
             CHECK_NOTHROW_MESSAGE(iterator = generator.begin(), "第一次迭代不应该抛出异常");
             CHECK_THROWS_WITH_AS_MESSAGE(++iterator,
                                          ::doctest::Contains{assert_message},
@@ -171,14 +121,14 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
 
         SUBCASE("exception between yield")
         {
-            auto gen{[] static -> ::generator<int>
+            auto gen{[] static -> ::generator
                      {
-                         co_yield 0;
+                         co_yield 0zu;
                          ::SoC::assert(false, assert_message);
-                         co_yield 0;
+                         co_yield 0zu;
                      }};
             auto generator{gen()};
-            ::generator<int>::iterator iterator;
+            ::generator::iterator iterator;
             CHECK_NOTHROW_MESSAGE(iterator = generator.begin(), "第一次迭代不应该抛出异常");
             CHECK_THROWS_WITH_AS_MESSAGE(++iterator,
                                          ::doctest::Contains{assert_message},

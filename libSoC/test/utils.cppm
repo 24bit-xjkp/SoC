@@ -20,13 +20,29 @@ export namespace SoC
      */
     struct std_allocator
     {
+        /// 记录分配内存的次数
+        inline static auto allocate_cnt{0zu};
+        /// 记录释放内存的次数
+        inline static auto deallocate_cnt{0zu};
+
+        /// 重置分配器的统计信息
+        constexpr inline static void reset() noexcept
+        {
+            allocate_cnt = 0;
+            deallocate_cnt = 0;
+        }
+
         /**
          * @brief 分配内存
          *
          * @param size 要分配的内存大小
          * @return void* 分配的内存指针
          */
-        constexpr inline static void* allocate(::std::size_t size) { return ::operator new (size); }
+        constexpr inline static void* allocate(::std::size_t size)
+        {
+            ++allocate_cnt;
+            return ::operator new (size);
+        }
 
         /**
          * @brief 分配内存
@@ -37,6 +53,7 @@ export namespace SoC
         template <typename type>
         constexpr inline static type* allocate()
         {
+            ++allocate_cnt;
             return ::operator new (sizeof(type), ::std::align_val_t{alignof(type)});
         }
 
@@ -50,6 +67,7 @@ export namespace SoC
         template <typename type>
         constexpr inline static ::SoC::allocation_result<type*> allocate(::std::size_t n)
         {
+            ++allocate_cnt;
             return ::SoC::allocation_result<type*>{::operator new (sizeof(type) * n, ::std::align_val_t{alignof(type)}), n};
         }
 
@@ -63,6 +81,7 @@ export namespace SoC
         template <typename type>
         constexpr inline static void deallocate(type* ptr, ::std::size_t n [[maybe_unused]] = 1)
         {
+            ++deallocate_cnt;
 #if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
             ::operator delete (ptr, sizeof(type) * n, ::std::align_val_t{alignof(type)});
 #else
@@ -78,6 +97,7 @@ export namespace SoC
          */
         constexpr inline static void deallocate(void* ptr, ::std::size_t size [[maybe_unused]])
         {
+            ++deallocate_cnt;
 #if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
             ::operator delete (ptr, size);
 #else

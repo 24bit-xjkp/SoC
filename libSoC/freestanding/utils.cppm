@@ -40,6 +40,18 @@ export namespace SoC
 #endif
     };
 
+    /**
+     * @brief 判断当前构建模式是否为指定模式
+     *
+     * @tparam args 指定构建模式参数包
+     * @return true 当前构建模式为指定模式之一
+     * @return false 当前构建模式不在指定模式之列
+     */
+    constexpr inline bool is_build_mode(::std::same_as<::SoC::build_mode> auto... args) noexcept
+    {
+        return ((::SoC::build_mode::current == args) || ...);
+    }
+
 #ifdef USE_FULL_ASSERT
     /// 是否启用全部的断言
     constexpr inline auto use_full_assert{true};

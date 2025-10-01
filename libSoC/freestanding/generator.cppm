@@ -1,46 +1,9 @@
 export module SoC.freestanding:generator;
 import :heap;
 
-namespace SoC
+export namespace SoC
 {
-    namespace detail
-    {
-        /**
-         * @brief 未捕获异常处理实现
-         *
-         * @tparam no_exception 是否禁用异常处理
-         */
-        template <bool no_exception>
-        struct unhandled_exception_impl;
-
-        template <>
-        struct unhandled_exception_impl<false>
-        {
-            ::std::exception_ptr exception_ptr{};
-
-            /**
-             * @brief 处理未捕获异常
-             *
-             */
-            constexpr inline void unhandled_exception() noexcept { exception_ptr = ::std::current_exception(); }
-        };
-
-        template <>
-        struct unhandled_exception_impl<true>
-        {
-            // NOLINTBEGIN(readability-convert-member-functions-to-static)
-
-            /**
-             * @brief 处理未捕获异常
-             *
-             */
-            constexpr inline void unhandled_exception() noexcept { ::SoC::fast_fail(); }
-
-            // NOLINTEND(readability-convert-member-functions-to-static)
-        };
-    }  // namespace detail
-
-    export namespace test
+    namespace test
     {
         /// @see SoC::generator
         extern "C++" template <typename value_type, ::SoC::is_allocator allocator_type = ::SoC::ram_heap_allocator_t>
@@ -54,7 +17,7 @@ namespace SoC
      * @tparam value_type 生成器值类型
      * @tparam allocator_type 分配器类型，必须是无状态分配器
      */
-    export template <typename value_type, ::SoC::is_allocator allocator_type = ::SoC::ram_heap_allocator_t>
+    template <typename value_type, ::SoC::is_allocator allocator_type = ::SoC::ram_heap_allocator_t>
         requires (::std::is_empty_v<allocator_type>)
     struct generator : ::std::ranges::view_interface<generator<value_type, allocator_type>>
     {
@@ -100,7 +63,7 @@ namespace SoC
         };
 
     public:
-        struct promise_type : ::SoC::detail::unhandled_exception_impl<::SoC::optional_noexcept>
+        struct promise_type
         {
             value_type* ptr{};
 
@@ -178,6 +141,26 @@ namespace SoC
                 allocator_type{}.deallocate(ptr, 0);
             }
 #endif
+
+#ifdef __cpp_exceptions
+            ::std::exception_ptr exception_ptr{};
+
+            /**
+             * @brief 处理未捕获异常
+             *
+             */
+            constexpr inline void unhandled_exception() noexcept { exception_ptr = ::std::current_exception(); }
+#else
+            // NOLINTBEGIN(readability-convert-member-functions-to-static)
+
+            /**
+             * @brief 处理未捕获异常
+             *
+             */
+            constexpr inline void unhandled_exception() noexcept { ::SoC::fast_fail(); }
+
+            // NOLINTEND(readability-convert-member-functions-to-static)
+#endif
         };
 
         handle_t handle{};
@@ -245,6 +228,14 @@ namespace SoC
          *
          * @return 哨位对象
          */
-        constexpr inline sentinel end() noexcept { return {}; }
+        constexpr inline static sentinel end() noexcept
+        {
+            // 防止覆盖率计算时，sentinel 被优化掉
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+            {
+                ::std::atomic_signal_fence(::std::memory_order_relaxed);
+            }
+            return {};
+        }
     };
 }  // namespace SoC
