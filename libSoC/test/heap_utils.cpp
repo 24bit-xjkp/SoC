@@ -70,12 +70,6 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
 
         /// 测试空闲页链表初始化是否正确
         SUBCASE("free_page_list") { CHECK_EQ(heap.free_page_list.back(), heap.metadata.data()); }
-
-        /// 显式使用析构函数以便在生成覆盖率报告时检测到析构函数的调用
-        SUBCASE("destructor")
-        {
-            ::SoC::unit_test::heap::test_fixture::get_heap();
-        }
     }
 
     /// @test 测试堆的获取实际分配大小函数能否正常工作

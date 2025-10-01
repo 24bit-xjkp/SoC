@@ -177,7 +177,14 @@ export namespace SoC
          */
         explicit heap(::std::uintptr_t* begin, ::std::uintptr_t* end) noexcept(::SoC::optional_noexcept);
 
-        USE_VIRTUAL inline ~heap() noexcept = default;
+        USE_VIRTUAL inline ~heap() noexcept
+        {
+            // 防止覆盖率计算时，析构函数被优化掉
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+            {
+                ::std::atomic_signal_fence(::std::memory_order_relaxed);
+            }
+        }
 
         inline heap(const heap&) noexcept = delete;
         inline heap& operator= (const heap&) = delete;
