@@ -93,8 +93,8 @@ export namespace SoC
              *
              * @param value 要生产的值
              */
-            constexpr inline ::std::suspend_always yield_value(auto&& value) noexcept
-                requires (::std::convertible_to<value_type&, decltype((value))>)
+            constexpr inline ::std::suspend_always
+                yield_value(::SoC::detail::either<value_type, value_type&> auto&& value) noexcept
             {
                 ptr = ::std::addressof(value);
                 return {};

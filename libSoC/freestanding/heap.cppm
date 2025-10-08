@@ -203,7 +203,7 @@ export namespace SoC
             auto ceiled_size{::std::max(::std::bit_ceil(size), min_block_size)};
             // 不超过页大小时对齐到下一个2^N块边界
             // 超过页大小时对齐到下一个页边界
-            return ceiled_size > page_size ? (size + page_size - 1) / page_size * page_size : ceiled_size;
+            return size > page_size ? (size + page_size - 1) / page_size * page_size : ceiled_size;
         }
 
         /**
@@ -305,14 +305,13 @@ export namespace SoC
             template <::SoC::detail::is_known_type_allocatable type>
             inline static ::SoC::allocation_result<type*> allocate(::std::size_t n) noexcept(::SoC::optional_noexcept)
             {
-                constexpr auto size{::std::max(sizeof(type), alignof(type))};
-                constexpr auto page_size{::SoC::heap::page_size};
+                // sizeof(type) >= alignof(type)，天然保证对齐
+                constexpr auto size{sizeof(type)};
                 auto total_size{size * n};
-                // 对齐到2^N字节
+                // 获取实际分配的大小
                 auto actual_size{::SoC::heap::get_actual_allocate_size(total_size)};
-                // 当分配大小超过页大小时转为对齐到整数页
-                if(actual_size >= page_size) [[unlikely]] { actual_size = (total_size + page_size - 1) / page_size * page_size; }
-                return ::SoC::allocation_result<type*>{static_cast<type*>(wrapper::heap->allocate(size * n)), actual_size / size};
+                return ::SoC::allocation_result<type*>{static_cast<type*>(wrapper::heap->allocate(total_size)),
+                                                       actual_size / size};
             }
 
             /**
@@ -325,8 +324,7 @@ export namespace SoC
             template <::SoC::detail::is_known_type_allocatable type>
             inline static void deallocate(type* ptr, ::std::size_t n = 1) noexcept(::SoC::optional_noexcept)
             {
-                constexpr auto size{::std::max(sizeof(type), alignof(type))};
-                wrapper::heap->deallocate(ptr, size * n);
+                wrapper::heap->deallocate(ptr, sizeof(type) * n);
             }
 
             /**
