@@ -19,21 +19,31 @@ export namespace SoC
      */
     enum class build_mode : ::std::uint8_t
     {
+        /// 调试模式
         debug = 0,
+        /// 发布模式
         release = 1,
+        /// 发布调试模式
         releasedbg = 2,
+        /// 最小尺寸发布模式
         minsizerel = 3,
+        /// 覆盖率模式
         coverage = 4,
 
 #ifdef SOC_BUILD_MODE_DEBUG
+        /// 当前构建模式为调试模式
         current = debug
 #elifdef SOC_BUILD_MODE_RELEASE
+        /// 当前构建模式为发布模式
         current = release
 #elifdef SOC_BUILD_MODE_RELEASEDBG
+        /// 当前构建模式为发布调试模式
         current = releasedbg,
 #elifdef SOC_BUILD_MODE_MINSIZEREL
+        /// 当前构建模式为最小尺寸发布模式
         current = minsizerel
 #elifdef SOC_BUILD_MODE_COVERAGE
+        /// 当前构建模式为覆盖率模式
         current = coverage
 #else
     #error Unknown build mode
@@ -161,9 +171,9 @@ namespace SoC
         /// 系统时钟周期，在此处修改时钟频率
         using cycles = ::SoC::duration<::std::ratio<1, 144>>;
         /// 微秒
-        using milliseconds = ::SoC::duration<::std::ratio<1>>;
+        using microseconds = ::SoC::duration<::std::ratio<1>>;
         /// 毫秒
-        using microseconds = ::SoC::duration<::std::kilo>;
+        using milliseconds = ::SoC::duration<::std::kilo>;
         /// 系统时刻周期，在此处修改系统时刻
         using systicks = ::SoC::microseconds;
         /// 秒
@@ -171,39 +181,77 @@ namespace SoC
     }
 }  // namespace SoC
 
+namespace SoC::detail
+{
+    /**
+     * @brief 对浮点数进行四舍五入取整，针对字面量
+     *
+     * @note 由于std::round的constexpr化尚未完成，因此使用手动实现的四舍五入取整
+     * @param i 待取整的浮点数
+     * @return consteval 取整后的整数
+     */
+    consteval inline ::std::size_t constexpr_literal_round(long double i) noexcept
+    {
+        auto integral{static_cast<::std::size_t>(i)};
+        auto error{i - static_cast<long double>(integral)};
+        return error >= 0.5l ? integral + 1 : integral;
+    }
+}  // namespace SoC::detail
+
 export namespace SoC::literal
 {
     consteval inline ::std::size_t operator""_K (unsigned long long i) noexcept { return i * 1'000; }
 
-    consteval inline ::std::size_t operator""_K (long double i) noexcept { return static_cast<::std::size_t>(i * 1'000); }
+    consteval inline ::std::size_t operator""_K (long double i) noexcept
+    {
+        return ::SoC::detail::constexpr_literal_round(i * 1'000);
+    }
 
     consteval inline ::std::size_t operator""_M (unsigned long long i) noexcept { return i * 1'000'000; }
 
-    consteval inline ::std::size_t operator""_M (long double i) noexcept { return static_cast<::std::size_t>(i * 1'000'000); }
+    consteval inline ::std::size_t operator""_M (long double i) noexcept
+    {
+        return ::SoC::detail::constexpr_literal_round(i * 1'000'000);
+    }
 
     consteval inline ::SoC::seconds operator""_s (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    consteval inline ::SoC::microseconds operator""_s (long double i) noexcept { return {static_cast<::std::size_t>(i * 1'000)}; }
-
-    consteval inline ::SoC::microseconds operator""_ms (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
-
-    consteval inline ::SoC::milliseconds operator""_ms (long double i) noexcept
+    consteval inline ::SoC::milliseconds operator""_s (long double i) noexcept
     {
-        return {static_cast<::std::size_t>(i * 1'000)};
+        return {::SoC::detail::constexpr_literal_round(i * 1'000)};
     }
 
-    consteval inline ::SoC::milliseconds operator""_us (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::milliseconds operator""_ms (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    consteval inline ::SoC::cycles operator""_us (long double i) noexcept { return {static_cast<::std::size_t>(i * 168)}; }
+    consteval inline ::SoC::microseconds operator""_ms (long double i) noexcept
+    {
+        return {::SoC::detail::constexpr_literal_round(i * 1'000)};
+    }
+
+    consteval inline ::SoC::microseconds operator""_us (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+
+    consteval inline ::SoC::cycles operator""_us (long double i) noexcept
+    {
+        constexpr auto cycles_per_us{::SoC::microseconds{1}.duration_cast<::SoC::cycles>().rep};
+        return {::SoC::detail::constexpr_literal_round(i * cycles_per_us)};
+    }
 
     consteval inline ::SoC::cycles operator""_cycle (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+
+    consteval inline ::SoC::cycles operator""_cycle (long double i) noexcept
+    {
+        return {::SoC::detail::constexpr_literal_round(i)};
+    }
 
     consteval inline ::SoC::cycles operator""_Kcycle (unsigned long long i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1000)};
     }
 
-    consteval inline ::SoC::cycles operator""_Kcycle (long double i) noexcept { return {static_cast<::std::size_t>(i * 1'000)}; }
+    consteval inline ::SoC::cycles operator""_Kcycle (long double i) noexcept
+    {
+        return {::SoC::detail::constexpr_literal_round(i * 1'000)};
+    }
 
     consteval inline ::SoC::cycles operator""_Mcycle (unsigned long long i) noexcept
     {
@@ -212,7 +260,7 @@ export namespace SoC::literal
 
     consteval inline ::SoC::cycles operator""_Mcycle (long double i) noexcept
     {
-        return {static_cast<::std::size_t>(i * 1000'000)};
+        return {::SoC::detail::constexpr_literal_round(i * 1000'000)};
     }
 }  // namespace SoC::literal
 
@@ -267,7 +315,7 @@ export namespace SoC
      */
     template <typename func_t, typename... args_t>
         requires (::SoC::detail::invocable_r<func_t, bool, args_t...>)
-    constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept
+    constexpr inline void wait_until(func_t&& func, args_t&&... args) noexcept(::SoC::optional_noexcept)
     {
 #pragma GCC unroll 0
         while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...)) { ; }
@@ -321,6 +369,9 @@ export namespace SoC
     {
         /// 断言失败输出的默认消息
         constexpr ::std::string_view default_assert_message{"断言失败"};
+
+        /// 快速终止输出的默认消息
+        constexpr ::std::string_view fast_fail_message{"程序被快速终止"};
     }  // namespace detail
 
     /**
@@ -388,7 +439,7 @@ export namespace SoC
                                                                                        !::SoC::in_unit_test)
     {
 #ifdef SOC_FAST_FAIL_EXCEPTION
-        throw fast_fail_exception{"程序被快速终止"};
+        throw ::SoC::fast_fail_exception{::SoC::detail::fast_fail_message.data()};
 #else
         __builtin_trap();
 #endif
@@ -417,6 +468,12 @@ export namespace SoC
         }
     }
 
+    namespace test
+    {
+        /// @see ::SoC::log_device_t
+        extern "C++" struct log_device_t;
+    }  // namespace test
+
     /**
      * @brief 日志设备类
      *
@@ -424,8 +481,12 @@ export namespace SoC
     struct log_device_t
     {
     private:
+        friend struct ::SoC::test::log_device_t;
+        /// 写入回调函数类型
         using write_callback_t = void (*)(void*, const void*, const void*) noexcept;
+        /// 写入回调函数
         write_callback_t write_callback{};
+        /// 日志设备指针
         void* device{};
 
     public:
@@ -531,7 +592,10 @@ export namespace SoC
                                    }
                                    return result;
                                }()};
-        return ::std::round(value * scaler) / scaler;
+        // 在一定范围内补偿float的精度问题，避免round(1.0005f * 1e3) / 1e3 != 1.001f
+        constexpr auto esp{1e-5f};
+        constexpr auto r_scaler{1.f / scaler};
+        return ::std::round(value * scaler + ::std::copysign(esp, value)) * r_scaler;
     }
 
     /**
@@ -570,6 +634,13 @@ export namespace SoC::detail
 
 export namespace SoC
 {
+    namespace test
+    {
+        /// @see SoC::optional
+        extern "C++" template <typename type>
+        struct optional;
+    }  // namespace test
+
     /**
      * @brief 可空引用
      *
@@ -587,6 +658,7 @@ export namespace SoC
 
     private:
         pointer ptr;
+        friend struct ::SoC::test::optional<type>;
 
     public:
         explicit constexpr inline optional() noexcept : ptr{nullptr} {}
@@ -599,18 +671,74 @@ export namespace SoC
             return *this;
         }
 
+        /**
+         * @brief 清除绑定对象
+         *
+         * @param ptr 空指针
+         * @return optional& 引用自身
+         */
+        constexpr inline optional& operator= (::std::nullptr_t ptr [[maybe_unused]]) noexcept
+        {
+            this->ptr = nullptr;
+            return *this;
+        }
+
+        /**
+         * @brief 获取绑定对象的引用
+         *
+         * @return 绑定对象引用
+         */
         constexpr inline operator reference() noexcept { return *ptr; }
 
+        /**
+         * @brief 获取绑定对象的常量引用
+         *
+         * @return 绑定对象常量引用
+         */
         constexpr inline operator const_reference() const noexcept { return *ptr; }
 
+        /**
+         * @brief 获取绑定对象的引用，不进行检查
+         *
+         * @return 绑定对象引用
+         */
         constexpr inline auto&& operator* (this auto&& self) noexcept { return *self.ptr; }
 
+        /**
+         * @brief 判断是否绑定了对象
+         *
+         * @return true 已绑定对象
+         * @return false 未绑定对象
+         */
         constexpr inline explicit operator bool() const noexcept { return ptr != nullptr; }
 
-        constexpr inline auto operator->(this auto&& self) noexcept { return self.ptr; }
+        /**
+         * @brief 获取绑定对象的指针
+         *
+         * @return 绑定对象指针
+         */
+        constexpr inline auto* operator->(this auto&& self) noexcept { return self.ptr; }
 
+        /**
+         * @brief 对绑定对象的引用进行索引操作，不进行检查
+         *
+         * @return 索引操作结果
+         */
+        constexpr inline decltype(auto) operator[] (this auto&& self, ::std::size_t index) noexcept(noexcept((*self.ptr)[index]))
+        {
+            return (*self.ptr)[index];
+        }
+
+        /**
+         * @brief 调用绑定对象的函数
+         *
+         * @tparam args_t 参数类型列表
+         * @param args 参数列表
+         * @throws 若调用的函数潜在抛出则向上传播，若为noexcept则也为noexcept
+         * @return 函数返回值
+         */
         template <typename... args_t>
-        constexpr inline ::std::invoke_result_t<value_type, args_t...>
+        constexpr inline decltype(auto)
             operator() (this auto&& self, args_t&&... args) noexcept(noexcept((*self.ptr)(::std::forward<args_t>(args)...)))
             requires requires() { (*self.ptr)(::std::forward<args_t>(args)...); }
         {
@@ -618,11 +746,44 @@ export namespace SoC
         }
 
         /**
+         * @brief 判断是否绑定了对象
+         *
+         * @return true 已绑定对象
+         * @return false 未绑定对象
+         */
+        constexpr inline bool has_value() const noexcept { return ptr != nullptr; }
+
+        /**
          * @brief 获取绑定对象的引用
          *
          * @return 对象引用
          */
-        constexpr inline auto&& get(this auto&& self) noexcept { return *self.ptr; }
+        constexpr inline auto&& value(this auto&& self) noexcept(::SoC::optional_noexcept)
+        {
+            if constexpr(::SoC::use_full_assert)
+            {
+                using namespace ::std::string_view_literals;
+                ::SoC::assert(self.ptr != nullptr, "尝试获取空optional的值"sv);
+            }
+            return *self.ptr;
+        }
+
+        /**
+         * @brief 获取绑定对象的引用，若为空则返回默认值
+         *
+         * @param default_value 默认值
+         * @return 对象引用或默认值
+         */
+        constexpr inline auto&& value_or(this auto&& self, ::std::convertible_to<value_type> auto&& default_value) noexcept
+        {
+            return self.ptr != nullptr ? *self.ptr : ::std::forward<type>(default_value);
+        }
+
+        /**
+         * @brief 清除绑定对象
+         *
+         */
+        constexpr inline void reset() noexcept { ptr = nullptr; }
     };
 
     /**
@@ -641,9 +802,23 @@ export namespace SoC
 
         value_type value;
 
-        constexpr inline union_wrapper() noexcept {}
+        constexpr inline union_wrapper() noexcept
+        {
+            // 在覆盖率测试模式下，防止构造函数被优化
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+            {
+                ::std::atomic_signal_fence(::std::memory_order_relaxed);
+            }
+        }
 
-        constexpr inline ~union_wrapper() noexcept {}
+        constexpr inline ~union_wrapper() noexcept
+        {
+            // 在覆盖率测试模式下，防止析构函数被优化
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+            {
+                ::std::atomic_signal_fence(::std::memory_order_relaxed);
+            }
+        }
 
         constexpr inline union_wrapper(const union_wrapper&) noexcept = default;
         constexpr inline union_wrapper& operator= (const union_wrapper&) noexcept = default;
@@ -666,7 +841,9 @@ export namespace SoC
         using const_reference = const type&;
         reference ref;
 
-        ~destructure_guard() noexcept { ref.~type(); }
+        constexpr inline explicit destructure_guard(reference ref) noexcept : ref{ref} {}
+
+        constexpr inline ~destructure_guard() noexcept { ref.~type(); }
 
         constexpr inline destructure_guard(const destructure_guard&) noexcept = default;
         constexpr inline destructure_guard& operator= (const destructure_guard&) noexcept = default;
