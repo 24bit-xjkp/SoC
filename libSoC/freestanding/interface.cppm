@@ -15,3 +15,4 @@ export import :fmt;
 export import :io;
 export import :ring_buffer;
 export import :priority_queue;
+export import :coroutine;
