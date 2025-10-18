@@ -1,3 +1,9 @@
+/**
+ * @file utils.cppm
+ * @author 24bit-xjkp (2283572185@qq.com)
+ * @brief SoC单元测试实用工具模块，提供基础测试夹具
+ */
+
 export module SoC.unit_test;
 
 export import std;

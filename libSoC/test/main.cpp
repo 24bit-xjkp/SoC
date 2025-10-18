@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ * @author 24bit-xjkp (2283572185@qq.com)
+ * @brief 提供doctest框架的主程序，进行测试环境初始化
+ */
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 

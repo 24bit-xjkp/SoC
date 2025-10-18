@@ -1,3 +1,9 @@
+/**
+ * @file generator.cppm
+ * @author 24bit-xjkp (2283572185@qq.com)
+ * @brief 协程生成器实现
+ */
+
 export module SoC.freestanding:generator;
 import :heap;
 

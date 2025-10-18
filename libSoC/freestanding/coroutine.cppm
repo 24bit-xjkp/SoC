@@ -5,6 +5,7 @@
  *
  * 本模块提供基于C++20标准的协程支持，包括协程承诺类型、任务类型、调度器等
  */
+
 export module SoC.freestanding:coroutine;
 import :ring_buffer;
 import :priority_queue;

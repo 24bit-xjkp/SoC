@@ -1,3 +1,9 @@
+/**
+ * @file utils_wrapper.cpp
+ * @author 24bit-xjkp (2283572185@qq.com)
+ * @brief SoC实用包装体部分单元测试
+ */
+
 import "test_framework.hpp";
 import SoC.unit_test;
 
@@ -6,6 +12,10 @@ import SoC.unit_test;
 
 namespace SoC::test
 {
+    /**
+     * @brief 导出SoC::optional中的符号用于测试
+     *
+     */
     extern "C++" template <typename type>
     struct optional : ::SoC::optional<type>
     {
