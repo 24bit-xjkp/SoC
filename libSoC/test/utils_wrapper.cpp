@@ -34,9 +34,9 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
     {
         constexpr static ::std::uint32_t clock_id{0x12345678};
         static constinit bool clock_closed{false};
-        auto callback = [](::std::uint32_t id)
+        auto callback = [](::std::uint32_t input_id)
         {
-            CHECK_EQ(id, clock_id);
+            CHECK_EQ(input_id, clock_id);
             clock_closed = true;
         };
 
@@ -49,7 +49,7 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
     /// @test 测试optional能否正确存储和访问值
     REGISTER_TEST_CASE("optional" * ::doctest::description{"测试optional能否正确存储和访问值"})
     {
-        struct test_struct
+        struct test_struct  // NOLINT(cppcoreguidelines-virtual-class-destructor)
         {
             int value;
 
@@ -75,7 +75,8 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
 
         SUBCASE("with value")
         {
-            test_struct self{0}, other{1};
+            test_struct self{0};
+            test_struct other{1};
             ::fakeit::Mock mock{self};
             const auto method_call{Method(mock, operator())};
             const auto method_index{Method(mock, operator[])};
@@ -118,6 +119,11 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
             test_struct() noexcept { ++ctor_called_counter; }
 
             ~test_struct() noexcept { ++dtor_called_counter; }
+
+            test_struct(const test_struct&) = delete;
+            test_struct(test_struct&&) = delete;
+            test_struct& operator= (const test_struct&) = delete;
+            test_struct& operator= (test_struct&&) = delete;
         };
 
         ::SoC::union_wrapper<test_struct> wrapper{};
@@ -136,11 +142,16 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
     {
         struct test_struct
         {
+            test_struct() noexcept = default;
             virtual ~test_struct() noexcept = default;
+            test_struct(const test_struct&) = delete;
+            test_struct(test_struct&&) = delete;
+            test_struct& operator= (const test_struct&) = delete;
+            test_struct& operator= (test_struct&&) = delete;
         };
 
-        alignas(test_struct)::std::byte buffer[sizeof(test_struct)];
-        auto&& ref{*new(buffer) test_struct{}};
+        alignas(test_struct)::std::array<::std::byte, sizeof(test_struct)> buffer{};
+        auto&& ref{*new(buffer.data()) test_struct{}};
         ::fakeit::Mock mock{ref};
         const auto dtor{Dtor(mock)};
         ::fakeit::Fake(dtor);
@@ -188,19 +199,22 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
             CHECK_EQ(moveable_value[0], value);
         }
 
+        // 由于doctest框架下SUBCASE会重新初始化moveable_value，所以这里需要忽略clang-analyzer-cplusplus.Move警告
+        // NOLINTBEGIN(clang-analyzer-cplusplus.Move)
+
         SUBCASE("move construct")
         {
             moveable_value_t other{::std::move(moveable_value)};
             CHECK_EQ(other.value, &value);
-            CHECK_EQ(moveable_value.value, nullptr);
+            CHECK_EQ(moveable_value.value, nullptr);  // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
         }
 
         SUBCASE("move assign")
         {
             moveable_value_t other{};
-            other = ::std::move(moveable_value);
+            other = ::std::move(moveable_value);  // NOLINT(clang-analyzer-cplusplus.Move)
             CHECK_EQ(other.value, &value);
-            CHECK_EQ(moveable_value.value, nullptr);
+            CHECK_EQ(moveable_value.value, nullptr);  // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
         }
 
         SUBCASE("copy construct")
@@ -217,5 +231,7 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
             CHECK_EQ(other.value, &value);
             CHECK_EQ(moveable_value.value, &value);
         }
+
+        // NOLINTEND(clang-analyzer-cplusplus.Move)
     }
 }

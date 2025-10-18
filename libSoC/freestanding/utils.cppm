@@ -751,7 +751,7 @@ export namespace SoC
          * @return true 已绑定对象
          * @return false 未绑定对象
          */
-        constexpr inline bool has_value() const noexcept { return ptr != nullptr; }
+        [[nodiscard]] constexpr inline bool has_value() const noexcept { return ptr != nullptr; }
 
         /**
          * @brief 获取绑定对象的引用

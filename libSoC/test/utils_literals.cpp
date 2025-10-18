@@ -32,15 +32,16 @@ TEST_SUITE("utils_literals")
                                 ::SoC::microseconds,
                                 ::SoC::cycles)
     {
-        duration a{1}, b{2};
+        duration one{1};
+        duration other{2};
 
-        CHECK_EQ(a + b, duration{3});
-        CHECK_EQ(b - a, duration{1});
-        CHECK_LT(a, b);
-        CHECK_GT(b, a);
-        CHECK_NE(a, b);
-        CHECK_EQ(a.template duration_cast<duration>(), a);
-        CHECK_EQ(b.template duration_cast<duration>(), b);
+        CHECK_EQ(one + other, duration{3});
+        CHECK_EQ(other - one, duration{1});
+        CHECK_LT(one, other);
+        CHECK_GT(other, one);
+        CHECK_NE(one, other);
+        CHECK_EQ(one.template duration_cast<duration>(), one);
+        CHECK_EQ(other.template duration_cast<duration>(), other);
     }
 
     /// @test 测试duration字面量是否正确

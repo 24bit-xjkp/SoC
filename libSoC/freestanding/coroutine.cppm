@@ -317,24 +317,6 @@ export namespace SoC
         handle_t handle{};
         friend struct ::SoC::test::task<allocator_t>;
 
-        /**
-         * @brief 销毁协程柄
-         *
-         * @note 仅能在任务完成后调用，否则断言失败
-         */
-        void destroy() noexcept(::SoC::optional_noexcept)
-        {
-            if(handle)
-            {
-                if constexpr(::SoC::use_full_assert)
-                {
-                    using namespace ::std::string_view_literals;
-                    ::SoC::assert(handle.done(), "任务尚未完成，不能绑定新的协程柄"sv);
-                }
-                handle.destroy();
-            }
-        }
-
     public:
         struct promise_type : ::SoC::promise_base<allocator_t>
         {
@@ -416,9 +398,9 @@ export namespace SoC
          * @param other 要移动的任务
          * @return 移动后的任务引用
          */
-        inline task_base& operator= (task_base&& other) noexcept(::SoC::optional_noexcept)  // NOLINT(*noexcept-move*)
+        inline task_base& operator= (task_base&& other) noexcept
         {
-            destroy();
+            if(handle) { handle.destroy(); }
             handle = ::std::exchange(other.handle, nullptr);
             return *this;
         }
@@ -427,7 +409,10 @@ export namespace SoC
          * @brief 销毁协程柄
          *
          */
-        inline ~task_base() noexcept { destroy(); }
+        inline ~task_base() noexcept
+        {
+            if(handle) { handle.destroy(); }
+        }
 
         /**
          * @brief 获取承诺引用
@@ -632,7 +617,7 @@ export namespace SoC
      * @param duration 要等待的时间
      * @return 等待体
      */
-    inline auto operator co_await(::SoC::detail::is_duration auto duration) noexcept
+    inline auto operator co_await(::SoC::detail::is_duration auto duration) noexcept(::SoC::optional_noexcept)
     {
         auto ticks{duration.template duration_cast<::SoC::systicks>().rep};
         if constexpr(::SoC::use_full_assert)
