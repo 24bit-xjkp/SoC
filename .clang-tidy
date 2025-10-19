@@ -41,6 +41,7 @@ Checks: >
   -cppcoreguidelines-pro-type-cstyle-cast,
   -cppcoreguidelines-avoid-const-or-ref-data-members,
   -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-virtual-class-destructor,
   misc-*,
   -misc-include-cleaner,
   -misc-use-internal-linkage,

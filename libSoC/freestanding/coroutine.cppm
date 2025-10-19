@@ -18,7 +18,7 @@ export namespace SoC
      *
      * @note 可等待体的销毁不涉及类型擦除，无需虚析构函数
      */
-    struct awaiter_base  // NOLINT(cppcoreguidelines-virtual-class-destructor)
+    struct awaiter_base
     {
         /**
          * @brief 等待体回调，通过该函数实现外部向可等待体传递信息
@@ -44,7 +44,7 @@ export namespace SoC
      *
      * @note 调度器的销毁不涉及类型擦除，无需虚析构函数
      */
-    struct scheduler_base  // NOLINT(cppcoreguidelines-virtual-class-destructor)
+    struct scheduler_base
     {
         /**
          * @brief 将handle插入到完成队列中
@@ -62,21 +62,40 @@ export namespace SoC
         virtual void wait_queue_push_back(::std::coroutine_handle<> handle, ::std::size_t ticks) noexcept = 0;
     };
 
-    /**
-     * @brief 从协程柄获取承诺引用
-     *
-     * @tparam promise 要获取的承诺类型
-     * @param handle 协程柄
-     * @return 承诺引用
-     */
-    template <typename promise>
-    inline promise& get_promise(::std::coroutine_handle<> handle) noexcept
-    {
-        return ::std::coroutine_handle<promise>::from_address(handle.address()).promise();
-    }
-
     namespace detail
     {
+        /**
+         * @brief 等待体，用于等待协程完成
+         *
+         */
+        struct finial_suspend_awaiter
+        {
+            /**
+             * @brief 检查是否立即可恢复
+             *
+             * @return false 协程已经执行到最终暂停点，需要挂起
+             */
+            [[nodiscard]] constexpr inline static bool await_ready() noexcept { return false; }
+
+            /**
+             * @brief 挂起当前协程，跳转到下一个要执行的协程中
+             *
+             * @param handle 当前协程柄
+             * @return 下一个要执行的协程柄
+             */
+            template <typename promise>
+            constexpr inline static ::std::coroutine_handle<> await_suspend(::std::coroutine_handle<promise> handle) noexcept
+            {
+                return handle.promise().handle_to_resume;
+            }
+
+            /**
+             * @brief 该函数不应被执行，因为协程已销毁而不应恢复执行
+             *
+             */
+            [[noreturn]] constexpr inline static void await_resume() noexcept { ::std::unreachable(); }
+        };
+
         /**
          * @brief 协程承诺类型基类，不包含分配器
          *
@@ -145,42 +164,19 @@ export namespace SoC
              */
             inline void clear_awaitable() noexcept { awaiter = nullptr; }
 
-            // NOLINTBEGIN(readability-convert-member-functions-to-static, modernize-use-nodiscard)
-
             /**
              * @brief 在协程初始化后立即挂起
              *
-             * @return std::suspend_always
+             * @return std::suspend_always 协程是惰性执行的，初始化后立即挂起
              */
-            inline ::std::suspend_always initial_suspend() noexcept { return {}; }
+            [[nodiscard]] inline static ::std::suspend_always initial_suspend() noexcept { return {}; }
 
             /**
-             * @brief 在协程执行完成后调用回调，然后销毁协程
+             * @brief 在协程执行完成后挂起，然后恢复父协程的执行
              *
+             * @return finial_suspend_awaiter 协程执行完成后挂起，然后恢复父协程的执行
              */
-            inline auto final_suspend() noexcept
-            {
-                struct awaiter
-                {
-                    constexpr inline bool await_ready() const noexcept { return false; }
-
-                    constexpr inline ::std::coroutine_handle<> await_suspend(::std::coroutine_handle<> handle) const noexcept
-                    {
-                        auto&& promise{::SoC::get_promise<promise_base_no_allocator>(handle)};
-                        return promise.handle_to_resume;
-                    }
-
-                    /**
-                     * @brief 该函数不应被执行，因为协程已销毁而不应恢复执行
-                     *
-                     */
-                    [[noreturn]] constexpr inline void await_resume() const noexcept { ::std::unreachable(); }
-                };
-
-                return awaiter{};
-            }
-
-            // NOLINTEND(readability-convert-member-functions-to-static, modernize-use-nodiscard)
+            [[nodiscard]] inline static ::SoC::detail::finial_suspend_awaiter final_suspend() noexcept { return {}; }
 
             /**
              * @brief 将返回的错误码放入协程帧
@@ -239,17 +235,16 @@ export namespace SoC
     namespace test
     {
         /// @see SoC::promise_base
-        extern "C++" template <::SoC::is_allocator allocator_t>
+        extern "C++" template <::SoC::is_static_allocator allocator_t>
         struct promise_base;
     }  // namespace test
 
     /**
      * @brief 协程承诺类型，支持自定义分配器
      *
-     * @tparam allocator_t 分配器类型
+     * @tparam allocator_t 分配器类型，必须是静态分配器
      */
-    template <::SoC::is_allocator allocator_t>
-        requires (::std::is_empty_v<allocator_t>)
+    template <::SoC::is_static_allocator allocator_t>
     struct promise_base : ::SoC::detail::promise_base_no_allocator
     {
     private:
@@ -267,7 +262,10 @@ export namespace SoC
          * @param size 协程帧大小
          * @return void* 协程帧首指针
          */
-        inline static void* operator new (::std::size_t size) noexcept { return allocator::allocate(size); }
+        inline static void* operator new (::std::size_t size) noexcept(::SoC::is_noexcept_allocator<allocator>)
+        {
+            return allocator::allocate(size);
+        }
 
 #if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
         /**
@@ -276,14 +274,17 @@ export namespace SoC
          * @param ptr 协程帧首指针
          * @param size 协程帧大小
          */
-        inline static void operator delete (void* ptr, ::std::size_t size) noexcept { return allocator::deallocate(ptr, size); }
+        inline static void operator delete (void* ptr, ::std::size_t size) noexcept(::SoC::is_noexcept_allocator<allocator>)
+        {
+            return allocator::deallocate(ptr, size);
+        }
 #else
         /**
          * @brief 重载delete以使用分配器释放promise
          *
          * @param ptr 要释放的内存指针
          */
-        constexpr inline static void operator delete (void* ptr) noexcept(::SoC::is_noexcept_allocator<allocator_type>)
+        constexpr inline static void operator delete (void* ptr) noexcept(::SoC::is_noexcept_allocator<allocator>)
         {
             // 由于不支持 sized deallocation，所以这里传递 0 作为大小
             allocator::deallocate(ptr, 0);
@@ -293,17 +294,17 @@ export namespace SoC
 
     namespace test
     {
-        /// @see SoC::task
-        extern "C++" template <::SoC::is_allocator allocator_t>
-        struct task;
+        /// @see SoC::task_base
+        extern "C++" template <::SoC::is_static_allocator allocator_t>
+        struct task_base;
     }  // namespace test
 
     /**
      * @brief 支持同步完成的任务
      *
-     * @tparam allocator_t 分配器类型
+     * @tparam allocator_t 分配器类型，必须是静态分配器
      */
-    template <::SoC::is_allocator allocator_t>
+    template <::SoC::is_static_allocator allocator_t>
     struct task_base
     {
         /// 承诺类型
@@ -315,7 +316,7 @@ export namespace SoC
     private:
         /// 协程柄
         handle_t handle{};
-        friend struct ::SoC::test::task<allocator_t>;
+        friend struct ::SoC::test::task_base<allocator_t>;
 
     public:
         struct promise_type : ::SoC::promise_base<allocator_t>
@@ -324,6 +325,7 @@ export namespace SoC
             using base_t = ::SoC::promise_base<allocator_t>;
 
         public:
+            using base_t::await_transform;
             using base_t::base_t;
 
             /**
@@ -332,15 +334,6 @@ export namespace SoC
              * @return 任务对象
              */
             inline task_base get_return_object() noexcept { return task_base{task_base::handle_t::from_promise(*this)}; }
-
-            /**
-             * @brief 分配失败时直接终止程序
-             *
-             */
-            [[noreturn]] inline static task_base get_return_object_on_allocation_failure() noexcept(::SoC::optional_noexcept)
-            {
-                ::SoC::fast_fail();
-            }
 
             /**
              * @brief 实现通过co_await获取协程柄
@@ -419,10 +412,7 @@ export namespace SoC
          *
          * @return 承诺引用
          */
-        [[using gnu: always_inline, hot, artificial]] inline auto&& get_promise() noexcept
-        {
-            return ::SoC::get_promise<promise_type>(handle);
-        }
+        [[using gnu: always_inline, hot, artificial]] inline auto&& get_promise() noexcept { return handle.promise(); }
 
         /**
          * @brief 获取协程柄
@@ -532,23 +522,53 @@ export namespace SoC
     };
 
     /**
+     * @brief 判断promise类型是否可以进行调度，要求满足：
+     * - promise::allocator满足SoC::is_static_allocator约束，且
+     * - promise派生自SoC::promise_base<promise::allocator>
+     *
+     * @tparam promise 要判断的promise类型
+     */
+    template <typename promise>
+    concept is_promise_schedulable = ::SoC::is_static_allocator<typename promise::allocator> &&
+                                     ::std::derived_from<promise, ::SoC::promise_base<typename promise::allocator>>;
+
+    /**
+     * @brief 判断task_t类型是否可以进行调度，要求满足：
+     * - task_t::promise_type派生自SoC::promise_base，且
+     * - std::coroutine_handle<type> task_t::detach() noexcept，且
+     * - task_t::allocator满足SoC::is_static_allocator约束，且
+     * - ::std::coroutine_handle<task_t::promise_type> task_t::get_handle()
+     *
+     * @tparam task 要判断的任务类型
+     * @tparam args 任务类型的参数类型列表
+     */
+    template <typename task_t, typename... args>
+    concept is_task_schedulable = requires(task_t task) {
+        // 从具有raii的task中分离出协程柄以便放入调度器管理
+        { task.detach() } noexcept -> ::std::convertible_to<::std::coroutine_handle<>>;
+        requires ::SoC::is_static_allocator<typename task_t::allocator>;
+        {
+            task.get_handle().promise()
+        } -> ::std::same_as<::std::add_lvalue_reference_t<typename ::std::coroutine_traits<task_t, args...>::promise_type>>;
+    } && ::SoC::is_promise_schedulable<typename ::std::coroutine_traits<task_t, args...>::promise_type>;
+
+    /**
      * @brief 支持异步完成的任务包装体
      *
      */
+    template <::SoC::is_task_schedulable task>
     struct async_task
     {
-        typename ::std::coroutine_handle<> sub_handle;
+        ::std::coroutine_handle<typename ::std::coroutine_traits<task>::promise_type> sub_handle;
 
         /**
          * @brief 构造异步完成的任务并将其放入就绪队列
          *
-         * @tparam allocator_t 分配器类型
          * @param sub_task 要异步完成的任务
          */
-        template <::SoC::is_allocator allocator_t>
-        inline async_task(::SoC::task_base<allocator_t> sub_task) noexcept : sub_handle{sub_task.get_handle()}
+        inline async_task(task sub_task) noexcept : sub_handle{sub_task.get_handle()}
         {
-            sub_task.get_promise().scheduler.ready_queue_push_back(sub_handle);
+            sub_handle.promise().scheduler.ready_queue_push_back(sub_handle);
         }
 
         /**
@@ -566,8 +586,7 @@ export namespace SoC
         inline void await_suspend(::std::coroutine_handle<> parent) const noexcept
         {
             // 注册父协程柄，子协程执行完毕后回调函数会继续执行父协程
-            auto&& sub_promise{::SoC::get_promise<::SoC::detail::promise_base_no_allocator>(sub_handle)};
-            sub_promise.handle_to_resume = parent;
+            sub_handle.promise().handle_to_resume = parent;
             // 不能唤醒子协程，因为它是异步完成的，可能正在等待异步事件
         }
 
@@ -579,7 +598,7 @@ export namespace SoC
          */
         inline ::std::errc await_resume() const noexcept(::SoC::optional_noexcept)  // NOLINT(modernize-use-nodiscard)
         {
-            auto&& sub_promise{::SoC::get_promise<::SoC::detail::promise_base_no_allocator>(sub_handle)};
+            auto&& sub_promise{sub_handle.promise()};
 #ifdef __cpp_exceptions
             if(sub_promise.exception_ptr) [[unlikely]] { ::std::rethrow_exception(sub_promise.exception_ptr); }
 #endif
@@ -587,30 +606,62 @@ export namespace SoC
         }
     };
 
-    /**
-     * @brief 判断task_t类型是否可以进行调度，要求满足：
-     * - task_t::promise_type派生自SoC::promise_base，且
-     * - std::coroutine_handle<type> task_t::detach() noexcept，且
-     * - task_t::allocator满足SoC::is_allocator约束
-     *
-     * @tparam task 要判断的任务类型
-     * @tparam args 任务类型的参数类型列表
-     */
-    template <typename task_t, typename... args>
-    concept is_task_schedulable =
-        requires(task_t task) {
-            // 从具有raii的task中分离出协程柄以便放入调度器管理
-            { task.detach() } noexcept -> ::std::convertible_to<::std::coroutine_handle<>>;
-            requires ::SoC::is_allocator<typename task_t::allocator>;
-        } && ::std::derived_from<typename ::std::coroutine_traits<task_t, args...>::promise_type,
-                                 ::SoC::promise_base<typename task_t::allocator>>;
-
-    /// @brief 默认任务类型，使用RAM堆分配器
+    /// @brief 默认任务类型，使用RAM分配器
     using task = ::SoC::task_base<::SoC::ram_heap_allocator_t>;
 }  // namespace SoC
 
 export namespace SoC
 {
+    namespace detail
+    {
+        /**
+         * @brief 等待体，用于等待指定时间
+         *
+         */
+        struct duration_awaiter : ::SoC::awaiter_base
+        {
+            ::std::size_t target_tick;
+
+            duration_awaiter(::std::size_t target_tick) noexcept : target_tick{target_tick} {}
+
+            /**
+             * @brief 判断是否可以立即完成等待
+             *
+             * @return false 由于设计为一定要进行等待，所以不能立即完成
+             */
+            [[nodiscard]] constexpr inline static bool await_ready() noexcept { return false; }
+
+            /**
+             * @brief 挂起等待体，将当前协程放入等待队列
+             *
+             * @param handle 当前协程柄
+             */
+            template <typename promise_t>
+            constexpr inline void await_suspend(::std::coroutine_handle<promise_t> handle) noexcept
+            {
+                handle.promise().scheduler.wait_queue_push_back(handle, target_tick);
+            }
+
+            /**
+             * @brief 等待体完成时的回调函数，无操作
+             *
+             */
+            constexpr inline static void await_resume() noexcept {}
+
+            /**
+             * @brief 等待体完成时的回调函数
+             *
+             * @param domain 事件域
+             * @param detail 事件详情
+             * @return true 将协程放入就绪队列
+             */
+            bool operator() (::std::uintptr_t domain [[maybe_unused]], ::std::uintptr_t detail [[maybe_unused]]) noexcept override
+            {
+                return true;
+            }
+        };
+    }  // namespace detail
+
     /**
      * @brief 支持在协程中等待指定时间
      *
@@ -629,37 +680,7 @@ export namespace SoC
         {
             ticks = ::std::max(ticks, 1zu);
         }
-
-        struct awaiter
-        {
-            ::std::size_t target_tick;
-
-            /**
-             * @brief 判断是否可以立即完成等待
-             *
-             * @return false 由于设计为一定要进行等待，所以不能立即完成
-             */
-            constexpr inline bool await_ready() noexcept { return false; }
-
-            /**
-             * @brief 挂起等待体，将当前协程放入等待队列
-             *
-             * @param handle 当前协程柄
-             */
-            constexpr inline void await_suspend(::std::coroutine_handle<> handle) noexcept
-            {
-                auto&& promise{::SoC::get_promise<::SoC::detail::promise_base_no_allocator>(handle)};
-                promise.scheduler.wait_queue_push_back(handle, target_tick);
-            }
-
-            /**
-             * @brief 等待体完成时的回调函数，无操作
-             *
-             */
-            constexpr inline void await_resume() noexcept {}
-        };
-
-        return awaiter{ticks};
+        return ::SoC::detail::duration_awaiter{ticks};
     }
 }  // namespace SoC
 
