@@ -9,7 +9,7 @@ import SoC.unit_test;
 
 namespace SoC::test
 {
-    template <typename value_type, ::SoC::is_allocator allocator_type>
+    template <typename value_type, ::SoC::is_static_allocator allocator_type>
     struct generator : ::SoC::generator<value_type, allocator_type>
     {
         using base_t = ::SoC::generator<value_type, allocator_type>;

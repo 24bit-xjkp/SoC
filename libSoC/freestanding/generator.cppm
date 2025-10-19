@@ -12,7 +12,7 @@ export namespace SoC
     namespace test
     {
         /// @see SoC::generator
-        extern "C++" template <typename value_type, ::SoC::is_allocator allocator_type = ::SoC::ram_heap_allocator_t>
+        extern "C++" template <typename value_type, ::SoC::is_static_allocator allocator_type = ::SoC::ram_heap_allocator_t>
         struct generator;
     }  // namespace test
 
@@ -21,10 +21,9 @@ export namespace SoC
      *
      * @note 为了可以优化掉堆分配，不支持生成器嵌套
      * @tparam value_type 生成器值类型
-     * @tparam allocator_type 分配器类型，必须是无状态分配器
+     * @tparam allocator_type 分配器类型，必须是静态分配器
      */
-    template <typename value_type, ::SoC::is_allocator allocator_type = ::SoC::ram_heap_allocator_t>
-        requires (::std::is_empty_v<allocator_type>)
+    template <typename value_type, ::SoC::is_static_allocator allocator_type = ::SoC::ram_heap_allocator_t>
     struct generator : ::std::ranges::view_interface<generator<value_type, allocator_type>>
     {
         struct promise_type;

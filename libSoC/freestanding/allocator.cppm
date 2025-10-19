@@ -101,6 +101,22 @@ export namespace SoC
                                                      : ::SoC::detail::is_allocator_with_exception<type>);
 
     /**
+     * @brief 判断allocator是否为静态分配器，要求满足：
+     * - SoC::is_allocator<allocator>，且
+     * - 所有allocate和deallocate函数都是静态的
+     * @tparam allocator 要判断的类型
+     */
+    template <typename allocator>
+    concept is_static_allocator = ::SoC::is_allocator<allocator> && requires(int* ptr, ::std::size_t n, void* void_ptr) {
+        { allocator::allocate(n) } -> ::std::same_as<void*>;
+        { allocator::template allocate<int>() } -> ::std::same_as<int*>;
+        { allocator::template allocate<int>(n) } -> ::std::same_as<::SoC::allocation_result<int*>>;
+        { allocator::deallocate(ptr) } -> ::std::same_as<void>;
+        { allocator::deallocate(ptr, n) } -> ::std::same_as<void>;
+        { allocator::deallocate(void_ptr, n) } -> ::std::same_as<void>;
+    };
+
+    /**
      * @brief 判断type是否为无异常分配器，要求满足：
      * - SoC::is_allocator<type>，且
      * - allocate和deallocate都满足noexcept
