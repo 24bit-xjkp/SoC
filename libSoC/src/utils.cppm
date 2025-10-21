@@ -77,6 +77,7 @@ namespace SoC
     extern "C" void c_assert_failed(const char* file_name, ::std::uint32_t line, const char* function_name) noexcept
     {
         ::SoC::println(::SoC::log_device, ASSERT_FAILED_MESSAGE "文件: {}({}) `{}`"_fmt, file_name, line, function_name);
+        __BKPT(0);
         ::SoC::fast_fail();
     }
 #endif
@@ -84,6 +85,7 @@ namespace SoC
     extern "C++" void assert_failed(::std::string_view message, ::std::source_location location) noexcept
     {
         ::SoC::println(::SoC::log_device, ASSERT_FAILED_MESSAGE "{}: {}"_fmt, location, message);
+        __BKPT(0);
         ::SoC::fast_fail();
     }
 }  // namespace SoC
