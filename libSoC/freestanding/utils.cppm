@@ -834,10 +834,36 @@ export namespace SoC
             }
         }
 
-        constexpr inline union_wrapper(const union_wrapper&) noexcept = default;
-        constexpr inline union_wrapper& operator= (const union_wrapper&) noexcept = default;
-        constexpr inline union_wrapper(union_wrapper&&) noexcept = default;
-        constexpr inline union_wrapper& operator= (union_wrapper&&) noexcept = default;
+        constexpr inline union_wrapper(const union_wrapper& other) noexcept(noexcept(type{other.value})) : value{other.value} {}
+
+        constexpr inline union_wrapper& operator= (const union_wrapper& other) noexcept(noexcept(value = other.value))
+        {
+            value = other.value;
+            return *this;
+        }
+
+        constexpr inline union_wrapper(union_wrapper&& other) noexcept(noexcept(type{::std::move(other.value)})) :
+            value{::std::move(other.value)}
+        {
+        }
+
+        constexpr inline union_wrapper& operator= (union_wrapper&& other) noexcept(noexcept(value = ::std::move(other.value)))
+        {
+            value = ::std::move(other.value);
+            return *this;
+        }
+
+        constexpr inline friend auto operator<=> (const union_wrapper& lhs,
+                                                  const union_wrapper& rhs) noexcept(noexcept(lhs.value <=> rhs.value))
+        {
+            return lhs.value <=> rhs.value;
+        }
+
+        constexpr inline friend bool operator== (const union_wrapper& lhs,
+                                                 const union_wrapper& rhs) noexcept(noexcept(lhs.value == rhs.value))
+        {
+            return lhs.value == rhs.value;
+        }
     };
 
     /**
