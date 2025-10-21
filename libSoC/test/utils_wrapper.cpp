@@ -111,30 +111,106 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
     /// @test 测试union_wrapper能否正确包装以实现不自动构造析构
     REGISTER_TEST_CASE("union_wrapper" * ::doctest::description{"测试union_wrapper能否正确包装以实现不自动构造析构"})
     {
-        static constinit auto ctor_called_counter{0zu};
-        static constinit auto dtor_called_counter{0zu};
+        static constinit auto ctor_cnt{0zu};
+        static constinit auto copy_ctor_cnt{0zu};
+        static constinit auto copy_assign_cnt{0zu};
+        static constinit auto move_ctor_cnt{0zu};
+        static constinit auto move_assign_cnt{0zu};
+        static constinit auto dtor_cnt{0zu};
+        static constinit auto three_way_compare_cnt{0zu};
+        static constinit auto equal_compare_cnt{0zu};
 
         struct test_struct
         {
-            test_struct() noexcept { ++ctor_called_counter; }
+            test_struct() noexcept { ++ctor_cnt; }
 
-            ~test_struct() noexcept { ++dtor_called_counter; }
+            ~test_struct() noexcept { ++dtor_cnt; }
 
-            test_struct(const test_struct&) = delete;
-            test_struct(test_struct&&) = delete;
-            test_struct& operator= (const test_struct&) = delete;
-            test_struct& operator= (test_struct&&) = delete;
+            test_struct(const test_struct&) noexcept { ++copy_ctor_cnt; }
+
+            test_struct(test_struct&&) noexcept { ++move_ctor_cnt; }
+
+            test_struct& operator= (const test_struct&) noexcept
+            {
+                ++copy_assign_cnt;
+                return *this;
+            }
+
+            test_struct& operator= (test_struct&&) noexcept
+            {
+                ++move_assign_cnt;
+                return *this;
+            }
+
+            auto operator<=> (const test_struct&) const noexcept
+            {
+                ++three_way_compare_cnt;
+                return ::std::strong_ordering::equal;
+            }
+
+            bool operator== (const test_struct&) const noexcept
+            {
+                ++equal_compare_cnt;
+                return true;
+            }
         };
 
         ::SoC::union_wrapper<test_struct> wrapper{};
-        CHECK_EQ(ctor_called_counter, 0zu);
-        CHECK_EQ(dtor_called_counter, 0zu);
-        ::new(&wrapper.value) test_struct{};
-        CHECK_EQ(ctor_called_counter, 1zu);
-        CHECK_EQ(dtor_called_counter, 0zu);
-        wrapper.value.~test_struct();
-        CHECK_EQ(ctor_called_counter, 1zu);
-        CHECK_EQ(dtor_called_counter, 1zu);
+        SUBCASE("constructor and destructor")
+        {
+            CHECK_EQ(ctor_cnt, 0zu);
+            CHECK_EQ(dtor_cnt, 0zu);
+            ::new(&wrapper.value) test_struct{};
+            CHECK_EQ(ctor_cnt, 1zu);
+            CHECK_EQ(dtor_cnt, 0zu);
+            wrapper.value.~test_struct();
+            CHECK_EQ(ctor_cnt, 1zu);
+            CHECK_EQ(dtor_cnt, 1zu);
+        }
+
+        // NOLINTBEGIN(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
+
+        SUBCASE("copy constructor")
+        {
+            ::SoC::union_wrapper _{wrapper};
+            CHECK_EQ(copy_ctor_cnt, 1zu);
+        }
+
+        SUBCASE("copy assignment operator")
+        {
+            ::SoC::union_wrapper<test_struct> _{};
+            _ = wrapper;
+            CHECK_EQ(copy_assign_cnt, 1zu);
+        }
+
+        SUBCASE("move constructor")
+        {
+            ::SoC::union_wrapper _{::std::move(wrapper)};
+            CHECK_EQ(move_ctor_cnt, 1zu);
+        }
+
+        SUBCASE("move assignment operator")
+        {
+            ::SoC::union_wrapper<test_struct> _{};
+            _ = ::std::move(wrapper);
+            CHECK_EQ(move_assign_cnt, 1zu);
+        }
+
+        SUBCASE("three-way comparison operator")
+        {
+            ::SoC::union_wrapper<test_struct> other{wrapper};
+            wrapper <=> other;
+            CHECK_EQ(three_way_compare_cnt, 1zu);
+        }
+
+        SUBCASE("equal comparison operator")
+        {
+            ::SoC::union_wrapper<test_struct> other{wrapper};
+            auto _{wrapper == other};
+            CHECK_EQ(equal_compare_cnt, 1zu);
+        }
+
+        // NOLINTEND(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
     }
 
     /// @test 测试destructure_guard能否正确析构
@@ -200,21 +276,21 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
         }
 
         // 由于doctest框架下SUBCASE会重新初始化moveable_value，所以这里需要忽略clang-analyzer-cplusplus.Move警告
-        // NOLINTBEGIN(clang-analyzer-cplusplus.Move)
+        // NOLINTBEGIN(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
 
         SUBCASE("move construct")
         {
             moveable_value_t other{::std::move(moveable_value)};
             CHECK_EQ(other.value, &value);
-            CHECK_EQ(moveable_value.value, nullptr);  // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+            CHECK_EQ(moveable_value.value, nullptr);
         }
 
         SUBCASE("move assign")
         {
             moveable_value_t other{};
-            other = ::std::move(moveable_value);  // NOLINT(clang-analyzer-cplusplus.Move)
+            other = ::std::move(moveable_value);
             CHECK_EQ(other.value, &value);
-            CHECK_EQ(moveable_value.value, nullptr);  // NOLINT(bugprone-use-after-move,hicpp-invalid-access-moved)
+            CHECK_EQ(moveable_value.value, nullptr);
         }
 
         SUBCASE("copy construct")
@@ -232,6 +308,6 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
             CHECK_EQ(moveable_value.value, &value);
         }
 
-        // NOLINTEND(clang-analyzer-cplusplus.Move)
+        // NOLINTEND(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
     }
 }
