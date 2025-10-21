@@ -138,4 +138,6 @@ namespace SoC
                                                            location.function_name(),
                                                            message)};
     }
+
+    extern "C++" void yield_cpu() noexcept(::SoC::optional_noexcept) { ::std::this_thread::yield(); }
 }  // namespace SoC

@@ -320,6 +320,13 @@ export namespace SoC
 #pragma GCC unroll 0
         while(!::std::invoke_r<bool>(::std::forward<func_t>(func), ::std::forward<args_t>(args)...)) { ; }
     }
+
+    /**
+     * @brief 让出CPU使用权，直到被其他事件唤醒
+     *
+     * @note 根据具体的平台进行实现，嵌入式下可实现为等待中断发生，宿主平台下可实现为std::this_thread::yield()
+     */
+    extern "C++" void yield_cpu() noexcept(::SoC::optional_noexcept);
 }  // namespace SoC
 
 export namespace SoC

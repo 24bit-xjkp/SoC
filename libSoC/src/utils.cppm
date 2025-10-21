@@ -24,6 +24,11 @@ namespace SoC
     }
 
     extern "C" void SysTick_Handler() noexcept { ++::SoC::systick; }
+
+    extern "C++" void yield_cpu() noexcept(::SoC::optional_noexcept)
+    {
+        ::SoC::wait_for_interpret();
+    }
 }  // namespace SoC
 
 namespace SoC::detail
