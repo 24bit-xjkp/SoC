@@ -41,10 +41,10 @@ namespace SoC::rcc
 
     export {
         /// 系统时钟频率
-        constexpr inline auto sys_clock_freq{::SoC::seconds{1}.duration_cast<::SoC::cycles>().rep};
+        constexpr inline auto sys_clock_freq{::SoC::second{1}.duration_cast<::SoC::cycle>().rep};
 
         /// 系统时刻频率
-        constexpr inline auto sys_tick_freq{::SoC::seconds{1}.duration_cast<::SoC::systicks>().rep};
+        constexpr inline auto sys_tick_freq{::SoC::second{1}.duration_cast<::SoC::systick>().rep};
 
         /// 外部高速晶振频率
         constexpr inline ::std::size_t hse_freq{HSE_VALUE};

@@ -619,7 +619,7 @@ export namespace SoC
      */
     inline auto operator co_await(::SoC::detail::is_duration auto duration) noexcept(::SoC::optional_noexcept)
     {
-        auto ticks{duration.template duration_cast<::SoC::systicks>().rep};
+        auto ticks{duration.template duration_cast<::SoC::systick>().rep};
         if constexpr(::SoC::use_full_assert)
         {
             using namespace ::std::string_view_literals;

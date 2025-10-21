@@ -17,14 +17,14 @@ namespace SoC::detail
      *
      * @param ticks 要等待的tick
      */
-    void wait_for(::SoC::systicks ticks) noexcept;
+    void wait_for(::SoC::systick ticks) noexcept;
 
     /**
      * @brief 等待指定周期数
      *
      * @param cycles 要等待的周期数
      */
-    void wait_for(::SoC::cycles cycles) noexcept;
+    void wait_for(::SoC::cycle cycles) noexcept;
 }  // namespace SoC::detail
 
 export namespace SoC
@@ -50,7 +50,7 @@ export namespace SoC
     inline void wait_for(::SoC::detail::is_duration auto duration) noexcept
     {
         // 提供一个快速通道，降低延迟偏差
-        if constexpr(::std::same_as<decltype(duration), ::SoC::cycles>)
+        if constexpr(::std::same_as<decltype(duration), ::SoC::cycle>)
         {
             using namespace ::SoC::literal;
             auto cycles{duration.rep};
@@ -60,9 +60,9 @@ export namespace SoC
             else if(cycles < 2_K) { return ::SoC::detail::wait_for(duration); }
         }
 
-        auto ticks{duration.template duration_cast<::SoC::systicks>()};
+        auto ticks{duration.template duration_cast<::SoC::systick>()};
         auto tmp{duration - ticks};
-        auto cycles{tmp.template duration_cast<::SoC::cycles>()};
+        auto cycles{tmp.template duration_cast<::SoC::cycle>()};
 
         ::SoC::detail::wait_for(ticks);
         ::SoC::detail::wait_for(cycles);
@@ -95,7 +95,7 @@ export namespace SoC
          *
          */
         operator ::std::uint64_t () const noexcept;
-    } inline constinit systick{};
+    } inline constinit systick_v{};
 }  // namespace SoC
 
 namespace SoC

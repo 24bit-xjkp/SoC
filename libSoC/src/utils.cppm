@@ -23,17 +23,16 @@ namespace SoC
         return result;
     }
 
-    extern "C" void SysTick_Handler() noexcept { ++::SoC::systick; }
+    extern "C" void SysTick_Handler() noexcept { ++::SoC::systick_v; }
 
-    extern "C++" void yield_cpu() noexcept(::SoC::optional_noexcept)
-    {
-        ::SoC::wait_for_interpret();
-    }
+    extern "C++" void yield_cpu() noexcept(::SoC::optional_noexcept) { ::SoC::wait_for_interpret(); }
+
+    extern "C++" ::std::uint64_t get_systick() noexcept(::SoC::optional_noexcept) { return ::SoC::systick_v; }
 }  // namespace SoC
 
 namespace SoC::detail
 {
-    [[gnu::noinline]] void wait_for(::SoC::cycles cycles) noexcept
+    [[gnu::noinline]] void wait_for(::SoC::cycle cycles) noexcept
     {
         if(cycles.rep <= 1) { return; }
         else
@@ -50,18 +49,18 @@ namespace SoC::detail
         }
     }
 
-    void wait_for(::SoC::systicks ticks) noexcept
+    void wait_for(::SoC::systick ticks) noexcept
     {
         auto tick{ticks.rep};
         if(tick == 0) [[unlikely]] { return; }
         auto start_value{SysTick->VAL};
-        auto end_tick{::SoC::systick + tick};
+        auto end_tick{::SoC::systick_v + tick};
 
 #pragma GCC unroll 0
         // 等待直到系统时刻到达预定值
-        while(::SoC::systick < end_tick) { ::SoC::wait_for_interpret(); }
+        while(::SoC::systick_v < end_tick) { ::SoC::wait_for_interpret(); }
         // 自旋以补偿start_value带来的时间误差
-        ::SoC::wait_until([start_value, end_tick] noexcept { return SysTick->VAL < start_value || ::SoC::systick > end_tick; });
+        ::SoC::wait_until([start_value, end_tick] noexcept { return SysTick->VAL < start_value || ::SoC::systick_v > end_tick; });
     }
 }  // namespace SoC::detail
 

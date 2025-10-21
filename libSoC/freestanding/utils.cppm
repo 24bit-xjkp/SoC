@@ -169,15 +169,22 @@ namespace SoC
 
     export {
         /// 系统时钟周期，在此处修改时钟频率
-        using cycles = ::SoC::duration<::std::ratio<1, 144>>;
+        using cycle = ::SoC::duration<::std::ratio<1, 144>>;
         /// 微秒
-        using microseconds = ::SoC::duration<::std::ratio<1>>;
+        using microsecond = ::SoC::duration<::std::ratio<1>>;
         /// 毫秒
-        using milliseconds = ::SoC::duration<::std::kilo>;
+        using millisecond = ::SoC::duration<::std::kilo>;
         /// 系统时刻周期，在此处修改系统时刻
-        using systicks = ::SoC::microseconds;
+        using systick = ::SoC::microsecond;
         /// 秒
-        using seconds = ::SoC::duration<::std::mega>;
+        using second = ::SoC::duration<::std::mega>;
+
+        /**
+         * @brief 获取当前系统时刻
+         *
+         * @return 当前系统时刻
+         */
+        extern "C++" ::std::uint64_t get_systick() noexcept(::SoC::optional_noexcept);
     }
 }  // namespace SoC
 
@@ -214,51 +221,51 @@ export namespace SoC::literal
         return ::SoC::detail::constexpr_literal_round(i * 1'000'000);
     }
 
-    consteval inline ::SoC::seconds operator""_s (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::second operator""_s (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    consteval inline ::SoC::milliseconds operator""_s (long double i) noexcept
+    consteval inline ::SoC::millisecond operator""_s (long double i) noexcept
     {
         return {::SoC::detail::constexpr_literal_round(i * 1'000)};
     }
 
-    consteval inline ::SoC::milliseconds operator""_ms (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::millisecond operator""_ms (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    consteval inline ::SoC::microseconds operator""_ms (long double i) noexcept
+    consteval inline ::SoC::microsecond operator""_ms (long double i) noexcept
     {
         return {::SoC::detail::constexpr_literal_round(i * 1'000)};
     }
 
-    consteval inline ::SoC::microseconds operator""_us (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::microsecond operator""_us (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    consteval inline ::SoC::cycles operator""_us (long double i) noexcept
+    consteval inline ::SoC::cycle operator""_us (long double i) noexcept
     {
-        constexpr auto cycles_per_us{::SoC::microseconds{1}.duration_cast<::SoC::cycles>().rep};
+        constexpr auto cycles_per_us{::SoC::microsecond{1}.duration_cast<::SoC::cycle>().rep};
         return {::SoC::detail::constexpr_literal_round(i * cycles_per_us)};
     }
 
-    consteval inline ::SoC::cycles operator""_cycle (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
+    consteval inline ::SoC::cycle operator""_cycle (unsigned long long i) noexcept { return {static_cast<::std::size_t>(i)}; }
 
-    consteval inline ::SoC::cycles operator""_cycle (long double i) noexcept
+    consteval inline ::SoC::cycle operator""_cycle (long double i) noexcept
     {
         return {::SoC::detail::constexpr_literal_round(i)};
     }
 
-    consteval inline ::SoC::cycles operator""_Kcycle (unsigned long long i) noexcept
+    consteval inline ::SoC::cycle operator""_Kcycle (unsigned long long i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1000)};
     }
 
-    consteval inline ::SoC::cycles operator""_Kcycle (long double i) noexcept
+    consteval inline ::SoC::cycle operator""_Kcycle (long double i) noexcept
     {
         return {::SoC::detail::constexpr_literal_round(i * 1'000)};
     }
 
-    consteval inline ::SoC::cycles operator""_Mcycle (unsigned long long i) noexcept
+    consteval inline ::SoC::cycle operator""_Mcycle (unsigned long long i) noexcept
     {
         return {static_cast<::std::size_t>(i * 1000'000)};
     }
 
-    consteval inline ::SoC::cycles operator""_Mcycle (long double i) noexcept
+    consteval inline ::SoC::cycle operator""_Mcycle (long double i) noexcept
     {
         return {::SoC::detail::constexpr_literal_round(i * 1000'000)};
     }
