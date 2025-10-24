@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# %%
 import dataclasses
 import typing
 from pathlib import Path
@@ -57,3 +59,12 @@ def generate_font_data(font_path: str | Path, font_type: str) -> None:
             bitmap = np.packbits(bitmap[::-1, :].T, axis=1)
             output.write(bitmap[:, ::-1].tobytes())
             del image
+
+
+font_path: str | Path = "MapleMono-NF-CN-Regular.ttf"  # 例如微软雅黑，可以换成任意 TTF 字体文件
+# 设置字体类型
+font_type: str = "8x16"
+
+generate_font_data(font_path, font_type)
+
+# %%

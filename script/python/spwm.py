@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# %%
 import math
 
 import matplotlib.pyplot as plt
@@ -42,3 +44,21 @@ def generate_spwm_data(stm32_frequency: float, spwm_sample_point: int, output_fr
         plt.plot(x, all_spwm_point, linewidth=0.075)
 
     (assets_dir / "spwm.data").write_bytes(partial_list)
+
+
+# ----------- 配置信息 -----------
+# stm32时钟频率
+stm32_frequency = 144e6
+# spwm采样点数
+spwm_sample_point = 256
+# 输出正弦交流电频率
+output_frequency = 50
+output_type = np.uint16
+# 是否需要绘图
+need_plot = True
+
+if need_plot:
+    use_svg_in_ipython()
+generate_spwm_data(stm32_frequency, spwm_sample_point, output_frequency, output_type, need_plot)
+
+# %%
