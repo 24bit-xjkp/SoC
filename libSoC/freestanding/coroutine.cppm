@@ -679,43 +679,4 @@ export namespace SoC
      * 由于定时器溢出事件类型单一，因此详情固定为0。
      */
     constexpr inline ::std::uintptr_t scheduler_timer_overflow_detail{0};
-
-    /**
-     * @brief 协程调度器
-     * 支持3级优先级
-     * @tparam buffer_size 队列缓冲区大小
-     */
-    template <::std::size_t queue_size = 8>
-    struct scheduler : ::SoC::scheduler_base
-    {
-    private:
-        using buffer_t = ::SoC::ring_buffer<::std::coroutine_handle<>, queue_size>;
-
-        /**
-         * @brief 等待队列元素类型
-         *
-         */
-        struct wait_item
-        {
-            ::std::uint64_t target_tick{};
-            ::std::coroutine_handle<> handle{};
-        };
-
-        /**
-         * @brief 比较函数对象，用于等待队列
-         *
-         */
-        struct compare_t
-        {
-            constexpr inline static bool operator() (const wait_item& lhs, const wait_item& rhs) noexcept
-            {
-                return lhs.target_tick > rhs.target_tick;
-            }
-        };
-
-        /// 就绪队列
-        ::std::array<buffer_t, 3> ready_queue{};
-        /// 等待队列
-        ::SoC::priority_queue<wait_item, queue_size, compare_t> wait_queue{};
-    };
 }  // namespace SoC
