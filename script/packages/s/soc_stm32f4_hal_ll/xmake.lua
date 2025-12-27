@@ -8,6 +8,7 @@ package("soc_stm32f4_hal_ll")
     includes(path.join(os.scriptdir(), "../utils.lua"))
     package_register("stm32f4_hal_ll", function(package)
         package:add("defines", "HSE_VALUE=" .. package:config("hse_value"))
+        -- 透穿_custom_mode给soc_cmsis包
         package:add("deps", "soc_cmsis", { configs = { _custom_mode = package:config("_custom_mode") }, public = true })
     end)
 package_end()

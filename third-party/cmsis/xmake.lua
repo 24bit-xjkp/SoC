@@ -10,10 +10,6 @@ target("cmsis")
     add_files("src/*.c")
     add_defines("STM32F407xx")
 
-    if get_config("_custom_mode") == "debug" then
-        add_rules("releasedbg")
-    end
-
     on_load(function (target)
         import("utility.common")
         if common.is_gcc() then

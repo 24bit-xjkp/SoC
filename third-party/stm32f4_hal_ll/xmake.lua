@@ -3,6 +3,7 @@ configure(true)
 set_version("1.0.0")
 set_project("stm32f4_hal_ll")
 
+-- 透穿_custom_mode给soc_cmsis包
 add_requires("soc_cmsis", {configs = {_custom_mode = get_config("_custom_mode")}})
 target("stm32f4_hal_ll")
     add_packages("soc_cmsis")
@@ -14,9 +15,6 @@ target("stm32f4_hal_ll")
     add_options("hse_value")
     add_files("src/*.c")
     set_warnings("none")
-    if get_config("_custom_mode") == "debug" then
-        add_rules("releasedbg")
-    end
 
     on_load(function (target)
         import("utility.common")

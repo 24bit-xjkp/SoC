@@ -1,5 +1,10 @@
 includes("*/xmake.lua")
-add_requires("soc_stm32f4_hal_ll", {configs = {hse_value = get_config("hse_value"), assert = get_config("assert"), _custom_mode = get_config("mode")}})
+local soc_stm32f4_hal_ll_config_table = {
+    hse_value = get_config("hse_value"),
+    assert = get_config("assert"),
+    _custom_mode = get_default_package_custom_mode()
+}
+add_requires("soc_stm32f4_hal_ll", {configs = soc_stm32f4_hal_ll_config_table})
 target("SoC.stm32")
     set_kind("static")
     add_packages("soc_stm32f4_hal_ll", {public = true})

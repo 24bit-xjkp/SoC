@@ -68,3 +68,18 @@ function configure(in_package)
     end
     add_rules("stm32_pc")
 end
+
+--- 获取默认的package自定义构建模式
+--- @return string
+function get_default_package_custom_mode()
+    local mode = get_config("mode") or "releasedbg"
+    -- 将调试模式映射为发布调试模式
+    local map = {
+        debug = "releasedbg",
+        release = "release",
+        minsizerel = "minsizerel",
+        releasedbg = "releasedbg",
+        coverage = "releasedbg",
+    }
+    return map[mode]
+end
