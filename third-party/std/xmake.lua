@@ -1,6 +1,7 @@
 register_target_with_unit_test("SoC.std", function ()
     set_kind("object")
-    if string.find(get_config("toolchain") or "", "gcc") then
+    local use_stdcxx = (get_config("runtimes") or ""):startswith("stdc++")
+    if string.find(get_config("toolchain") or "", "gcc") or use_stdcxx then
         add_files("gcc.cppm", { public = true })
     else
         add_files("clang.cppm", { public = true })
