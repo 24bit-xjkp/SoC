@@ -2,18 +2,10 @@ local script_dir = path.join(os.projectdir(), "script")
 local toolchains_dir = path.join(script_dir, "toolchains", "xmake")
 local xmake_dir = path.join(script_dir, "xmake")
 includes(path.join(toolchains_dir, "*.lua"))
-includes(path.join(xmake_dir, "option.lua"), path.join(xmake_dir, "register.lua"))
--- 由于通用的coverage规则不支持独立平台，所以需要自定义一个规则
--- 该规则在arm平台下不启用coverage分析
-rule("SoC_coverage", function()
-    add_deps("debug")
-    local callback = register_rule_on_load_table["coverage"]
-    on_load(function(target)
-        if not (target:is_arch("arm") and target:is_plat("cross")) then
-            callback(target)
-        end
-    end)
-end)
+local xmake_script_table = { "option.lua", "register.lua", "utility.lua" }
+for _, script in ipairs(xmake_script_table) do
+    includes(path.join(xmake_dir, script))
+end
 
 rule("stm32_pc", function()
     on_load(function(target)
@@ -24,6 +16,8 @@ rule("stm32_pc", function()
             "-Wno-experimental-header-units",
         }
         if target:is_arch("arm") and target:is_plat("cross") then
+            import("utility", { rootdir = xmake_dir })
+            target:set("enabled", utility.is_current_mode_support_stm32_target())
             target:set("exceptions", "no-cxx")
             target:set("policy", "build.c++.modules.std", false)
             target:add("options", "assert")
@@ -63,23 +57,8 @@ function configure(in_package)
     set_config("debug_info", "minsizerel")
     local build_mode = in_package and get_config("_custom_mode") or get_config("mode")
     if build_mode then
-        add_rules(build_mode == "coverage" and "SoC_coverage" or build_mode)
+        add_rules(build_mode)
         add_defines(string.format("SOC_BUILD_MODE_%s", string.upper(build_mode)))
     end
     add_rules("stm32_pc")
-end
-
---- 获取默认的package自定义构建模式
---- @return string
-function get_default_package_custom_mode()
-    local mode = get_config("mode") or "releasedbg"
-    -- 将调试模式映射为发布调试模式
-    local map = {
-        debug = "releasedbg",
-        release = "release",
-        minsizerel = "minsizerel",
-        releasedbg = "releasedbg",
-        coverage = "releasedbg",
-    }
-    return map[mode]
 end
