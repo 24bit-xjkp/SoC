@@ -4,11 +4,6 @@ option("assert", function()
     add_defines("USE_FULL_ASSERT")
 end)
 
-option("build_unit_test", function()
-    set_default(true)
-    set_description("Whether to build unit test.")
-end)
-
 option("unit_test_with_asan", function()
     set_default(true)
     set_description("Whether to build unit test with address sanitizer.")

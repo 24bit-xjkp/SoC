@@ -49,7 +49,7 @@ end)
 --- 添加xmake工程通用配置
 --- @param in_package boolean 是否在package中调用
 function configure(in_package)
-    set_xmakever("3.0.0")
+    set_xmakever("3.0.5")
     set_policy("check.auto_ignore_flags", false)
     set_policy("build.c++.modules.hide_dependencies", true)
     set_policy("build.c++.modules.non_cascading_changes", true)
