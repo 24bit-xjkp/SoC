@@ -1,5 +1,6 @@
 includes("*/xmake.lua")
-if is_current_mode_support_stm32_target() then
+is_stm32_support = is_current_mode_support_stm32_target()
+if is_stm32_support then
     local soc_stm32f4_hal_ll_config_table = {
         hse_value = get_config("hse_value"),
         assert = get_config("assert"),
@@ -16,6 +17,7 @@ target("SoC.stm32")
     add_extrafiles("assets/*")
     set_pcxxheader("include/pch.hpp")
     add_includedirs("include")
+    set_enabled(is_stm32_support)
 
     on_load(function (target)
         import("utility.common")

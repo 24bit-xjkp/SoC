@@ -2,7 +2,7 @@ local script_dir = path.join(os.projectdir(), "script")
 local toolchains_dir = path.join(script_dir, "toolchains", "xmake")
 local xmake_dir = path.join(script_dir, "xmake")
 includes(path.join(toolchains_dir, "*.lua"))
-local xmake_script_table = { "option.lua", "register.lua", "utility.lua" }
+local xmake_script_table = { "option.lua", "utility.lua" }
 for _, script in ipairs(xmake_script_table) do
     includes(path.join(xmake_dir, script))
 end
@@ -16,8 +16,6 @@ rule("stm32_pc", function()
             "-Wno-experimental-header-units",
         }
         if target:is_arch("arm") and target:is_plat("cross") then
-            import("utility", { rootdir = xmake_dir })
-            target:set("enabled", utility.is_current_mode_support_stm32_target())
             target:set("exceptions", "no-cxx")
             target:set("policy", "build.c++.modules.std", false)
             target:add("options", "assert")
@@ -30,10 +28,13 @@ rule("stm32_pc", function()
         else
             target:set("exceptions", "cxx")
             target:add("defines", "USE_FULL_ASSERT")
+            -- fuzzer下默认启用asan/ubsan
+            if not is_mode("fuzzer") then
+                target:set("policy", "build.sanitizer.address", get_config("unit_test_with_asan"))
+                target:set("policy", "build.sanitizer.undefined", get_config("unit_test_with_ubsan"))
+            end
             target:set("toolchains", get_config("toolchain_host"))
             target:set("policy", "build.c++.modules.std", true)
-            target:set("policy", "build.sanitizer.address", get_config("unit_test_with_asan"))
-            target:set("policy", "build.sanitizer.undefined", get_config("unit_test_with_ubsan"))
             target:set("runtimes", get_config("runtimes") == "c++_static" and "c++_shared" or "stdc++_shared")
             target:set("cxflags", "-fPIC", table.unpack(warning_flags))
         end

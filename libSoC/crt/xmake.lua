@@ -6,6 +6,7 @@ target("SoC.crt")
     if is_mode("debug") then
         add_rules("releasedbg")
     end
+    set_enabled(is_current_mode_support_stm32_target())
 
     on_load(function (target)
         import("utility.common")

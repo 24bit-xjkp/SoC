@@ -1,4 +1,16 @@
-register_target_with_unit_test("SoC.freestanding", function ()
+local test_table = {}
+if is_current_mode_support_unit_test() then
+    test_table["unit_test"] = function ()
+        add_deps("SoC.std.unit_test")
+        add_defines("SOC_IN_UNIT_TEST", {public = true})
+    end
+end
+if is_current_mode_support_fuzzer() then
+    test_table["fuzzer"] = function ()
+        add_deps("SoC.std.fuzzer")
+    end
+end
+register_target_with_test("SoC.freestanding", function ()
     add_files("*.cppm", {public = true})
     add_files("*.cpp")
 
@@ -15,7 +27,5 @@ register_target_with_unit_test("SoC.freestanding", function ()
     set_kind("object")
 end, function ()
     add_deps("SoC.std")
-end, function ()
-    add_deps("SoC.std.unit_test")
-    add_defines("SOC_IN_UNIT_TEST", {public = true})
-end)
+    set_enabled(is_current_mode_support_stm32_target())
+end, test_table)

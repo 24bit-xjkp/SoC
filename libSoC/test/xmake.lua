@@ -1,7 +1,10 @@
 local config_table = {toolchains = get_config("toolchain_host")}
-add_requireconfs("*|soc_*", {plat = get_config("host"), arch = os.arch()})
+local is_unit_test_support = is_current_mode_support_unit_test()
+if is_unit_test_support then
+    add_requireconfs("*|soc_*", {plat = get_config("host"), arch = os.arch()})
     add_requires("doctest >=2.4.12", {configs = config_table})
-add_requires("fakeit", {configs = table.join(config_table, {framework = "doctest"})})
+    add_requires("fakeit", {configs = table.join(config_table, {framework = "doctest"})})
+end
 set_arch(os.arch())
 set_plat(get_config("host"))
 
@@ -13,6 +16,7 @@ target("unit_test_utils")
     set_kind("shared")
     add_rules("utils.symbols.export_all", {export_classes = true})
     set_default(false)
+    set_enabled(is_unit_test_support)
 target_end()
 target("unit_test")
     add_files("*.cppm")
@@ -23,6 +27,7 @@ target("unit_test")
     set_kind("binary")
     set_policy("build.c++.modules.fallbackscanner", true)
     set_default(false)
+    set_enabled(is_unit_test_support)
 
     for _, file in ipairs(os.files(regex)) do
         local name = path.basename(file)

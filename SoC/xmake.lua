@@ -3,6 +3,7 @@ target("SoC")
     add_deps("SoC.stm32")
     add_files("src/*.cpp", "src/*.ld")
     set_extension(".elf")
+    set_enabled(is_current_mode_support_stm32_target())
 
     on_load(function (target)
         import("utility.common")
