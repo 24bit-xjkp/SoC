@@ -1,6 +1,6 @@
 local config_table = {toolchains = get_config("toolchain_host")}
 add_requireconfs("*|soc_*", {plat = get_config("host"), arch = os.arch()})
-add_requires("doctest", {configs = config_table})
+    add_requires("doctest >=2.4.12", {configs = config_table})
 add_requires("fakeit", {configs = table.join(config_table, {framework = "doctest"})})
 set_arch(os.arch())
 set_plat(get_config("host"))

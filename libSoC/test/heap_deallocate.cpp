@@ -7,6 +7,7 @@
 import "test_framework.hpp";
 import SoC.unit_test.heap;
 
+using namespace ::std::string_view_literals;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define REGISTER_TEST_CASE(NAME) TEST_CASE("heap_deallocate/" NAME)
 
@@ -29,7 +30,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate_pages(page_ptr + 1, heap.page_size),
                                              ::doctest::Contains{"释放范围首指针不满足页对齐"},
                                              ::SoC::assert_failed_exception,
-                                             "页指针未对齐，应该断言失败");
+                                             "页指针未对齐，应该断言失败"sv);
             }
 
             SUBCASE("used_block not 1")
@@ -38,7 +39,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size),
                                              ::doctest::Contains{"要释放的页使用计数不为1"},
                                              ::SoC::assert_failed_exception,
-                                             "used_block不为1，应该断言失败");
+                                             "used_block不为1，应该断言失败"sv);
             }
 
             SUBCASE("block_size not page_size")
@@ -48,7 +49,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size),
                                              ::doctest::Contains{"释放块大小与申请块大小不匹配"},
                                              ::SoC::assert_failed_exception,
-                                             "释放块大小与申请块大小不匹配，应该断言失败");
+                                             "释放块大小与申请块大小不匹配，应该断言失败"sv);
             }
         }
 
@@ -61,7 +62,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
             SUBCASE("deallocate 1 page")
             {
                 auto* second_page{::std::exchange(first_page->next_page, nullptr)};
-                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size), "释放已分配的1页，不应当断言失败");
+                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size), "释放已分配的1页，不应当断言失败"sv);
 
                 // 检查页指针是否正确插入free_page_list中
                 CHECK_EQ(free_page_list, first_page);
@@ -79,7 +80,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 auto* second_page{::std::exchange(free_page_list, free_page_list->next_page)};
                 second_page->used_block = 1;
                 auto* third_page{::std::exchange(second_page->next_page, nullptr)};
-                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size * 2), "释放已分配的2页，不应当断言失败");
+                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size * 2), "释放已分配的2页，不应当断言失败"sv);
 
                 // 由于按页地址顺序释放，而free_page_list是FILO，所以second_page在first_page前
                 CHECK_EQ(free_page_list, second_page);
@@ -101,7 +102,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
     REGISTER_TEST_CASE("deallocate" * ::doctest::description{"测试块释放函数"})
     {
         auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
-        constexpr auto* depend_on_allocate_message{"该测试用例依赖allocate函数"};
+        constexpr auto depend_on_allocate_message{"该测试用例依赖allocate函数"sv};
 
         // 这些功能在deallocate_pages中已经测试过
         SUBCASE("deallocate pages")
@@ -110,7 +111,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
             const auto method{Method(mock, deallocate_pages)};
             ::fakeit::Fake(method);
             auto&& heap{mock.get()};
-            constexpr auto message{"deallocate_pages已mock为空实现，deallocate不应断言失败"};
+            constexpr auto message{"deallocate_pages已mock为空实现，deallocate不应断言失败"sv};
 
             CHECK_NOTHROW_MESSAGE(heap.deallocate(nullptr, heap.page_size), message);
             CHECK_NOTHROW_MESSAGE(heap.deallocate(nullptr, heap.page_size * 2), message);
@@ -126,27 +127,28 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
             ::std::byte* ptr{};
             // 分配一个16字节的块以便测试释放函数
             REQUIRE_NOTHROW_MESSAGE(ptr = static_cast<::std::byte*>(heap.allocate(block_size)),
-                                    "申请16字节，allocate函数不应当断言失败");
+                                    "申请16字节，allocate函数不应当断言失败"sv);
             auto&& metadata{*heap.free_page_list.front()};
 
             CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size + 1),
                                          ::doctest::Contains{"释放块大小与申请块大小不匹配"},
                                          ::SoC::assert_failed_exception,
-                                         "释放块大小与申请块大小不匹配，应该断言失败");
+                                         "释放块大小与申请块大小不匹配，应该断言失败"sv);
 
             CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr + 1, block_size),
                                          ::doctest::Contains{"释放页指针不满足块对齐"},
                                          ::SoC::assert_failed_exception,
-                                         "释放页指针不满足块对齐，应该断言失败");
+                                         "释放页指针不满足块对齐，应该断言失败"sv);
 
-            const ::doctest::Contains exception_string{"要释放的块所在页使用计数不在[1, block_size]范围内"};
-            constexpr auto* message{"要释放的块所在页使用计数不在[1, block_size]范围内"};
+            constexpr auto message{"未检出要释放的块所在页使用计数异常"sv};
+            const ::doctest::Contains exception_string{"要释放的块所在页使用计数不在[1, max_block_num]范围内"};
             metadata.used_block = 0;
             CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
                                          exception_string,
                                          ::SoC::assert_failed_exception,
                                          message);
-            metadata.used_block = block_size + 1;
+            constexpr auto max_block_num{heap.page_size / block_size};
+            metadata.used_block = max_block_num + 1;
             CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
                                          exception_string,
                                          ::SoC::assert_failed_exception,
@@ -156,8 +158,8 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
         SUBCASE("hot path")
         {
             INFO(depend_on_allocate_message);
-            constexpr auto* allocate_message{"allocate函数不应当断言失败"};
-            constexpr auto* deallocate_message{"deallocate函数不应当断言失败"};
+            constexpr auto allocate_message{"allocate函数不应当断言失败"sv};
+            constexpr auto deallocate_message{"deallocate函数不应当断言失败"sv};
 
             SUBCASE("deallocate 1 block in unfull page")
             {

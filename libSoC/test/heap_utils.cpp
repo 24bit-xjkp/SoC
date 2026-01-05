@@ -7,6 +7,7 @@
 import "test_framework.hpp";
 import SoC.unit_test.heap;
 
+using namespace ::std::string_view_literals;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define REGISTER_TEST_CASE(NAME) TEST_CASE("heap_utils/" NAME)
 
@@ -24,7 +25,7 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
             REQUIRE_THROWS_WITH_AS_MESSAGE((::SoC::test::heap{begin, end + 1}),
                                            ::doctest::Contains{"堆结束地址必须对齐到页边界"},
                                            ::SoC::assert_failed_exception,
-                                           "堆结束地址未对齐到页大小的情况下应触发断言失败");
+                                           "堆结束地址未对齐到页大小的情况下应触发断言失败"sv);
         }
 
         /// 堆大小不足一页
@@ -33,7 +34,7 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
             REQUIRE_THROWS_WITH_AS_MESSAGE((::SoC::test::heap{begin, begin}),
                                            ::doctest::Contains{"堆大小必须大于一页"},
                                            ::SoC::assert_failed_exception,
-                                           "堆大小不足一页的情况下应触发断言失败");
+                                           "堆大小不足一页的情况下应触发断言失败"sv);
         }
     }
 
@@ -154,7 +155,7 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
                         REQUIRE_NOTHROW_MESSAGE(
                             page_index = heap.get_metadata_index(
                                 ::std::bit_cast<::SoC::unit_test::heap::free_block_list_t*>(base_address + offset)),
-                            "块指针合法，不应该断言失败");
+                            "块指针合法，不应该断言失败"sv);
                         CHECK_EQ(page_index, page_index_gt);
                     }
                 }};
@@ -181,13 +182,13 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
             CHECK_THROWS_WITH_AS_MESSAGE(heap.get_metadata_index(heap.data - 1),
                                          exception_string,
                                          ::SoC::assert_failed_exception,
-                                         "块指针小于堆地址下限，应该断言失败");
+                                         "块指针小于堆地址下限，应该断言失败"sv);
 
             CHECK_THROWS_WITH_AS_MESSAGE(
                 heap.get_metadata_index(heap.data + heap.metadata.size() * heap.page_size / heap.ptr_size),
                 exception_string,
                 ::SoC::assert_failed_exception,
-                "块指针大于堆地址上限，应该断言失败");
+                "块指针大于堆地址上限，应该断言失败"sv);
         }
     }
 

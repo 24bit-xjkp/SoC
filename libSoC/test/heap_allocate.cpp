@@ -7,6 +7,7 @@
 import "test_framework.hpp";
 import SoC.unit_test.heap;
 
+using namespace ::std::string_view_literals;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define REGISTER_TEST_CASE(NAME) TEST_CASE("heap_allocate/" NAME)
 
@@ -48,7 +49,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
 
         SUBCASE("prepare")
         {
-            constexpr auto* message{"块插入失败"};
+            constexpr auto message{"块插入失败"sv};
             REQUIRE_MESSAGE(page_ptr32->next_page == nullptr, message);
             REQUIRE_MESSAGE(page_ptr32 == heap.free_page_list[1], message);
 
@@ -69,7 +70,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
         SUBCASE("with free block")
         {
             ::SoC::unit_test::heap::metadata_t* current_free_page_list_head{};
-            REQUIRE_NOTHROW_MESSAGE(current_free_page_list_head = heap.page_gc(true), "堆含有空闲块，不应出现空间不足错误");
+            REQUIRE_NOTHROW_MESSAGE(current_free_page_list_head = heap.page_gc(true), "堆含有空闲块，不应出现空间不足错误"sv);
             // 检查空闲页链表的头指针是否正确
             CHECK_EQ(current_free_page_list_head, page_ptr256_1);
             // 检查16字节块链表是否保持空
@@ -106,8 +107,8 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             CHECK_THROWS_WITH_AS_MESSAGE(heap.page_gc(true),
                                          ::doctest::Contains{"剩余堆空间不足"},
                                          ::SoC::assert_failed_exception,
-                                         "剩余堆空间不足，应该断言失败");
-            CHECK_NOTHROW_MESSAGE(heap.page_gc(false), "禁用断言时，剩余堆空间不足不应该产生断言失败");
+                                         "剩余堆空间不足，应该断言失败"sv);
+            CHECK_NOTHROW_MESSAGE(heap.page_gc(false), "禁用断言时，剩余堆空间不足不应该产生断言失败"sv);
         }
     }
 
@@ -122,7 +123,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             CHECK_THROWS_WITH_AS_MESSAGE(heap.make_block_in_page(0),
                                          ::doctest::Contains{"仅在块空闲链表为空时调用此函数"},
                                          ::SoC::assert_failed_exception,
-                                         "空闲页链表非空，应该断言失败");
+                                         "空闲页链表非空，应该断言失败"sv);
         }
 
         SUBCASE("free_page_list not empty")
@@ -130,12 +131,12 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             auto heap{::SoC::unit_test::heap::test_fixture::get_heap()};
             auto* current_page{heap.free_page_list.back()};
             auto* next_page{current_page->next_page};
-            REQUIRE_MESSAGE(current_page != nullptr, "空闲页链表不应为空");
+            REQUIRE_MESSAGE(current_page != nullptr, "空闲页链表不应为空"sv);
             auto page_begin{::std::bit_cast<::std::uintptr_t>(current_page->free_block_list)};
             constexpr auto block_index{0zu};
             constexpr auto block_size{1zu << (::SoC::test::heap::min_block_shift + block_index)};
             ::SoC::unit_test::heap::free_block_list_t* free_block_ptr{};
-            REQUIRE_NOTHROW_MESSAGE(free_block_ptr = heap.make_block_in_page(block_index), "空闲页链表非空，应该能够成功分块");
+            REQUIRE_NOTHROW_MESSAGE(free_block_ptr = heap.make_block_in_page(block_index), "空闲页链表非空，应该能够成功分块"sv);
 
             // 首个空闲块地址应当是页起始地址
             CHECK_EQ(free_block_ptr, ::std::bit_cast<void*>(page_begin));
@@ -175,13 +176,13 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
                 current_page->used_block = 1;
                 CHECK_THROWS_AS_MESSAGE(heap.make_block_in_page(block_index),
                                         ::SoC::assert_failed_exception,
-                                        "无空闲块且空闲链表为空，page_gc应该断言失败");
+                                        "无空闲块且空闲链表为空，page_gc应该断言失败"sv);
             }
 
             SUBCASE("with free block")
             {
                 current_page->used_block = 0;
-                REQUIRE_NOTHROW_MESSAGE(heap.make_block_in_page(block_index), "空闲页链表为空且有空闲块，应该能够成功分块");
+                REQUIRE_NOTHROW_MESSAGE(heap.make_block_in_page(block_index), "空闲页链表为空且有空闲块，应该能够成功分块"sv);
                 CHECK_EQ(heap.free_page_list.back(), nullptr);
                 CHECK_EQ(heap.free_page_list[block_index], current_page);
                 CHECK_EQ(current_page->next_page, nullptr);
@@ -203,7 +204,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             {
                 auto* current_page{heap.free_page_list.back()};
                 auto* next_page{current_page->next_page};
-                REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "堆中空闲页充足，分配不应该失败");
+                REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "堆中空闲页充足，分配不应该失败"sv);
                 // 检查分配的页是不是空闲页表头部的页
                 CHECK_EQ(page_ptr, current_page->free_block_list);
                 // 检查分配后的空闲页表头是不是指向下一页
@@ -221,7 +222,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
                 current_page->next_page = nullptr;
                 heap.free_page_list.front() = current_page;
 
-                REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "可以通过page_gc回收空闲块，分配不应该失败");
+                REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "可以通过page_gc回收空闲块，分配不应该失败"sv);
                 // 检查分配的页是不是空闲页表头部的页
                 CHECK_EQ(page_ptr, current_page->free_block_list);
                 // 检查分配后的空闲页表头是不是为空
@@ -241,7 +242,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
 
                 CHECK_THROWS_AS_MESSAGE(page_ptr = heap.allocate_pages(1),
                                         ::SoC::assert_failed_exception,
-                                        "堆中不存在空闲块和空闲页，page_gc应该断言失败");
+                                        "堆中不存在空闲块和空闲页，page_gc应该断言失败"sv);
             }
         }
 
@@ -249,7 +250,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
         {
             SUBCASE("with enough free pages")
             {
-                constexpr auto* message{"堆中空闲页充足，分配不应该失败"};
+                constexpr auto message{"堆中空闲页充足，分配不应该失败"sv};
                 ::fakeit::Mock mock{heap};
                 const auto method{Method(mock, page_gc)};
                 ::fakeit::Fake(method);
@@ -326,7 +327,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             SUBCASE("not enough free pages")
             {
                 const ::doctest::Contains exception_string{"堆中剩余连续分页数量不足"};
-                constexpr auto* no_enough_continuous_page_message{"堆内没有足够连续页，allocate_pages应该断言失败"};
+                constexpr auto no_enough_continuous_page_message{"堆内没有足够连续页，allocate_pages应该断言失败"sv};
 
                 SUBCASE("no enough continuous page")
                 {
@@ -363,7 +364,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
                     CHECK_THROWS_WITH_AS_MESSAGE(heap.allocate_pages(2),
                                                  exception_string,
                                                  ::SoC::assert_failed_exception,
-                                                 "堆内没有空闲页，allocate_pages应该断言失败");
+                                                 "堆内没有空闲页，allocate_pages应该断言失败"sv);
                 }
             }
         }
@@ -384,7 +385,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
 
                               void* result{};
                               REQUIRE_NOTHROW_MESSAGE(result = heap.allocate_cold_path(actual_size),
-                                                      "空闲表为空，断言不应该失败");
+                                                      "空闲表为空，断言不应该失败"sv);
                               // 检查分配结果是否为页基址
                               CHECK_EQ(result, page_begin);
                               // 检查元数据块是否正确插入空闲表
