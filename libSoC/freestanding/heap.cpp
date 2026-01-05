@@ -294,7 +294,6 @@ namespace SoC
                 else
                 {
                     // 进入下一页进行分配
-                    free_block_list = next_page->free_block_list;
                     free_list = ::std::exchange(next_page, next_page->next_page);
                 }
             }
@@ -324,7 +323,8 @@ namespace SoC
             ::SoC::assert(block_size == actual_size, "释放块大小与申请块大小不匹配"sv);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % block_size == 0, "释放页指针不满足块对齐"sv);
-            ::SoC::assert(used_block >= 1 && used_block <= block_size, "要释放的块所在页使用计数不在[1, block_size]范围内"sv);
+            auto max_block_num{1zu << (page_shift - block_size_shift)};
+            ::SoC::assert(used_block >= 1 && used_block <= max_block_num, "要释放的块所在页使用计数不在[1, max_block_num]范围内"sv);
         }
         auto* old_head{::std::exchange(free_block_list, page_ptr)};
         ::new(page_ptr)::SoC::detail::free_block_list_t{old_head};
