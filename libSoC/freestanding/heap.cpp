@@ -136,7 +136,18 @@ namespace SoC
             if(block_list->used_block == 0) { block_list = insert_block_into_page_list(block_list); }
         }
         auto* free_page{free_page_list.back()};
-        if(assert) { ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv); }
+        if(assert)
+        {
+            // fuzzer模式下堆空间不足则抛出bad_alloc异常，以便fuzzer能够将该测试用例标记为弃用
+            if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv);
+            }
+            else
+            {
+                if(free_page == nullptr) [[unlikely]] { throw heap_full_exception_t{}; }
+            }
+        }
         return free_page;
     }
 
@@ -216,8 +227,16 @@ namespace SoC
                 }
             }
 
-            ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
-            return nullptr;
+            if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                // fuzzer模式下堆中剩余连续分页数量不足则返回空指针，以便fuzzer能够将该测试用例标记为弃用
+                ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
+                return nullptr;
+            }
+            else
+            {
+                throw heap_full_exception_t{};
+            }
         }
     }
 
@@ -297,6 +316,10 @@ namespace SoC
                     free_list = ::std::exchange(next_page, next_page->next_page);
                 }
             }
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                if(result == nullptr) { throw heap_full_exception_t{}; }
+            }
             return result;
         }
         else
@@ -324,7 +347,8 @@ namespace SoC
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % block_size == 0, "释放页指针不满足块对齐"sv);
             auto max_block_num{1zu << (page_shift - block_size_shift)};
-            ::SoC::assert(used_block >= 1 && used_block <= max_block_num, "要释放的块所在页使用计数不在[1, max_block_num]范围内"sv);
+            ::SoC::assert(used_block >= 1 && used_block <= max_block_num,
+                          "要释放的块所在页使用计数不在[1, max_block_num]范围内"sv);
         }
         auto* old_head{::std::exchange(free_block_list, page_ptr)};
         ::new(page_ptr)::SoC::detail::free_block_list_t{old_head};

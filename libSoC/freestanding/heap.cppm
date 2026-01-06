@@ -161,6 +161,17 @@ export namespace SoC
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
 
+#ifdef SOC_BUILD_MODE_FUZZER
+        /**
+         * @brief 堆已满异常
+         *
+         */
+        struct heap_full_exception_t : ::std::runtime_error
+        {
+            inline heap_full_exception_t() : ::std::runtime_error{"堆已满"} {}
+        };
+#endif
+
     public:
         /// 堆页大小
         constexpr inline static auto page_size{1zu << page_shift};

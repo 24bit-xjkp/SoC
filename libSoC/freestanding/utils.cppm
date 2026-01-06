@@ -29,6 +29,8 @@ export namespace SoC
         minsizerel = 3,
         /// 覆盖率模式
         coverage = 4,
+        /// 模糊测试模式
+        fuzzer = 5,
 
 #ifdef SOC_BUILD_MODE_DEBUG
         /// 当前构建模式为调试模式
@@ -45,6 +47,9 @@ export namespace SoC
 #elifdef SOC_BUILD_MODE_COVERAGE
         /// 当前构建模式为覆盖率模式
         current = coverage
+#elifdef SOC_BUILD_MODE_FUZZER
+        /// 当前构建模式为模糊测试模式
+        current = fuzzer
 #else
     #error Unknown build mode
 #endif
@@ -466,11 +471,12 @@ export namespace SoC
      * @param message 要输出的消息
      * @param location 源代码位置
      */
-    constexpr inline void
-        always_check(bool expression,
-                     ::std::string_view message = ::SoC::detail::default_assert_message,
-                     ::std::source_location location = ::std::source_location::current()) noexcept(::SoC::optional_noexcept ||
-                                                                                                   !::SoC::use_full_assert)
+    constexpr inline void always_check(
+        bool expression,
+        ::std::string_view message = ::SoC::detail::default_assert_message,
+        ::std::source_location location = ::std::source_location::current()) noexcept(::SoC::use_full_assert
+                                                                                          ? noexcept(::SoC::assert_failed({}, {}))
+                                                                                          : noexcept(::SoC::fast_fail()))
     {
         if constexpr(::SoC::use_full_assert)
         {
