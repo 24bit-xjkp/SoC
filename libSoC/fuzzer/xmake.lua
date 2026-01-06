@@ -14,7 +14,7 @@ for _, file in ipairs(os.files("*.cpp")) do
     target(name)
         add_files(file)
         add_deps("fuzzer_utils")
-        add_tests("fuzzer", { runargs = { "-timeout=20", "-max_total_time=14400", "-jobs=" .. 2, "-use_value_profile=1" } })
+        add_tests("fuzzer", { runargs = { "-timeout=20", "-max_total_time=14400", "-fork=2", "-use_value_profile=1" } })
         set_enabled(is_fuzzer_support)
 
         on_load(function (target)

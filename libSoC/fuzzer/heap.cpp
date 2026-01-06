@@ -119,7 +119,7 @@ struct heap_fuzzer_param
     }
 };
 
-constexpr auto buffer_size{4zu * 1024 * 1024};
+constexpr auto buffer_size{2zu * 1024 * 1024};
 constexpr auto buffer_elements{buffer_size / sizeof(::std::uintptr_t)};
 // NOLINTNEXTLINE(*-avoid-c-arrays, cert-err58-cpp)
 const auto buffer{::std::make_unique<::std::uintptr_t[]>(buffer_elements)};
