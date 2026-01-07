@@ -148,19 +148,36 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                                          ::SoC::assert_failed_exception,
                                          "释放页指针不满足块对齐，应该断言失败"sv);
 
-            constexpr auto message{"未检出要释放的块所在页使用计数异常"sv};
-            const ::doctest::Contains exception_string{"要释放的块所在页使用计数不在[1, max_block_num]范围内"};
-            metadata.used_block = 0;
-            CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
-                                         exception_string,
-                                         ::SoC::assert_failed_exception,
-                                         message);
-            constexpr auto max_block_num{heap.page_size / block_size};
-            metadata.used_block = max_block_num + 1;
-            CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
-                                         exception_string,
-                                         ::SoC::assert_failed_exception,
-                                         message);
+            {
+                constexpr auto message{"未检出要释放的块所在页使用计数异常"sv};
+                const ::doctest::Contains exception_string{"要释放的块所在页使用计数不在[1, max_block_num]范围内"};
+                metadata.used_block = 0;
+                CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
+                                             exception_string,
+                                             ::SoC::assert_failed_exception,
+                                             message);
+                constexpr auto max_block_num{heap.page_size / block_size};
+                metadata.used_block = max_block_num + 1;
+                CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
+                                             exception_string,
+                                             ::SoC::assert_failed_exception,
+                                             message);
+            }
+
+            {
+                constexpr auto message{"未检出堆结构损坏异常"sv};
+                metadata.used_block = heap.page_size / block_size;
+                CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
+                                             ::doctest::Contains{"要释放的块所在页已完全分配，但其空闲块链表不为空"},
+                                             ::SoC::assert_failed_exception,
+                                             message);
+                metadata.used_block = 1;
+                metadata.free_block_list = nullptr;
+                CHECK_THROWS_WITH_AS_MESSAGE(heap.deallocate(ptr, block_size),
+                                             ::doctest::Contains{"要释放的块所在页未完全分配，但其空闲块链表为空"},
+                                             ::SoC::assert_failed_exception,
+                                             message);
+            }
         }
 
         SUBCASE("hot path")

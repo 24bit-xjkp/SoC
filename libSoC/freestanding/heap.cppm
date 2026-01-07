@@ -183,7 +183,14 @@ export namespace SoC
          *
          * @note 只在fuzzer模式下起作用
          */
-        constexpr inline static void throw_heap_full_exception() noexcept {}
+        constexpr inline static void throw_heap_full_exception() noexcept
+        {
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+            {
+                // 防止被优化导致覆盖率计算失败
+                ::std::atomic_signal_fence(::std::memory_order_relaxed);
+            }
+        }
 #endif
 
     public:

@@ -142,6 +142,11 @@ namespace SoC
             if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
             {
                 ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv);
+                if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+                {
+                    // 这是空函数，调用它是为了触发覆盖率收集
+                    throw_heap_full_exception();
+                }
             }
             else
             {
@@ -232,6 +237,11 @@ namespace SoC
 
             if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
             {
+                if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
+                {
+                    // 这是空函数，调用它是为了触发覆盖率收集
+                    throw_heap_full_exception();
+                }
                 ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
                 return nullptr;
             }
@@ -344,7 +354,9 @@ namespace SoC
             ::SoC::assert(used_block >= 1 && used_block <= max_block_num,
                           "要释放的块所在页使用计数不在[1, max_block_num]范围内"sv);
             ::SoC::assert(used_block != max_block_num || free_block_list == nullptr,
-                          "要释放的块所在页使用计数为max_block_num，但其空闲块链表不为空"sv);
+                          "要释放的块所在页已完全分配，但其空闲块链表不为空"sv);
+            ::SoC::assert(used_block == max_block_num || free_block_list != nullptr,
+                          "要释放的块所在页未完全分配，但其空闲块链表为空"sv);
         }
         auto* old_head{::std::exchange(free_block_list, page_ptr)};
         ::new(page_ptr)::SoC::detail::free_block_list_t{old_head};
