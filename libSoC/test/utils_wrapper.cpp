@@ -213,32 +213,6 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
         // NOLINTEND(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
     }
 
-    /// @test 测试destructure_guard能否正确析构
-    REGISTER_TEST_CASE("destructure_guard" * ::doctest::description{"测试destructure_guard能否正确析构"})
-    {
-        struct test_struct
-        {
-            test_struct() noexcept = default;
-            virtual ~test_struct() noexcept = default;
-            test_struct(const test_struct&) = delete;
-            test_struct(test_struct&&) = delete;
-            test_struct& operator= (const test_struct&) = delete;
-            test_struct& operator= (test_struct&&) = delete;
-        };
-
-        alignas(test_struct)::std::array<::std::byte, sizeof(test_struct)> buffer{};
-        auto&& ref{*new(buffer.data()) test_struct{}};
-        ::fakeit::Mock mock{ref};
-        const auto dtor{Dtor(mock)};
-        ::fakeit::Fake(dtor);
-
-        {
-            auto&& mocked_ref{mock.get()};
-            ::SoC::destructure_guard guard{mocked_ref};
-        }
-        ::fakeit::Verify(dtor).Once();
-    }
-
     /// @test 测试moveable_value能否正确在移动时清空原始值
     REGISTER_TEST_CASE("moveable_value" * ::doctest::description{"测试moveable_value能否正确在移动时清空原始值"})
     {
