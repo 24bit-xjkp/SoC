@@ -840,61 +840,53 @@ export namespace SoC
             }
         }
 
-        constexpr inline union_wrapper(const union_wrapper& other) noexcept(noexcept(type{other.value})) : value{other.value} {}
+        constexpr inline union_wrapper(const union_wrapper& other) noexcept(::std::is_nothrow_copy_constructible_v<value_type>)
+            requires (::std::is_copy_constructible_v<value_type>)
+            : value{other.value}
+        {
+        }
 
-        constexpr inline union_wrapper& operator= (const union_wrapper& other) noexcept(noexcept(value = other.value))
+        constexpr inline union_wrapper&
+            operator= (const union_wrapper& other) noexcept(::std::is_nothrow_copy_assignable_v<value_type>)
+            requires (::std::is_copy_assignable_v<value_type>)
         {
             value = other.value;
             return *this;
         }
 
-        constexpr inline union_wrapper(union_wrapper&& other) noexcept(noexcept(type{::std::move(other.value)})) :
-            value{::std::move(other.value)}
+        constexpr inline union_wrapper(union_wrapper&& other) noexcept(::std::is_nothrow_move_constructible_v<value_type>)
+            requires (::std::is_move_constructible_v<value_type>)
+            : value{::std::move(other.value)}
         {
         }
 
-        constexpr inline union_wrapper& operator= (union_wrapper&& other) noexcept(noexcept(value = ::std::move(other.value)))
+        constexpr inline union_wrapper&
+            operator= (union_wrapper&& other) noexcept(::std::is_nothrow_move_assignable_v<value_type>)
+            requires (::std::is_move_assignable_v<value_type>)
         {
             value = ::std::move(other.value);
             return *this;
         }
 
+        constexpr inline void swap(union_wrapper& other) noexcept(::std::is_nothrow_swappable_v<value_type>)
+            requires (::std::is_swappable_v<value_type>)
+        {
+            ::std::ranges::swap(value, other.value);
+        }
+
         constexpr inline friend auto operator<=> (const union_wrapper& lhs,
                                                   const union_wrapper& rhs) noexcept(noexcept(lhs.value <=> rhs.value))
+            requires (::std::three_way_comparable<value_type>)
         {
             return lhs.value <=> rhs.value;
         }
 
         constexpr inline friend bool operator== (const union_wrapper& lhs,
                                                  const union_wrapper& rhs) noexcept(noexcept(lhs.value == rhs.value))
+            requires (::std::equality_comparable<value_type>)
         {
             return lhs.value == rhs.value;
         }
-    };
-
-    /**
-     * @brief 析构守卫
-     *
-     * @tparam type 要存储的类型
-     */
-    template <typename type>
-    struct destructure_guard
-    {
-        using value_type = type;
-        using pointer = type*;
-        using const_pointer = const type*;
-        using reference = type&;
-        using const_reference = const type&;
-        reference ref;
-
-        constexpr inline explicit destructure_guard(reference ref) noexcept : ref{ref} {}
-
-        constexpr inline ~destructure_guard() noexcept { ref.~type(); }
-
-        constexpr inline destructure_guard(const destructure_guard&) noexcept = default;
-        constexpr inline destructure_guard& operator= (const destructure_guard&) noexcept = default;
-        constexpr inline destructure_guard(destructure_guard&&) noexcept = default;
-        constexpr inline destructure_guard& operator= (destructure_guard&&) noexcept = default;
     };
 
     /**

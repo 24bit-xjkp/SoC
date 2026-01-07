@@ -126,29 +126,29 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
 
             ~test_struct() noexcept { ++dtor_cnt; }
 
-            test_struct(const test_struct&) noexcept { ++copy_ctor_cnt; }
+            test_struct(const test_struct& other [[maybe_unused]]) noexcept { ++copy_ctor_cnt; }
 
-            test_struct(test_struct&&) noexcept { ++move_ctor_cnt; }
+            test_struct(test_struct&& other [[maybe_unused]]) noexcept { ++move_ctor_cnt; }
 
-            test_struct& operator= (const test_struct&) noexcept
+            test_struct& operator= (const test_struct& other [[maybe_unused]]) noexcept
             {
                 ++copy_assign_cnt;
                 return *this;
             }
 
-            test_struct& operator= (test_struct&&) noexcept
+            test_struct& operator= (test_struct&& other [[maybe_unused]]) noexcept
             {
                 ++move_assign_cnt;
                 return *this;
             }
 
-            auto operator<=> (const test_struct&) const noexcept
+            auto operator<=> (const test_struct& other [[maybe_unused]]) const noexcept
             {
                 ++three_way_compare_cnt;
                 return ::std::strong_ordering::equal;
             }
 
-            bool operator== (const test_struct&) const noexcept
+            bool operator== (const test_struct& other [[maybe_unused]]) const noexcept
             {
                 ++equal_compare_cnt;
                 return true;
@@ -172,6 +172,7 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
 
         SUBCASE("copy constructor")
         {
+            // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
             ::SoC::union_wrapper _{wrapper};
             CHECK_EQ(copy_ctor_cnt, 1zu);
         }
@@ -198,6 +199,7 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
 
         SUBCASE("three-way comparison operator")
         {
+            // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
             ::SoC::union_wrapper<test_struct> other{wrapper};
             wrapper <=> other;
             CHECK_EQ(three_way_compare_cnt, 1zu);
@@ -205,38 +207,13 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
 
         SUBCASE("equal comparison operator")
         {
+            // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
             ::SoC::union_wrapper<test_struct> other{wrapper};
             auto _{wrapper == other};
             CHECK_EQ(equal_compare_cnt, 1zu);
         }
 
         // NOLINTEND(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
-    }
-
-    /// @test 测试destructure_guard能否正确析构
-    REGISTER_TEST_CASE("destructure_guard" * ::doctest::description{"测试destructure_guard能否正确析构"})
-    {
-        struct test_struct
-        {
-            test_struct() noexcept = default;
-            virtual ~test_struct() noexcept = default;
-            test_struct(const test_struct&) = delete;
-            test_struct(test_struct&&) = delete;
-            test_struct& operator= (const test_struct&) = delete;
-            test_struct& operator= (test_struct&&) = delete;
-        };
-
-        alignas(test_struct)::std::array<::std::byte, sizeof(test_struct)> buffer{};
-        auto&& ref{*new(buffer.data()) test_struct{}};
-        ::fakeit::Mock mock{ref};
-        const auto dtor{Dtor(mock)};
-        ::fakeit::Fake(dtor);
-
-        {
-            auto&& mocked_ref{mock.get()};
-            ::SoC::destructure_guard guard{mocked_ref};
-        }
-        ::fakeit::Verify(dtor).Once();
     }
 
     /// @test 测试moveable_value能否正确在移动时清空原始值
