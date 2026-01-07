@@ -277,7 +277,7 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
         SUBCASE("remove pages with free_page_list head")
         {
             // 检查返回值是否为范围内的首个页
-            auto block_ptr{first_page->free_block_list};
+            auto* block_ptr{first_page->free_block_list};
             CHECK_EQ(heap.remove_pages(block_ptr, third_page->free_block_list), block_ptr);
             // 检查空闲页表头是否为第四页
             CHECK_EQ(heap.free_page_list.back(), third_page->next_page);
@@ -295,7 +295,7 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
 
         SUBCASE("remove pages without free_page_list head")
         {
-            auto block_ptr{second_page->free_block_list};
+            auto* block_ptr{second_page->free_block_list};
             auto do_check{[&]
                           {
                               // 检查返回值是否为范围内的首个页

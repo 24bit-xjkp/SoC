@@ -81,7 +81,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 first_page->next_page = nullptr;
                 auto* second_page{::std::exchange(free_page_list, free_page_list->next_page)};
                 second_page->used_block = 1;
-                auto second_page_ptr{::std::exchange(second_page->free_block_list, nullptr)};
+                auto* second_page_ptr{::std::exchange(second_page->free_block_list, nullptr)};
                 auto* third_page{::std::exchange(second_page->next_page, nullptr)};
                 CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(first_page_ptr, heap.page_size * 2),
                                       "释放已分配的2页，不应当断言失败"sv);

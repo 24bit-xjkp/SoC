@@ -204,7 +204,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             {
                 auto* current_page{heap.free_page_list.back()};
                 auto* next_page{current_page->next_page};
-                auto block_ptr{current_page->free_block_list};
+                auto* block_ptr{current_page->free_block_list};
                 REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "堆中空闲页充足，分配不应该失败"sv);
                 // 检查分配的页是不是空闲页表头部的页
                 CHECK_EQ(page_ptr, block_ptr);
@@ -224,7 +224,7 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
                 auto* current_page{::std::exchange(heap.free_page_list.back(), nullptr)};
                 current_page->next_page = nullptr;
                 heap.free_page_list.front() = current_page;
-                auto block_ptr{current_page->free_block_list};
+                auto* block_ptr{current_page->free_block_list};
 
                 REQUIRE_NOTHROW_MESSAGE(page_ptr = heap.allocate_pages(1), "可以通过page_gc回收空闲块，分配不应该失败"sv);
                 // 检查分配的页是不是空闲页表头部的页
@@ -515,9 +515,9 @@ TEST_SUITE("heap_allocate" * ::doctest::description{"SoC::heap分配函数单元
             SUBCASE("allocate 256 bytes") { do_check(256, 4, true); }
             SUBCASE("allocate 512 bytes")
             {
-                auto old_free_list{heap.free_page_list.back()};
-                auto block_ptr{old_free_list->free_block_list};
-                auto next_page{old_free_list->next_page};
+                auto* old_free_list{heap.free_page_list.back()};
+                auto* block_ptr{old_free_list->free_block_list};
+                auto* next_page{old_free_list->next_page};
                 auto* result{heap.allocate(512)};
                 // 检查分配的块是不是空闲块链表头部的块
                 CHECK_EQ(result, block_ptr);

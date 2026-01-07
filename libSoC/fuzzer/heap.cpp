@@ -38,7 +38,7 @@ namespace SoC::test
                     if(block_size_shift == page_shift)
                     {
                         auto index{ptr - begin};
-                        auto expected_free_block_list{reinterpret_cast<void*>(data_address + index * page_size)};
+                        auto* expected_free_block_list{reinterpret_cast<void*>(data_address + index * page_size)};
                         ::SoC::assert(free_block_list == expected_free_block_list, "未分块页的空闲块链表指针与预期不符"sv);
                         ::SoC::assert(free_block_list->next == nullptr, "未分块页的空闲块链表下一个指针不为空"sv);
                     }
