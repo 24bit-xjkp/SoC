@@ -22,14 +22,26 @@ namespace SoC::test
         void check_heap_status(::block_size_counter_t& block_size_counter, const ::allocated_memory_t& allocated_memory)
         {
             heap_status_counter.clear();
+            auto begin{metadata.begin()};
             auto end{metadata.end()};
             // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
             auto data_address{reinterpret_cast<::std::uintptr_t>(data)};
-            for(auto ptr{metadata.begin()}; ptr != end;)
+            for(auto ptr{begin}; ptr != end;)
             {
-                auto&& [_, _, used_block, block_size_shift]{*ptr};
+                auto&& [_, free_block_list, used_block, block_size_shift]{*ptr};
+                auto max_block_num{1zu << (page_shift - block_size_shift)};
+                ::SoC::assert(used_block != max_block_num || free_block_list == nullptr,
+                              "页使用计数为max_block_num，但其空闲块链表不为空"sv);
+
                 if(used_block == 0)
                 {
+                    if(block_size_shift == page_shift)
+                    {
+                        auto index{ptr - begin};
+                        auto expected_free_block_list{reinterpret_cast<void*>(data_address + index * page_size)};
+                        ::SoC::assert(free_block_list == expected_free_block_list, "未分块页的空闲块链表指针与预期不符"sv);
+                        ::SoC::assert(free_block_list->next == nullptr, "未分块页的空闲块链表下一个指针不为空"sv);
+                    }
                     ++ptr;
                     continue;
                 }
@@ -50,7 +62,7 @@ namespace SoC::test
                     auto continuous_pages{static_cast<::std::ptrdiff_t>(actual_size / page_size)};
                     for(auto i{0z}; i != continuous_pages; ++i)
                     {
-                        auto&& [_, _, used_block, block_size_shift]{*(ptr + i)};
+                        auto&& [_, free_block_list, used_block, block_size_shift]{*(ptr + i)};
                         ::SoC::assert(used_block == 1, "已按页分配分配的页面中使用计数不为1"sv);
                         ::SoC::assert(block_size_shift == page_shift, "已按页分配分配的页面中块大小不为页大小"sv);
                     }
@@ -81,7 +93,7 @@ struct heap_fuzzer_param
     };
 
     /// 最大分配大小
-    constexpr inline static auto max_allocate_size{8192zu};
+    constexpr inline static auto max_allocate_size{2048zu};
     /// 每次操作实际需要的字节数
     constexpr inline static auto param_size{3zu};
 
@@ -113,7 +125,7 @@ struct heap_fuzzer_param
      * @return 要释放的内存块对应的迭代器
      * @note 只能在free操作时调用
      */
-    allocated_memory_t::iterator get_free_iter(::allocated_memory_t& allocated_memory) const noexcept
+    [[nodiscard]] allocated_memory_t::iterator get_free_iter(::allocated_memory_t& allocated_memory) const noexcept
     {
         return allocated_memory.begin() + static_cast<::std::ptrdiff_t>(value % allocated_memory.size());
     }

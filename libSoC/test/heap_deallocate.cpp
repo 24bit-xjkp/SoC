@@ -57,12 +57,12 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
         {
             auto* first_page{::std::exchange(free_page_list, free_page_list->next_page)};
             first_page->used_block = 1;
-            void* page_ptr{first_page->free_block_list};
+            void* first_page_ptr{::std::exchange(first_page->free_block_list, nullptr)};
 
             SUBCASE("deallocate 1 page")
             {
                 auto* second_page{::std::exchange(first_page->next_page, nullptr)};
-                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size), "释放已分配的1页，不应当断言失败"sv);
+                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(first_page_ptr, heap.page_size), "释放已分配的1页，不应当断言失败"sv);
 
                 // 检查页指针是否正确插入free_page_list中
                 CHECK_EQ(free_page_list, first_page);
@@ -70,6 +70,8 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 CHECK_EQ(first_page->next_page, second_page);
                 // 检查释放后first_page使用计数是否为0
                 CHECK_EQ(first_page->used_block, 0);
+                // 检查free_block_list是否正确恢复
+                CHECK_EQ(first_page->free_block_list, first_page_ptr);
                 // 检查second_page是否未被错误修改
                 CHECK_EQ(second_page->used_block, 0);
             }
@@ -79,8 +81,10 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 first_page->next_page = nullptr;
                 auto* second_page{::std::exchange(free_page_list, free_page_list->next_page)};
                 second_page->used_block = 1;
+                auto second_page_ptr{::std::exchange(second_page->free_block_list, nullptr)};
                 auto* third_page{::std::exchange(second_page->next_page, nullptr)};
-                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(page_ptr, heap.page_size * 2), "释放已分配的2页，不应当断言失败"sv);
+                CHECK_NOTHROW_MESSAGE(heap.deallocate_pages(first_page_ptr, heap.page_size * 2),
+                                      "释放已分配的2页，不应当断言失败"sv);
 
                 // 由于按页地址顺序释放，而free_page_list是FILO，所以second_page在first_page前
                 CHECK_EQ(free_page_list, second_page);
@@ -88,10 +92,14 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
                 CHECK_EQ(second_page->next_page, first_page);
                 // 检查释放后second_page使用计数是否为0
                 CHECK_EQ(second_page->used_block, 0);
+                // 检查second_page的free_block_list是否正确恢复
+                CHECK_EQ(second_page->free_block_list, second_page_ptr);
                 // 检查third_page是否正确串在first_page后面形成链表
                 CHECK_EQ(first_page->next_page, third_page);
                 // 检查释放后first_page使用计数是否为0
                 CHECK_EQ(first_page->used_block, 0);
+                // 检查first_page的free_block_list是否正确恢复
+                CHECK_EQ(first_page->free_block_list, first_page_ptr);
                 // 检查third_page是否未被错误修改
                 CHECK_EQ(third_page->used_block, 0);
             }
@@ -113,7 +121,7 @@ TEST_SUITE("heap_deallocate" * ::doctest::description{"SoC::heap释放函数单�
             auto&& heap{mock.get()};
             constexpr auto message{"deallocate_pages已mock为空实现，deallocate不应断言失败"sv};
 
-            CHECK_NOTHROW_MESSAGE(heap.deallocate(nullptr, heap.page_size), message);
+            CHECK_NOTHROW_MESSAGE(heap.deallocate(nullptr, heap.page_size + 1), message);
             CHECK_NOTHROW_MESSAGE(heap.deallocate(nullptr, heap.page_size * 2), message);
 
             ::fakeit::Verify(method).Exactly(2);

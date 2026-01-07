@@ -131,7 +131,7 @@ namespace SoC
 {
     extern "C++" void assert_failed(::std::string_view message, ::std::source_location location)
     {
-        throw ::SoC::assert_failed_exception{::std::format("\n{}({}:{}): 函数 `{}` 中断言失败: {}",
+        throw ::SoC::assert_failed_exception{::std::format("\n[ERROR] {}({}:{}): 函数 `{}` 中断言失败: {}",
                                                            location.file_name(),
                                                            location.line(),
                                                            location.column(),

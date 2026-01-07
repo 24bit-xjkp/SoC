@@ -238,8 +238,9 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
         CHECK_EQ(page_ptr->next_page, free_page_list_head_gt);
         auto metadata_index{::std::distance(heap.metadata.data(), page_ptr)};
         auto data_address{::std::bit_cast<::std::uintptr_t>(heap.data) + metadata_index * heap.page_size};
-        // 检查页的空闲块指针是否指向数据块首地址，即完成对于页操作的初始化
+        // 检查页的空闲块指针是否指向数据块首地址，并且next为nullptr，即完成对于页操作的初始化
         CHECK_EQ(page_ptr->free_block_list, ::std::bit_cast<::SoC::unit_test::heap::free_block_list_t*>(data_address));
+        CHECK_EQ(page_ptr->free_block_list->next, nullptr);
         // 检查块大小是否正确设置为页大小
         CHECK_EQ(page_ptr->block_size_shift, heap.page_shift);
     }
@@ -276,7 +277,8 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
         SUBCASE("remove pages with free_page_list head")
         {
             // 检查返回值是否为范围内的首个页
-            CHECK_EQ(heap.remove_pages(first_page->free_block_list, third_page->free_block_list), first_page->free_block_list);
+            auto block_ptr{first_page->free_block_list};
+            CHECK_EQ(heap.remove_pages(block_ptr, third_page->free_block_list), block_ptr);
             // 检查空闲页表头是否为第四页
             CHECK_EQ(heap.free_page_list.back(), third_page->next_page);
             // 检查范围内的页used_blocks是否为1
@@ -284,15 +286,20 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
             CHECK_EQ(second_page->used_block, 1);
             CHECK_EQ(third_page->used_block, 1);
             CHECK_EQ(fourth_page->used_block, 0);
+            // 检查范围内的页free_block_list是否为nullptr
+            CHECK_EQ(first_page->free_block_list, nullptr);
+            CHECK_EQ(second_page->free_block_list, nullptr);
+            CHECK_EQ(third_page->free_block_list, nullptr);
+            CHECK_NE(fourth_page->free_block_list, nullptr);
         }
 
         SUBCASE("remove pages without free_page_list head")
         {
+            auto block_ptr{second_page->free_block_list};
             auto do_check{[&]
                           {
                               // 检查返回值是否为范围内的首个页
-                              CHECK_EQ(heap.remove_pages(second_page->free_block_list, third_page->free_block_list),
-                                       second_page->free_block_list);
+                              CHECK_EQ(heap.remove_pages(block_ptr, third_page->free_block_list), block_ptr);
                               // 检查空闲页表头是否为第一页
                               CHECK_EQ(heap.free_page_list.back(), first_page);
                               // 检查范围内的页used_blocks是否为1，不在移除范围内的页used_blocks是否为0
@@ -300,6 +307,11 @@ TEST_SUITE("heap_utils" * ::doctest::description{"SoC::heap实用函数单元测
                               CHECK_EQ(second_page->used_block, 1);
                               CHECK_EQ(third_page->used_block, 1);
                               CHECK_EQ(fourth_page->used_block, 0);
+                              // 检查范围内的页free_block_list是否为nullptr，不在移除范围内的页free_block_list是否为非nullptr
+                              CHECK_NE(first_page->free_block_list, nullptr);
+                              CHECK_EQ(second_page->free_block_list, nullptr);
+                              CHECK_EQ(third_page->free_block_list, nullptr);
+                              CHECK_NE(fourth_page->free_block_list, nullptr);
                           }};
 
             SUBCASE("in order") { do_check(); }
