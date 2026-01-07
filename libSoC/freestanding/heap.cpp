@@ -145,7 +145,7 @@ namespace SoC
             }
             else
             {
-                if(free_page == nullptr) [[unlikely]] { throw heap_full_exception_t{}; }
+                throw_heap_full_exception();
             }
         }
         return free_page;
@@ -229,13 +229,13 @@ namespace SoC
 
             if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
             {
-                // fuzzer模式下堆中剩余连续分页数量不足则返回空指针，以便fuzzer能够将该测试用例标记为弃用
                 ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
                 return nullptr;
             }
             else
             {
-                throw heap_full_exception_t{};
+                // fuzzer模式下下走异常路径退出，以便和正常分配进行区分
+                throw_heap_full_exception();
             }
         }
     }
@@ -315,10 +315,6 @@ namespace SoC
                     // 进入下一页进行分配
                     free_list = ::std::exchange(next_page, next_page->next_page);
                 }
-            }
-            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
-            {
-                if(result == nullptr) { throw heap_full_exception_t{}; }
             }
             return result;
         }

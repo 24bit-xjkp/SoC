@@ -170,6 +170,20 @@ export namespace SoC
         {
             inline heap_full_exception_t() : ::std::runtime_error{"堆已满"} {}
         };
+
+        /**
+         * @brief 抛出堆已满异常
+         *
+         * @note 只在fuzzer模式下起作用
+         */
+        [[noreturn]] inline static void throw_heap_full_exception() { throw heap_full_exception_t{}; }
+#else
+        /**
+         * @brief 抛出堆已满异常
+         *
+         * @note 只在fuzzer模式下起作用
+         */
+        constexpr inline static void throw_heap_full_exception() noexcept {}
 #endif
 
     public:
