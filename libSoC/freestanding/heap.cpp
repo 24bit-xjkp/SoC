@@ -190,11 +190,12 @@ namespace SoC
         // 分配一个页的快速路径
         if(page_cnt == 1) [[likely]]
         {
-            auto* free_page{free_page_list.back()};
-            if(free_page == nullptr) [[unlikely]] { free_page = page_gc(true); }
+            // 如果空闲页链表非空则已经通过快速路径完成分配
+            // 因此进入慢速路径一定需要调用page_gc
+            auto* free_page{page_gc(true)};
             free_page_list.back() = free_page->next_page;
             free_page->used_block = 1;
-            // 和慢速路径保持一致，将空闲块指针设置为空
+            // 和快速路径保持一致，将空闲块指针设置为空
             return ::std::exchange(free_page->free_block_list, nullptr);
         }
         else
