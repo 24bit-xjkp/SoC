@@ -24,6 +24,9 @@ namespace SoC::test
             heap_status_counter.clear();
             auto begin{metadata.begin()};
             auto end{metadata.end()};
+            ::std::size_t using_page_num{};
+            ::std::size_t free_page_num{};
+
             // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
             auto data_address{reinterpret_cast<::std::uintptr_t>(data)};
             for(auto ptr{begin}; ptr != end;)
@@ -43,13 +46,23 @@ namespace SoC::test
                         ::SoC::assert(free_block_list->next == nullptr, "未分块页的空闲块链表下一个指针不为空"sv);
                     }
                     ++ptr;
+                    ++free_page_num;
                     continue;
                 }
+
                 if(block_size_shift != page_shift)
                 {
                     // 此时block_size_shift对应的就是真实分配的内存块大小，直接累加即可
                     heap_status_counter[1zu << block_size_shift] += used_block;
+
+                    ::std::size_t free_block_num{};
+                    for(auto* free_block{free_block_list}; free_block != nullptr; free_block = free_block->next)
+                    {
+                        ++free_block_num;
+                    }
+                    ::SoC::assert(free_block_num == max_block_num - used_block, "已分块页的空闲块链表长度与使用计数不一致"sv);
                     ++ptr;
+                    ++using_page_num;
                 }
                 else
                 {
@@ -67,6 +80,7 @@ namespace SoC::test
                         ::SoC::assert(block_size_shift == page_shift, "已按页分配分配的页面中块大小不为页大小"sv);
                     }
                     ptr += continuous_pages;
+                    using_page_num += continuous_pages;
                     ++heap_status_counter[actual_size];
                 }
             }
@@ -74,6 +88,9 @@ namespace SoC::test
 
             ::std::erase_if(block_size_counter, [](const auto& pair) static noexcept { return pair.second == 0; });
             ::SoC::assert(heap_status_counter == block_size_counter, "堆状态计数器与实际分配的内存块大小计数器不一致"sv);
+            ::SoC::assert(using_page_num == get_using_pages(), "已分配页面数与get_using_pages返回值不一致"sv);
+            ::SoC::assert(free_page_num == get_free_pages(), "空闲页面数与get_free_pages返回值不一致"sv);
+            ::SoC::assert(using_page_num + free_page_num == get_total_pages(), "总页面数与get_total_pages返回值不一致"sv);
         }
 
     private:
@@ -131,7 +148,7 @@ struct heap_fuzzer_param
     }
 };
 
-constexpr auto buffer_size{2zu * 1024 * 1024};
+constexpr auto buffer_size{128zu * 1024};
 constexpr auto buffer_elements{buffer_size / sizeof(::std::uintptr_t)};
 // NOLINTNEXTLINE(*-avoid-c-arrays, cert-err58-cpp)
 const auto buffer{::std::make_unique<::std::uintptr_t[]>(buffer_elements)};
@@ -180,6 +197,7 @@ extern "C" int LLVMFuzzerTestOneInput(const ::std::uint8_t* data, ::std::size_t 
                 allocated_memory.erase(iter);
                 break;
             }
+            default: ::std::unreachable();
         }
         heap.check_heap_status(block_size_counter, allocated_memory);
     }
