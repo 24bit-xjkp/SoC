@@ -138,19 +138,13 @@ namespace SoC
         auto* free_page{free_page_list.back()};
         if(assert)
         {
-            // fuzzer模式下堆空间不足则抛出bad_alloc异常，以便fuzzer能够将该测试用例标记为弃用
-            if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
             {
-                ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv);
-                if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
-                {
-                    // 这是空函数，调用它是为了触发覆盖率收集
-                    throw_heap_full_exception();
-                }
+                ::SoC::fuzzer_assert(free_page != nullptr, fuzzer_error_code::heap_full);
             }
             else
             {
-                throw_heap_full_exception();
+                ::SoC::always_check(free_page != nullptr, "剩余堆空间不足"sv);
             }
         }
         return free_page;
@@ -236,21 +230,16 @@ namespace SoC
                 }
             }
 
-            if constexpr(!::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
             {
-                if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
-                {
-                    // 这是空函数，调用它是为了触发覆盖率收集
-                    throw_heap_full_exception();
-                }
-                ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
-                return nullptr;
+                // fuzzer模式下下走异常路径退出，以便和正常分配进行区分
+                ::SoC::fuzzer_assert(false, fuzzer_error_code::heap_full);
             }
             else
             {
-                // fuzzer模式下下走异常路径退出，以便和正常分配进行区分
-                throw_heap_full_exception();
+                ::SoC::always_check(false, "堆中剩余连续分页数量不足"sv);
             }
+            return nullptr;
         }
     }
 
@@ -260,7 +249,15 @@ namespace SoC
         if constexpr(::SoC::use_full_assert)
         {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % page_size == 0, "释放范围首指针不满足页对齐"sv);
+            auto is_aligned{reinterpret_cast<::std::uintptr_t>(ptr) % page_size == 0};
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(is_aligned, fuzzer_error_code::pointer_unaligned);
+            }
+            else
+            {
+                ::SoC::assert(is_aligned, "释放范围首指针不满足页对齐"sv);
+            }
         }
         auto metadata_index{get_metadata_index(static_cast<::SoC::detail::free_block_list_t*>(ptr))};
         auto&& head{free_page_list.back()};
@@ -271,8 +268,15 @@ namespace SoC
             auto&& [next_page, free_block_list, used_block, block_size_shift]{metadata};
             if(::SoC::use_full_assert)
             {
+                if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+                {
+                    ::SoC::fuzzer_assert(block_size_shift == page_shift, fuzzer_error_code::block_size_mismatch);
+                }
+                else
+                {
+                    ::SoC::assert(block_size_shift == page_shift, "释放块大小与申请块大小不匹配"sv);
+                }
                 ::SoC::assert(used_block == 1, "要释放的页使用计数不为1"sv);
-                ::SoC::assert(block_size_shift == page_shift, "释放块大小与申请块大小不匹配"sv);
             }
             used_block = 0;
             free_block_list = data + index * scaled_page_size;
@@ -288,10 +292,10 @@ namespace SoC
         {
             auto step{actual_size / ptr_size};
             auto free_page_list_index{::std::countr_zero(actual_size) - min_block_shift};
-            auto&& free_list{free_page_list[free_page_list_index]};
             auto* page_begin{make_block_in_page(free_page_list_index)};
             // 刚通过make_block_in_page生成的空闲块链表是连续的
             // 不使用next指针以减少一次内存访问
+            auto&& free_list{free_page_list[free_page_list_index]};
             free_list->free_block_list += step;
             ++free_list->used_block;
             return page_begin;
@@ -346,9 +350,18 @@ namespace SoC
         {
             // 输入正确性检查
             auto block_size{1zu << block_size_shift};
-            ::SoC::assert(block_size == actual_size, "释放块大小与申请块大小不匹配"sv);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            ::SoC::assert(reinterpret_cast<::std::uintptr_t>(ptr) % block_size == 0, "释放页指针不满足块对齐"sv);
+            auto is_aligned{reinterpret_cast<::std::uintptr_t>(ptr) % block_size == 0};
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(block_size == actual_size, fuzzer_error_code::block_size_mismatch);
+                ::SoC::fuzzer_assert(is_aligned, fuzzer_error_code::pointer_unaligned);
+            }
+            else
+            {
+                ::SoC::assert(block_size == actual_size, "释放块大小与申请块大小不匹配"sv);
+                ::SoC::assert(is_aligned, "释放页指针不满足块对齐"sv);
+            }
 
             // 堆结构完整性检查
             auto max_block_num{1zu << (page_shift - block_size_shift)};

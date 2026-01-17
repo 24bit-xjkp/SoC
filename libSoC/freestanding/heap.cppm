@@ -161,37 +161,21 @@ export namespace SoC
         /// 指针大小
         constexpr inline static auto ptr_size{sizeof(void*)};
 
-#ifdef SOC_BUILD_MODE_FUZZER
         /**
-         * @brief 堆已满异常
+         * @brief 模糊测试错误码
          *
          */
-        struct heap_full_exception_t : ::std::runtime_error
+        enum class fuzzer_error_code : ::std::size_t  // NOLINT(performance-enum-size)
         {
-            inline heap_full_exception_t() : ::std::runtime_error{"堆已满"} {}
+            /// 成功，作为占位符
+            success,
+            /// 堆已满
+            heap_full,
+            /// 块大小不匹配
+            block_size_mismatch,
+            /// 指针未对齐
+            pointer_unaligned,
         };
-
-        /**
-         * @brief 抛出堆已满异常
-         *
-         * @note 只在fuzzer模式下起作用
-         */
-        [[noreturn]] inline static void throw_heap_full_exception() { throw heap_full_exception_t{}; }
-#else
-        /**
-         * @brief 抛出堆已满异常
-         *
-         * @note 只在fuzzer模式下起作用
-         */
-        constexpr inline static void throw_heap_full_exception() noexcept
-        {
-            if constexpr(::SoC::is_build_mode(::SoC::build_mode::coverage))
-            {
-                // 防止被优化导致覆盖率计算失败
-                ::std::atomic_signal_fence(::std::memory_order_relaxed);
-            }
-        }
-#endif
 
     public:
         /// 堆页大小

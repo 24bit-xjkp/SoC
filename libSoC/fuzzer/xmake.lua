@@ -4,12 +4,13 @@ set_plat(get_config("host"))
 local is_fuzzer_support = is_current_mode_support_fuzzer()
 target("fuzzer_utils")
     add_files("utils.cppm", {public = true})
+    add_files("utils.cpp")
     add_deps("SoC.freestanding.fuzzer")
     set_kind("object")
     set_enabled(is_fuzzer_support)
 target_end()
 
-for _, file in ipairs(os.files("*.cpp")) do
+for _, file in ipairs(os.files("*.cpp|utils.cpp")) do
     local name = "fuzzer_" .. path.basename(file)
     target(name)
         add_files(file)

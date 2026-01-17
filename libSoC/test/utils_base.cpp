@@ -99,6 +99,19 @@ TEST_SUITE("utils_base" * ::doctest::description{"SoC基本实用函数部分单
         CHECK_THROWS_WITH_AS(::SoC::always_check(false), ::doctest::Contains{message}, ::SoC::assert_failed_exception);
     }
 
+    /// @test 测试fuzzer_assert能否正确处理断言
+    REGISTER_TEST_CASE("fuzzer_assert" * ::doctest::description{"测试fuzzer_assert能否正确处理断言"})
+    {
+        enum class test : ::std::size_t  // NOLINT(performance-enum-size)
+        {
+            test
+        };
+
+        // 在非fuzzer模式下，fuzzer_assert应当无实际效果
+        CHECK_NOTHROW(::SoC::fuzzer_assert(true, test::test));
+        CHECK_NOTHROW(::SoC::fuzzer_assert(false, test::test));
+    }
+
     /// @test 测试log_device_t能否正确处理日志设备
     REGISTER_TEST_CASE("log_device_t" * ::doctest::description{"测试log_device_t能否正确处理日志设备"})
     {

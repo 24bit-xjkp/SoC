@@ -10,8 +10,8 @@ namespace SoC::test
 {
     extern "C++" struct heap : ::SoC::heap
     {
+        using ::SoC::heap::fuzzer_error_code;
         using ::SoC::heap::heap;
-        using ::SoC::heap::heap_full_exception_t;
 
         /**
          * @brief 检查堆状态是否符合预期
@@ -146,6 +146,16 @@ struct heap_fuzzer_param
     {
         return allocated_memory.begin() + static_cast<::std::ptrdiff_t>(value % allocated_memory.size());
     }
+
+    [[nodiscard]] ::SoC::test::heap::fuzzer_error_code get_error_code() const noexcept
+    {
+        switch(value >> 14zu)
+        {
+            case 1: return ::SoC::test::heap::fuzzer_error_code::block_size_mismatch;
+            case 2: return ::SoC::test::heap::fuzzer_error_code::pointer_unaligned;
+            default: return ::SoC::test::heap::fuzzer_error_code::success;
+        }
+    }
 };
 
 constexpr auto buffer_size{128zu * 1024};
@@ -161,43 +171,85 @@ extern "C" int LLVMFuzzerTestOneInput(const ::std::uint8_t* data, ::std::size_t 
     ::SoC::test::heap heap{buffer_range.begin(), buffer_range.end()};
     ::allocated_memory_t allocated_memory{};
     ::block_size_counter_t block_size_counter{};
+    using error_code_t = ::SoC::test::heap::fuzzer_error_code;
+    using heap_operation_t = ::heap_fuzzer_param::heap_operation;
 
     while(size >= ::heap_fuzzer_param::param_size)
     {
         ::heap_fuzzer_param param{data, size};
-        switch(param.operation)
-        {
-            case ::heap_fuzzer_param::heap_operation::alloc:
-            {
-                auto alloc_size{param.get_alloc_size()};
-                try
-                {
-                    void* ptr{heap.allocate(alloc_size)};
-                    ::SoC::assert(ptr != nullptr, "分配内存失败但未通过异常路径退出"sv);
-                    allocated_memory.emplace_back(ptr, alloc_size);
-                    ++block_size_counter[heap.get_actual_allocate_size(alloc_size)];
-                }
-                catch(const ::SoC::test::heap::heap_full_exception_t&)
-                {
-                    // 堆空间不足，在正常模式下已经快速失败
-                    // 在fuzzer模式下退出该测试用例，避免堆结构被破坏
-                    return 0;
-                }
-                break;
-            }
-            case ::heap_fuzzer_param::heap_operation::free:
-            {
-                // 没有分配内存，继续下一个操作
-                if(allocated_memory.empty()) { continue; }
 
-                auto iter{param.get_free_iter(allocated_memory)};
-                auto&& [ptr, allocated_size]{*iter};
+        if(param.operation == heap_operation_t::alloc)
+        {
+            auto alloc_size{param.get_alloc_size()};
+            try
+            {
+                void* ptr{heap.allocate(alloc_size)};
+                ::SoC::assert(ptr != nullptr, "分配内存失败但未通过异常路径退出"sv);
+                allocated_memory.emplace_back(ptr, alloc_size);
+                ++block_size_counter[heap.get_actual_allocate_size(alloc_size)];
+            }
+            catch(const ::SoC::fuzzer_assert_failed_t& error)
+            {
+                ::SoC::assert(error.get<error_code_t>() == error_code_t::heap_full, "分配内存失败但不为heap_full错误"sv);
+                // 堆空间不足，在正常模式下已经快速失败
+                // 在fuzzer模式下退出该测试用例，避免堆结构被破坏
+                return 0;
+            }
+        }
+        else
+        {
+            // 没有分配内存，继续下一个操作
+            if(allocated_memory.empty()) { continue; }
+
+            auto iter{param.get_free_iter(allocated_memory)};
+            auto [ptr, allocated_size]{*iter};
+            auto error_code{param.get_error_code()};
+            if(error_code == error_code_t::success)
+            {
                 heap.deallocate(ptr, allocated_size);
                 --block_size_counter[heap.get_actual_allocate_size(allocated_size)];
                 allocated_memory.erase(iter);
-                break;
             }
-            default: ::std::unreachable();
+            else if(error_code == error_code_t::pointer_unaligned)
+            {
+                try
+                {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    heap.deallocate(reinterpret_cast<void*>(reinterpret_cast<::std::uintptr_t>(ptr) + 1), allocated_size);
+                    ::SoC::assert(false, "释放未对齐指针未通过异常路径退出"sv);
+                }
+                catch(const ::SoC::fuzzer_assert_failed_t& error)
+                {
+                    ::SoC::assert(error.get<error_code_t>() == error_code_t::pointer_unaligned,
+                                  "释放未对齐指针失败但不为pointer_unaligned错误"sv);
+                }
+            }
+            else
+            {
+                try
+                {
+                    if(auto actual_size{heap.get_actual_allocate_size(allocated_size)}; actual_size == 16)
+                    {
+                        // 触发heap.deallocate_pages的检查
+                        allocated_size = heap.page_size * 2;
+                    }
+                    else if(actual_size >= heap.page_size) { allocated_size = heap.page_size / 2; }
+                    else
+                    {
+                        allocated_size = actual_size * 2;
+                    }
+                    // 对齐到页边界以避免出现pointer_unaligned错误
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                    heap.deallocate(reinterpret_cast<void*>(reinterpret_cast<::std::uintptr_t>(ptr) & ~(heap.page_size - 1)),
+                                    allocated_size);
+                    ::SoC::assert(false, "释放大小不匹配的块未通过异常路径退出"sv);
+                }
+                catch(const ::SoC::fuzzer_assert_failed_t& error)
+                {
+                    ::SoC::assert(error.get<error_code_t>() == error_code_t::block_size_mismatch,
+                                  "释放大小不匹配的块失败但不为block_size_mismatch错误"sv);
+                }
+            }
         }
         heap.check_heap_status(block_size_counter, allocated_memory);
     }

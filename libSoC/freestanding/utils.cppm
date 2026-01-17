@@ -421,6 +421,38 @@ export namespace SoC
         }
     }
 
+#ifdef SOC_BUILD_MODE_FUZZER
+    /**
+     * @brief 模糊测试断言失败时调用的函数
+     *
+     * @note 应当实现为通过异常报告断言失败
+     * @param value 枚举值，用于报告断言失败类型
+     */
+    extern "C++" [[noreturn]] [[using gnu: noinline, cold]] void
+        fuzzer_assert_failed(::std::size_t value) noexcept(::SoC::optional_noexcept);
+#else
+    /**
+     * @brief 模糊测试断言失败时调用的函数，非模糊测试模式下无实际实现
+     *
+     * @param value 枚举值，用于报告断言失败类型
+     */
+    constexpr inline void fuzzer_assert_failed(::std::size_t value [[maybe_unused]]) noexcept {}
+#endif
+
+    /**
+     * @brief 基于C++的模糊测试断言函数
+     *
+     * @note 在未定义SOC_BUILD_MODE_FUZZER宏时不应当调用该函数
+     * @param expression 断言表达式
+     * @param value 枚举值，用于报告断言失败类型
+     */
+    template <typename type>
+        requires (::std::is_scoped_enum_v<type> && sizeof(type) == sizeof(::std::size_t))
+    constexpr inline void fuzzer_assert(bool expression, type value) noexcept(::SoC::optional_noexcept)
+    {
+        if(!expression) [[unlikely]] { ::SoC::fuzzer_assert_failed(::std::to_underlying(value)); }
+    }
+
     /**
      * @brief 基于C++的断言函数，不受宏的影响
      *
