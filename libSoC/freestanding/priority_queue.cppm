@@ -7,6 +7,48 @@
 export module SoC.freestanding:priority_queue;
 import :utils;
 
+namespace SoC::detail
+{
+    /**
+     * @brief 优先队列析构函数
+     *
+     * @tparam type 队列元素类型
+     * @param buffer 队列缓冲区
+     */
+    template <typename type>
+    constexpr inline void
+        priority_queue_destruct(::std::span<::SoC::union_wrapper<type>> buffer) noexcept(::std::is_nothrow_destructible_v<type>)
+    {
+        for(auto& ref: buffer) { ref.value.~type(); }
+    }
+
+    /**
+     * @brief 优先队列交换函数
+     *
+     * @tparam type 队列元素类型
+     */
+    template <typename type>
+    constexpr inline void priority_queue_swap(::SoC::union_wrapper<type>* self,
+                                              ::std::size_t self_tail,
+                                              ::SoC::union_wrapper<type>* other,
+                                              ::std::size_t other_tail) noexcept(::std::is_nothrow_swappable_v<type> &&
+                                                                                 ::std::is_nothrow_move_constructible_v<type>)
+    {
+        if(self_tail < other_tail)
+        {
+            ::std::ranges::swap_ranges(::std::span{self, self_tail}, ::std::span{other, self_tail});
+            auto rest{other_tail - self_tail};
+            ::std::ranges::uninitialized_move(::std::span{other + self_tail, rest}, ::std::span{self + self_tail, rest});
+        }
+        else
+        {
+            ::std::ranges::swap_ranges(::std::span{other, other_tail}, ::std::span{self, other_tail});
+            auto rest{self_tail - other_tail};
+            ::std::ranges::uninitialized_move(::std::span{self + other_tail, rest}, ::std::span{other + other_tail, rest});
+        }
+    }
+}  // namespace SoC::detail
+
 export namespace SoC
 {
     namespace test
@@ -42,6 +84,17 @@ export namespace SoC
         [[no_unique_address]] compare_t comp{};
         friend struct ::SoC::test::priority_queue<type, buffer_size, compare>;
 
+        /**
+         * @brief 优先队列错误码，用于模糊测试
+         *
+         */
+        enum class error_code : ::std::size_t  // NOLINT(performance-enum-size)
+        {
+            success,
+            priority_queue_full,
+            priority_queue_empty
+        };
+
     public:
         /**
          * @brief 默认构造优先队列，初始队列为空
@@ -53,9 +106,12 @@ export namespace SoC
          * @brief 析构优先队列
          *
          */
-        constexpr inline ~priority_queue() noexcept
+        constexpr inline ~priority_queue() noexcept(::std::is_nothrow_destructible_v<type>)
         {
-            for(auto i: ::std::ranges::views::iota(0zu, tail)) { buffer[i].value.~type(); }
+            if constexpr(!::std::is_trivially_destructible_v<type>)
+            {
+                ::SoC::detail::priority_queue_destruct(::std::span{buffer}.subspan(0, tail));
+            }
         }
 
         /**
@@ -63,9 +119,10 @@ export namespace SoC
          *
          * @param other 要复制的优先队列
          */
-        constexpr inline priority_queue(const priority_queue& other) noexcept : tail{other.tail}, comp{other.comp}
+        constexpr inline priority_queue(const priority_queue& other) noexcept(::std::is_nothrow_copy_constructible_v<type>) :
+            tail{other.tail}, comp{other.comp}
         {
-            for(auto i: ::std::ranges::views::iota(0zu, tail)) { ::new(&buffer[i].value) type{other.buffer[i].value}; }
+            ::std::ranges::uninitialized_copy(::std::span{other.buffer}.subspan(0, other.tail), buffer);
         }
 
         /**
@@ -73,12 +130,10 @@ export namespace SoC
          *
          * @param other 要移动的优先队列
          */
-        constexpr inline priority_queue(priority_queue&& other) noexcept : tail{other.tail}, comp{::std::move(other.comp)}
+        constexpr inline priority_queue(priority_queue&& other) noexcept(::std::is_nothrow_move_constructible_v<type>) :
+            tail{other.tail}, comp{::std::move(other.comp)}
         {
-            for(auto i: ::std::ranges::views::iota(0zu, tail))
-            {
-                ::new(&buffer[i].value) type{::std::move(other.buffer[i].value)};
-            }
+            ::std::ranges::uninitialized_move(::std::span{other.buffer}.subspan(0, other.tail), buffer);
         }
 
         /**
@@ -86,9 +141,11 @@ export namespace SoC
          *
          * @param other 要交换的优先队列
          */
-        constexpr inline void swap(priority_queue& other) noexcept
+        constexpr inline void swap(priority_queue& other) noexcept(::std::is_nothrow_swappable_v<type> &&
+                                                                   ::std::is_nothrow_move_constructible_v<type> &&
+                                                                   ::std::is_nothrow_swappable_v<compare_t>)
         {
-            ::std::ranges::swap(buffer, other.buffer);
+            ::SoC::detail::priority_queue_swap(buffer.data(), tail, other.buffer.data(), other.tail);
             ::std::ranges::swap(tail, other.tail);
             ::std::ranges::swap(comp, other.comp);
         }
@@ -168,7 +225,14 @@ export namespace SoC
         constexpr inline void emplace_back(args_t&&... args) noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::always_check(!full(), "优先队列已满"sv);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(!full(), error_code::priority_queue_full);
+            }
+            else
+            {
+                ::SoC::always_check(!full(), "优先队列已满"sv);
+            }
             ::new(&buffer[tail++].value) type{::std::forward<decltype(args)>(args)...};
             ::std::ranges::push_heap(::std::span{buffer}.subspan(0, tail), comp);
         }
@@ -180,9 +244,23 @@ export namespace SoC
         constexpr inline void pop_front() noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::always_check(!empty(), "优先队列已空"sv);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(!empty(), error_code::priority_queue_empty);
+            }
+            else
+            {
+                ::SoC::always_check(!empty(), "优先队列已空"sv);
+            }
             ::std::ranges::pop_heap(::std::span{buffer}.subspan(0, tail), comp);
             buffer[--tail].value.~type();
         }
     };
+
+    template <typename type, ::std::size_t buffer_size, template <typename> typename comp_t>
+    void swap(::SoC::priority_queue<type, buffer_size, comp_t>& lhs,
+              ::SoC::priority_queue<type, buffer_size, comp_t>& rhs) noexcept(noexcept(lhs.swap(rhs)))
+    {
+        lhs.swap(rhs);
+    }
 }  // namespace SoC
