@@ -60,12 +60,27 @@ namespace
     };
 }  // namespace
 
+namespace doctest
+{
+    template <>
+    struct StringMaker<::test_struct>
+    {
+        static ::doctest::String convert(const ::test_struct& value)
+        {
+            ::std::array<char, ::std::numeric_limits<::std::size_t>::digits10 + 2> buffer{};
+            ::std::to_chars(buffer.begin(), buffer.end(), value.value);
+            return {buffer.data()};
+        }
+    };
+}  // namespace doctest
+
 using priority_queue_t = ::SoC::test::priority_queue<::test_struct, 4>;
 
 /// @test 测试优先队列
 TEST_SUITE("priority_queue" * ::doctest::description{"测试优先队列"})
 {
-    REGISTER_TEST_CASE("general operator")
+    /// @test 测试优先队列的一般操作
+    REGISTER_TEST_CASE("general operator" * ::doctest::description{"测试优先队列的一般操作"})
     {
         ::priority_queue_t priority_queue{};
 
@@ -113,7 +128,74 @@ TEST_SUITE("priority_queue" * ::doctest::description{"测试优先队列"})
                                      "优先队列已空时移除元素应断言失败");
     }
 
-    REGISTER_TEST_CASE("constructor, destructor, and assignment" * ::doctest::description{"测试构造函数、析构函数和赋值运算符"})
+    /// @test 测试优先队列的交换操作
+    REGISTER_TEST_CASE("swap" * ::doctest::description{"测试优先队列的交换操作"})
+    {
+        ::priority_queue_t priority_queue1{};
+        ::priority_queue_t priority_queue1_gt{};
+        ::priority_queue_t priority_queue2{};
+        ::priority_queue_t priority_queue2_gt{};
+        constexpr ::std::ranges::equal_to pred{};
+        constexpr auto proj{[](const ::SoC::union_wrapper<::test_struct>& value) static noexcept { return value.value; }};
+
+        auto self_swap{[=] mutable
+                       {
+                           priority_queue1.swap(priority_queue1);
+                           priority_queue2.swap(priority_queue2);
+                           CHECK(::std::ranges::equal(priority_queue1.buffer, priority_queue1_gt.buffer, pred, proj, proj));
+                           CHECK(::std::ranges::equal(priority_queue2.buffer, priority_queue2_gt.buffer, pred, proj, proj));
+                       }};
+        auto cross_swap{[=] mutable
+                        {
+                            priority_queue1.swap(priority_queue2);
+                            CHECK(::std::ranges::equal(priority_queue1.buffer, priority_queue2_gt.buffer, pred, proj, proj));
+                            CHECK(::std::ranges::equal(priority_queue2.buffer, priority_queue1_gt.buffer, pred, proj, proj));
+                            priority_queue1.swap(priority_queue2);
+                            CHECK(::std::ranges::equal(priority_queue1.buffer, priority_queue1_gt.buffer, pred, proj, proj));
+                            CHECK(::std::ranges::equal(priority_queue2.buffer, priority_queue2_gt.buffer, pred, proj, proj));
+                        }};
+
+        SUBCASE("same size")
+        {
+            for(auto i: ::std::views::iota(0zu, 4zu))
+            {
+                priority_queue1.emplace_back(i);
+                priority_queue1_gt.emplace_back(i);
+                priority_queue2.emplace_back(i + 4);
+                priority_queue2_gt.emplace_back(i + 4);
+            }
+
+            SUBCASE("self swap") { self_swap(); }
+            SUBCASE("cross swap") { cross_swap(); }
+        }
+
+        SUBCASE("different size")
+        {
+            for(auto i: ::std::views::iota(0zu, 4zu))
+            {
+                priority_queue1.emplace_back(i);
+                priority_queue1_gt.emplace_back(i);
+            }
+            for(auto i: ::std::views::iota(0zu, 3zu))
+            {
+                priority_queue2.emplace_back(i + 4);
+                priority_queue2_gt.emplace_back(i + 4);
+            }
+
+            SUBCASE("self swap") { self_swap(); }
+            SUBCASE("cross swap") { cross_swap(); }
+        }
+
+        SUBCASE("empty")
+        {
+            SUBCASE("self swap") { self_swap(); }
+            SUBCASE("cross swap") { cross_swap(); }
+        }
+    }
+
+    /// @test 测试优先队列的构造函数、析构函数和赋值运算符
+    REGISTER_TEST_CASE("constructor, destructor, and assignment" *
+                       ::doctest::description{"测试优先队列的构造函数、析构函数和赋值运算符"})
     {
         ::priority_queue_t priority_queue{};
         for(auto i: ::std::views::iota(0zu, 4zu)) { priority_queue.emplace_back(i); }
