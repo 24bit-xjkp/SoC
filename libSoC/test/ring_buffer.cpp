@@ -164,7 +164,7 @@ namespace doctest
     {
         static ::doctest::String convert(const test_struct& value)
         {
-            ::std::array<char, ::std::numeric_limits<::std::size_t>::digits10 + 1> buffer{};
+            ::std::array<char, ::std::numeric_limits<::std::size_t>::digits10 + 2> buffer{};
             ::std::to_chars(buffer.begin(), buffer.end(), value.value);
             return {buffer.data()};
         }
@@ -869,6 +869,12 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
                 SUBCASE("self swap") { check_self_swap(); }
                 SUBCASE("swap") { check_swap(); }
             }
+        }
+
+        SUBCASE("empty")
+        {
+            SUBCASE("self swap") { check_self_swap(); }
+            SUBCASE("swap") { check_swap(); }
         }
     }
 

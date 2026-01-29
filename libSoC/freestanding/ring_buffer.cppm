@@ -7,11 +7,33 @@
 export module SoC.freestanding:ring_buffer;
 import :utils;
 
-#ifdef SOC_IN_UNIT_TEST
+#if defined(SOC_IN_UNIT_TEST) || defined(SOC_BUILD_MODE_FUZZER)
 export
 #endif
     namespace SoC::detail
 {
+    /// @brief 环形缓冲区大小类型，在模糊测试模式下为 uint8_t以便验证计数器溢出场景
+    using ring_buffer_size_t =
+        ::std::conditional_t<::SoC::is_build_mode(::SoC::build_mode::fuzzer), ::std::uint8_t, ::std::size_t>;
+
+    /**
+     * @brief 环形缓冲区模糊测试错误码
+     *
+     */
+    enum class ring_buffer_fuzzer_error_code : ::std::size_t  // NOLINT(performance-enum-size)
+    {
+        /// 成功，作为占位符
+        success,
+        /// 缓冲区已满
+        full,
+        /// 缓冲区为空
+        empty,
+        /// 迭代器超出缓冲区范围
+        out_of_range,
+        /// 迭代器指向不同的缓冲区
+        different_buffer
+    };
+
     /**
      * @brief 检查迭代器索引是否超出缓冲区范围
      *
@@ -21,19 +43,27 @@ export
      * @param location 调用位置
      */
     constexpr inline void check_ring_buffer_iterator_index(
-        ::std::size_t index_to_check,
-        ::std::size_t head,
-        ::std::size_t tail,
+        ::SoC::detail::ring_buffer_size_t index_to_check,
+        ::SoC::detail::ring_buffer_size_t head,
+        ::SoC::detail::ring_buffer_size_t tail,
         ::std::source_location location = ::std::source_location::current()) noexcept(::SoC::optional_noexcept)
     {
         if constexpr(::SoC::use_full_assert)
         {
             using namespace ::std::string_view_literals;
-            constexpr ::std::string_view message{"迭代器超出环形缓冲区范围"};
-            if(head <= tail) [[likely]] { ::SoC::assert(index_to_check >= head && index_to_check < tail, message, location); }
+            bool expression_to_check{};
+            if(head <= tail) [[likely]] { expression_to_check = index_to_check >= head && index_to_check < tail; }
             else
             {
-                ::SoC::assert(index_to_check >= head || index_to_check < tail, message, location);
+                expression_to_check = index_to_check >= head || index_to_check < tail;
+            }
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(expression_to_check, ::SoC::detail::ring_buffer_fuzzer_error_code::out_of_range);
+            }
+            else
+            {
+                ::SoC::assert(expression_to_check, "迭代器超出环形缓冲区范围"sv, location);
             }
         }
     }
@@ -53,7 +83,14 @@ export
         if constexpr(::SoC::use_full_assert)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::assert(self == other, "迭代器指向不同的环形缓冲区"sv, location);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(self == other, ::SoC::detail::ring_buffer_fuzzer_error_code::different_buffer);
+            }
+            else
+            {
+                ::SoC::assert(self == other, "迭代器指向不同的环形缓冲区"sv, location);
+            }
         }
     }
 
@@ -67,10 +104,12 @@ export
      */
     template <typename type>
     constexpr inline void
-        ring_buffer_destructor(::std::size_t head, ::std::size_t tail, ::std::span<::SoC::union_wrapper<type>> buffer) noexcept
+        ring_buffer_destructor(::SoC::detail::ring_buffer_size_t head,
+                               ::SoC::detail::ring_buffer_size_t tail,
+                               ::std::span<::SoC::union_wrapper<type>> buffer) noexcept(::std::is_nothrow_destructible_v<type>)
     {
         const auto buffer_mask{buffer.size() - 1};
-        for(::std::size_t i = head; i != tail; ++i) { buffer[i & buffer_mask].value.~type(); }
+        for(::SoC::detail::ring_buffer_size_t i = head; i != tail; ++i) { buffer[i & buffer_mask].value.~type(); }
     }
 
     /**
@@ -83,10 +122,11 @@ export
      * @param dst_buffer 目标缓冲区
      */
     template <typename type>
-    constexpr inline void ring_buffer_copy_constructor(::std::size_t head,
-                                                       ::std::size_t tail,
-                                                       ::std::span<const ::SoC::union_wrapper<type>> src_buffer,
-                                                       ::std::span<::SoC::union_wrapper<type>> dst_buffer) noexcept
+    constexpr inline void ring_buffer_copy_constructor(
+        ::SoC::detail::ring_buffer_size_t head,
+        ::SoC::detail::ring_buffer_size_t tail,
+        ::std::span<const ::SoC::union_wrapper<type>> src_buffer,
+        ::std::span<::SoC::union_wrapper<type>> dst_buffer) noexcept(::std::is_nothrow_copy_constructible_v<type>)
     {
         const auto buffer_mask{src_buffer.size() - 1};
         const auto buffer_shift{::std::countr_zero(src_buffer.size())};
@@ -96,10 +136,10 @@ export
         auto dst_begin{dst_buffer.begin()};
         auto dst_end{dst_buffer.end()};
 
-        if((head >> buffer_shift) == ((tail - 1) >> buffer_shift))
+        if((head >> buffer_shift) == (tail >> buffer_shift))
         {
             // 没有发生回绕
-            ::std::ranges::uninitialized_copy_n(src_begin, src_buffer.size(), dst_begin, dst_end);
+            ::std::ranges::uninitialized_copy(src_begin + actual_head, src_begin + actual_tail, dst_begin, dst_end);
         }
         else
         {
@@ -120,10 +160,11 @@ export
      * @param dst_buffer 目标缓冲区
      */
     template <typename type>
-    constexpr inline void ring_buffer_move_constructor(::std::size_t head,
-                                                       ::std::size_t tail,
-                                                       ::std::span<::SoC::union_wrapper<type>> src_buffer,
-                                                       ::std::span<::SoC::union_wrapper<type>> dst_buffer) noexcept
+    constexpr inline void ring_buffer_move_constructor(
+        ::SoC::detail::ring_buffer_size_t head,
+        ::SoC::detail::ring_buffer_size_t tail,
+        ::std::span<::SoC::union_wrapper<type>> src_buffer,
+        ::std::span<::SoC::union_wrapper<type>> dst_buffer) noexcept(::std::is_nothrow_move_constructible_v<type>)
     {
         const auto buffer_mask{src_buffer.size() - 1};
         const auto buffer_shift{::std::countr_zero(src_buffer.size())};
@@ -133,10 +174,10 @@ export
         auto dst_begin{dst_buffer.begin()};
         auto dst_end{dst_buffer.end()};
 
-        if((head >> buffer_shift) == ((tail - 1) >> buffer_shift))
+        if((head >> buffer_shift) == (tail >> buffer_shift))
         {
             // 没有发生回绕
-            ::std::ranges::uninitialized_move_n(src_begin, src_buffer.size(), dst_begin, dst_end);
+            ::std::ranges::uninitialized_move(src_begin + actual_head, src_begin + actual_tail, dst_begin, dst_end);
         }
         else
         {
@@ -159,15 +200,16 @@ export
      * @param dst_buffer 目标缓冲区
      */
     template <typename type>
-    constexpr inline void ring_buffer_swap_rest(::std::size_t src_head,
-                                                ::std::size_t& src_tail,
-                                                ::std::size_t dst_head,
-                                                ::std::size_t& dst_tail,
-                                                ::std::span<::SoC::union_wrapper<type>> src_buffer,
-                                                ::std::span<::SoC::union_wrapper<type>> dst_buffer) noexcept
+    constexpr inline void ring_buffer_swap_rest(
+        ::SoC::detail::ring_buffer_size_t src_head,
+        ::SoC::detail::ring_buffer_size_t& src_tail,
+        ::SoC::detail::ring_buffer_size_t dst_head,
+        ::SoC::detail::ring_buffer_size_t& dst_tail,
+        ::std::span<::SoC::union_wrapper<type>> src_buffer,
+        ::std::span<::SoC::union_wrapper<type>> dst_buffer) noexcept(::std::is_nothrow_move_constructible_v<type>)
     {
-        const auto src_buffer_size{src_tail - src_head};
-        const auto dst_buffer_size{dst_tail - dst_head};
+        const auto src_buffer_size{static_cast<::SoC::detail::ring_buffer_size_t>(src_tail - src_head)};
+        const auto dst_buffer_size{static_cast<::SoC::detail::ring_buffer_size_t>(dst_tail - dst_head)};
         const auto src_buffer_mask{src_buffer.size() - 1};
         const auto dst_buffer_mask{dst_buffer.size() - 1};
         for(auto i{dst_buffer_size}; i != src_buffer_size; ++i)
@@ -191,11 +233,11 @@ export namespace SoC
     namespace test
     {
         /// @see SoC::ring_buffer
-        extern "C++" template <typename type, ::std::size_t buffer_size>
+        extern "C++" template <typename type, ::SoC::detail::ring_buffer_size_t buffer_size>
         struct ring_buffer;
 
         /// @see SoC::ring_buffer::iter
-        extern "C++" template <typename type, ::std::size_t buffer_size, bool is_const>
+        extern "C++" template <typename type, ::SoC::detail::ring_buffer_size_t buffer_size, bool is_const>
         struct ring_buffer_iterator_t;
     }  // namespace test
 
@@ -205,7 +247,7 @@ export namespace SoC
      * @tparam type 元素类型
      * @tparam buffer_size 缓冲区容量
      */
-    template <typename type, ::std::size_t buffer_size>
+    template <typename type, ::SoC::detail::ring_buffer_size_t buffer_size>
         requires (::std::has_single_bit(buffer_size))
     struct ring_buffer
     {
@@ -214,18 +256,19 @@ export namespace SoC
         using const_pointer = const type*;
         using reference = type&;
         using const_reference = const type&;
-        using size_type = ::std::size_t;
+        using size_type = ::SoC::detail::ring_buffer_size_t;
         using difference_type = ::std::ptrdiff_t;
 
     private:
         ::std::array<::SoC::union_wrapper<type>, buffer_size> buffer{};
-        ::std::size_t head{};
-        ::std::size_t tail{};
+        ::SoC::detail::ring_buffer_size_t head{};
+        ::SoC::detail::ring_buffer_size_t tail{};
         /// 缓冲区容量掩码
-        constexpr inline static ::std::size_t buffer_mask = buffer_size - 1;
+        constexpr inline static ::SoC::detail::ring_buffer_size_t buffer_mask = buffer_size - 1;
         /// 缓冲区容量位宽
-        constexpr inline static ::std::size_t buffer_shift{::std::countr_zero(buffer_size)};
+        constexpr inline static ::SoC::detail::ring_buffer_size_t buffer_shift{::std::countr_zero(buffer_size)};
         friend struct ::SoC::test::ring_buffer<type, buffer_size>;
+        using error_code = ::SoC::detail::ring_buffer_fuzzer_error_code;
 
         /**
          * @brief 环形缓冲区迭代器
@@ -237,7 +280,7 @@ export namespace SoC
         {
         private:
             friend struct ::SoC::test::ring_buffer_iterator_t<type, buffer_size, is_const>;
-            ::std::size_t index;
+            ::SoC::detail::ring_buffer_size_t index;
             using ring_buffer_pointer_t = ::std::conditional_t<is_const, const ring_buffer*, ring_buffer*>;
             ring_buffer_pointer_t ring_buffer_ptr;
 
@@ -253,8 +296,8 @@ export namespace SoC
              * @param index 索引
              * @param buffer 缓冲区引用
              */
-            constexpr inline iterator_t(::std::size_t index = 0, ring_buffer_pointer_t buffer = nullptr) noexcept :
-                index{index}, ring_buffer_ptr{buffer}
+            constexpr inline iterator_t(::SoC::detail::ring_buffer_size_t index = 0,
+                                        ring_buffer_pointer_t buffer = nullptr) noexcept : index{index}, ring_buffer_ptr{buffer}
             {
             }
 
@@ -291,7 +334,7 @@ export namespace SoC
              */
             constexpr inline friend iterator_t operator+ (const iterator_t& self, ::std::ptrdiff_t offset) noexcept
             {
-                return {self.index + offset, self.ring_buffer_ptr};
+                return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index + offset), self.ring_buffer_ptr};
             }
 
             /**
@@ -303,7 +346,7 @@ export namespace SoC
              */
             constexpr inline friend iterator_t operator+ (::std::ptrdiff_t offset, const iterator_t& self) noexcept
             {
-                return {self.index + offset, self.ring_buffer_ptr};
+                return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index + offset), self.ring_buffer_ptr};
             }
 
             /**
@@ -354,7 +397,7 @@ export namespace SoC
              */
             constexpr inline friend iterator_t operator- (const iterator_t& self, ::std::ptrdiff_t offset) noexcept
             {
-                return {self.index - offset, self.ring_buffer_ptr};
+                return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index - offset), self.ring_buffer_ptr};
             }
 
             /**
@@ -443,7 +486,7 @@ export namespace SoC
              */
             constexpr inline reference operator[] (::std::ptrdiff_t offset) const noexcept(::SoC::optional_noexcept)
             {
-                auto actual_index{index + offset};
+                auto actual_index{static_cast<::SoC::detail::ring_buffer_size_t>(index + offset)};
                 if constexpr(::SoC::use_full_assert)
                 {
                     ::SoC::detail::check_ring_buffer_iterator_index(actual_index, ring_buffer_ptr->head, ring_buffer_ptr->tail);
@@ -483,7 +526,7 @@ export namespace SoC
          * @brief 析构一个环形缓冲区
          *
          */
-        constexpr inline ~ring_buffer() noexcept
+        constexpr inline ~ring_buffer() noexcept(::std::is_nothrow_destructible_v<value_type>)
         {
             if constexpr(!::std::is_trivially_destructible_v<value_type>)
             {
@@ -614,7 +657,7 @@ export namespace SoC
          *
          * @return 指向缓冲区开头的常量反向迭代器
          */
-        [[nodiscard]] constexpr inline const_reverse_iterator crbegin() const noexcept { return rend(); }
+        [[nodiscard]] constexpr inline const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 
         /**
          * @brief 获取指向缓冲区末尾的反向迭代器
@@ -628,7 +671,7 @@ export namespace SoC
          *
          * @return 指向缓冲区末尾的常量反向迭代器
          */
-        [[nodiscard]] constexpr inline const_reverse_iterator crend() const noexcept { return rbegin(); }
+        [[nodiscard]] constexpr inline const_reverse_iterator crend() const noexcept { return rend(); }
 
         /**
          * @brief 检查缓冲区是否为空
@@ -642,21 +685,24 @@ export namespace SoC
          *
          * @return 缓冲区是否已满
          */
-        [[nodiscard]] constexpr inline bool full() const noexcept { return tail - head == buffer_size; }
+        [[nodiscard]] constexpr inline bool full() const noexcept
+        {
+            return static_cast<::SoC::detail::ring_buffer_size_t>(tail - head) == buffer_size;
+        }
 
         /**
          * @brief 获取缓冲区已用大小
          *
          * @return 已用大小
          */
-        [[nodiscard]] constexpr inline ::std::size_t size() const noexcept { return tail - head; }
+        [[nodiscard]] constexpr inline ::SoC::detail::ring_buffer_size_t size() const noexcept { return tail - head; }
 
         /**
          * @brief 获取缓冲区容量
          *
          * @return 缓冲区容量
          */
-        [[nodiscard]] constexpr inline ::std::size_t capacity() const noexcept { return buffer_size; }
+        [[nodiscard]] constexpr inline ::SoC::detail::ring_buffer_size_t capacity() const noexcept { return buffer_size; }
 
         /**
          * @brief 访问缓冲区第一个元素
@@ -666,7 +712,14 @@ export namespace SoC
         constexpr inline auto&& front(this auto&& self) noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::always_check(!self.empty(), "环形缓冲区已空"sv);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(!self.empty(), error_code::empty);
+            }
+            else
+            {
+                ::SoC::always_check(!self.empty(), "环形缓冲区已空"sv);
+            }
             return self.buffer[self.head & buffer_mask].value;
         }
 
@@ -678,7 +731,14 @@ export namespace SoC
         constexpr inline auto&& back(this auto&& self) noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::always_check(!self.empty(), "环形缓冲区已空"sv);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(!self.empty(), error_code::empty);
+            }
+            else
+            {
+                ::SoC::always_check(!self.empty(), "环形缓冲区已空"sv);
+            }
             return self.buffer[(self.tail - 1) & buffer_mask].value;
         }
 
@@ -693,7 +753,11 @@ export namespace SoC
         constexpr inline void emplace_back(args_t&&... args) noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::always_check(!full(), "环形缓冲区已满"sv);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer)) { ::SoC::fuzzer_assert(!full(), error_code::full); }
+            else
+            {
+                ::SoC::always_check(!full(), "环形缓冲区已满"sv);
+            }
             ::new(&buffer[tail++ & buffer_mask].value) value_type{::std::forward<args_t>(args)...};
         }
 
@@ -704,7 +768,11 @@ export namespace SoC
         constexpr inline void pop_front() noexcept(::SoC::optional_noexcept)
         {
             using namespace ::std::string_view_literals;
-            ::SoC::always_check(!empty(), "环形缓冲区已空"sv);
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer)) { ::SoC::fuzzer_assert(!empty(), error_code::empty); }
+            else
+            {
+                ::SoC::always_check(!empty(), "环形缓冲区已空"sv);
+            }
             auto&& ref{buffer[head++ & buffer_mask].value};
             ref.~value_type();
         }
@@ -721,4 +789,11 @@ export namespace SoC
             return ::std::ranges::equal(lhs, rhs);
         }
     };
+
+    template <typename type, ::SoC::detail::ring_buffer_size_t buffer_size>
+    constexpr inline void swap(::SoC::ring_buffer<type, buffer_size>& lhs,
+                               ::SoC::ring_buffer<type, buffer_size>& rhs) noexcept(noexcept(lhs.swap(rhs)))
+    {
+        lhs.swap(rhs);
+    }
 }  // namespace SoC
