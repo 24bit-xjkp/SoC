@@ -153,9 +153,22 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
                 ++equal_compare_cnt;
                 return true;
             }
+
+            static void reset() noexcept
+            {
+                ctor_cnt = 0zu;
+                copy_ctor_cnt = 0zu;
+                copy_assign_cnt = 0zu;
+                move_ctor_cnt = 0zu;
+                move_assign_cnt = 0zu;
+                dtor_cnt = 0zu;
+                three_way_compare_cnt = 0zu;
+                equal_compare_cnt = 0zu;
+            }
         };
 
         ::SoC::union_wrapper<test_struct> wrapper{};
+        test_struct::reset();
         SUBCASE("constructor and destructor")
         {
             CHECK_EQ(ctor_cnt, 0zu);
@@ -211,6 +224,15 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
             ::SoC::union_wrapper<test_struct> other{wrapper};
             auto _{wrapper == other};
             CHECK_EQ(equal_compare_cnt, 1zu);
+        }
+
+        SUBCASE("swap")
+        {
+            ::SoC::union_wrapper<test_struct> other{};
+            ::std::ranges::swap(wrapper, other);
+            // 通过move实现，需要1次移动构造创建临时变量，2次移动复制完成swap
+            CHECK_EQ(move_ctor_cnt, 1zu);
+            CHECK_EQ(move_assign_cnt, 2zu);
         }
 
         // NOLINTEND(clang-analyzer-cplusplus.Move,bugprone-use-after-move,hicpp-invalid-access-moved)
