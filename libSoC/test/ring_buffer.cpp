@@ -930,30 +930,32 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
         const auto check_copy_ctor{[&]
                                    {
                                        ::test_struct::reset();
+                                       auto size{buffer.size()};
                                        ::ring_buffer_t copied_buffer{buffer};
                                        // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
                                        CHECK_EQ(copied_buffer, buffer_gt);
                                        CHECK_EQ(::test_struct::ctor_cnt, 0);
                                        CHECK_EQ(::test_struct::dtor_cnt, 0);
-                                       CHECK_EQ(::test_struct::copy_ctor_cnt, 4);
+                                       CHECK_EQ(::test_struct::copy_ctor_cnt, size);
                                        CHECK_EQ(::test_struct::move_ctor_cnt, 0);
                                        ::test_struct::reset();
                                        buffer_ptr.reset();
                                        CHECK_EQ(::test_struct::ctor_cnt, 0);
-                                       CHECK_EQ(::test_struct::dtor_cnt, 4);
+                                       CHECK_EQ(::test_struct::dtor_cnt, size);
                                        CHECK_EQ(::test_struct::copy_ctor_cnt, 0);
                                        CHECK_EQ(::test_struct::move_ctor_cnt, 0);
                                    }};
         const auto check_move_ctor{[&]
                                    {
                                        ::test_struct::reset();
+                                       auto size{buffer.size()};
                                        ::ring_buffer_t moved_buffer{::std::move(buffer)};
                                        // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
                                        CHECK_EQ(moved_buffer, buffer_gt);
                                        CHECK_EQ(::test_struct::ctor_cnt, 0);
                                        CHECK_EQ(::test_struct::dtor_cnt, 0);
                                        CHECK_EQ(::test_struct::copy_ctor_cnt, 0);
-                                       CHECK_EQ(::test_struct::move_ctor_cnt, 4);
+                                       CHECK_EQ(::test_struct::move_ctor_cnt, size);
                                        ::test_struct::reset();
                                        buffer_ptr.reset();
                                        CHECK_EQ(::test_struct::ctor_cnt, 0);
@@ -973,14 +975,45 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
                                          buffer = auto{buffer_gt};
                                          CHECK_EQ(buffer, buffer_gt);
                                      }};
+        const auto pop_front{[&]
+                             {
+                                 buffer.pop_front();
+                                 buffer_gt.pop_front();
+                             }};
+        const auto pop_back{[&]
+                            {
+                                buffer.back().~test_struct();
+                                --buffer.tail;
+                                buffer_gt.back().~test_struct();
+                                --buffer_gt.tail;
+                            }};
 
         SUBCASE("continuous data")
         {
             fill_data();
-            SUBCASE("copy constructor") { check_copy_ctor(); }
-            SUBCASE("move constructor") { check_move_ctor(); }
-            SUBCASE("copy assignment") { check_copy_assign(); }
-            SUBCASE("move assignment") { check_move_assign(); }
+            SUBCASE("full ring buffer")
+            {
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
+            SUBCASE("unfull ring buffer front")
+            {
+                pop_front();
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
+            SUBCASE("unfull ring buffer back")
+            {
+                pop_back();
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
         }
 
         SUBCASE("discontinuous data")
@@ -990,10 +1023,29 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
             buffer_gt.emplace_back();
             buffer_gt.pop_front();
             fill_data();
-            SUBCASE("copy constructor") { check_copy_ctor(); }
-            SUBCASE("move constructor") { check_move_ctor(); }
-            SUBCASE("copy assignment") { check_copy_assign(); }
-            SUBCASE("move assignment") { check_move_assign(); }
+            SUBCASE("full ring buffer")
+            {
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
+            SUBCASE("unfull ring buffer front")
+            {
+                pop_front();
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
+            SUBCASE("unfull ring buffer back")
+            {
+                pop_back();
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
         }
 
         SUBCASE("wrap-around data")
@@ -1004,10 +1056,29 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
             buffer_gt.head = head_start;
             buffer_gt.tail = head_start;
             fill_data();
-            SUBCASE("copy constructor") { check_copy_ctor(); }
-            SUBCASE("move constructor") { check_move_ctor(); }
-            SUBCASE("copy assignment") { check_copy_assign(); }
-            SUBCASE("move assignment") { check_move_assign(); }
+            SUBCASE("full ring buffer")
+            {
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
+            SUBCASE("unfull ring buffer front")
+            {
+                pop_front();
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
+            SUBCASE("unfull ring buffer back")
+            {
+                pop_back();
+                SUBCASE("copy constructor") { check_copy_ctor(); }
+                SUBCASE("move constructor") { check_move_ctor(); }
+                SUBCASE("copy assignment") { check_copy_assign(); }
+                SUBCASE("move assignment") { check_move_assign(); }
+            }
         }
     }
 }
