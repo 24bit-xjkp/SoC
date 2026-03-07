@@ -25,7 +25,7 @@ target("unit_test")
     add_packages("doctest", "fakeit")
     set_kind("binary")
     set_policy("build.c++.modules.fallbackscanner", true)
-    set_default(false)
+    set_default(is_mode("coverage"))
     set_enabled(is_unit_test_support)
 
     for _, file in ipairs(os.files(regex .. "|*_interface.cpp")) do
