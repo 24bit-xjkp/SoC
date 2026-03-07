@@ -9,7 +9,7 @@ set_arch(os.arch())
 set_plat(get_config("host"))
 
 target("unit_test_utils")
-    add_files("utils.cppm", {public = true})
+    add_files("utils_interface.cpp", {public = true})
     add_files("main.cpp")
     add_deps("SoC.freestanding.unit_test")
     add_packages("doctest", "fakeit")
@@ -19,7 +19,6 @@ target("unit_test_utils")
     set_enabled(is_unit_test_support)
 target_end()
 target("unit_test")
-    add_files("*.cppm")
     local regex = "*.cpp|main.cpp"
     add_files(regex)
     add_deps("unit_test_utils")
@@ -29,7 +28,7 @@ target("unit_test")
     set_default(false)
     set_enabled(is_unit_test_support)
 
-    for _, file in ipairs(os.files(regex)) do
+    for _, file in ipairs(os.files(regex .. "|*_interface.cpp")) do
         local name = path.basename(file)
         add_tests(name, {runargs = {"-ts=" .. name}})
     end

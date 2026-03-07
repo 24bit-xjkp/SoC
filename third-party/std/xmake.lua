@@ -11,9 +11,9 @@ register_target_with_test("SoC.std", function ()
     local is_gcc = string.find(get_config("toolchain") or "", "gcc")
     local use_stdcxx = (get_config("runtimes") or ""):startswith("stdc++")
     if is_gcc or use_stdcxx then
-        add_files("gcc.cppm", { public = true })
+        add_files("gcc.cpp", { public = true })
     else
-        add_files("clang.cppm", { public = true })
+        add_files("clang.cpp", { public = true })
     end
 
     on_load(function (target)

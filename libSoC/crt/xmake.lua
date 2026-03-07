@@ -1,8 +1,7 @@
 target("SoC.crt")
     set_kind("object")
     add_deps("SoC.std")
-    add_files("*.cppm", {public = true})
-    add_files("*.cpp")
+    add_files("*.cpp", {public = true})
     if is_mode("debug") then
         add_rules("releasedbg")
     end

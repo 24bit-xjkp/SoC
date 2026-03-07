@@ -1,5 +1,5 @@
 /**
- * @file functional.cppm
+ * @file functional.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief 独立的多态函数包装器
  */

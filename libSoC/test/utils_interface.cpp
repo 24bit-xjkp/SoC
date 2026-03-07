@@ -1,5 +1,5 @@
 /**
- * @file utils.cppm
+ * @file utils_interface.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief SoC单元测试实用工具模块，提供基础测试夹具
  */

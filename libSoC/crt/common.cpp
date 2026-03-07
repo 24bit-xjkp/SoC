@@ -1,5 +1,5 @@
 /**
- * @file common.cppm
+ * @file common.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief 公共模块，包括crt和startup交互所需定义
  */

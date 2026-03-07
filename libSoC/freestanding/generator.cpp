@@ -1,5 +1,5 @@
 /**
- * @file generator.cppm
+ * @file generator.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief 协程生成器实现
  */

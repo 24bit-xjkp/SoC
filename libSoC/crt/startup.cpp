@@ -1,5 +1,5 @@
 /**
- * @file startup.cppm
+ * @file startup.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief 平台无关的启动模块
  */

@@ -11,8 +11,8 @@ if is_current_mode_support_fuzzer() then
     end
 end
 register_target_with_test("SoC.freestanding", function ()
-    add_files("*.cppm", {public = true})
-    add_files("*.cpp")
+    add_files("*.cpp", {public = true})
+    add_files("src/*.cpp")
 
     on_load(function (target)
         import("utility.common")

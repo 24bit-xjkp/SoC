@@ -1,5 +1,5 @@
 /**
- * @file dma.cppm
+ * @file dma.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief stm32 dma外设
  */

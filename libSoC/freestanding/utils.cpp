@@ -1,5 +1,5 @@
 /**
- * @file utils.cppm
+ * @file utils.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief 独立的实用工具实现
  */
@@ -447,7 +447,7 @@ export namespace SoC
      * @param value 枚举值，用于报告断言失败类型
      */
     template <typename type>
-        requires (::std::is_scoped_enum_v<type> && sizeof(type) == sizeof(::std::size_t))
+        requires (::std::is_enum_v<type> && sizeof(type) == sizeof(::std::size_t))
     constexpr inline void fuzzer_assert(bool expression, type value) noexcept(::SoC::optional_noexcept)
     {
         if(!expression) [[unlikely]] { ::SoC::fuzzer_assert_failed(::std::to_underlying(value)); }

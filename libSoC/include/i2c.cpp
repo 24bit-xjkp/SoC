@@ -1,5 +1,5 @@
 /**
- * @file i2c.cppm
+ * @file i2c.cpp
  * @author 24bit-xjkp (2283572185@qq.com)
  * @brief stm32 i2c外设
  */
