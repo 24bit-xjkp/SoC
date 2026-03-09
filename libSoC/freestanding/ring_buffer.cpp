@@ -561,7 +561,7 @@ export namespace SoC
         /**
          * @brief 交换两个环形缓冲区的内容
          *
-         * @param other 要交换内容的环形缓冲区
+         * @param other 要交换的环形缓冲区
          */
         constexpr inline void swap(ring_buffer& other) noexcept(::std::is_nothrow_swappable_v<value_type>)
         {
@@ -788,12 +788,13 @@ export namespace SoC
         {
             return ::std::ranges::equal(lhs, rhs);
         }
-    };
 
-    template <typename type, ::SoC::detail::ring_buffer_size_t buffer_size>
-    constexpr inline void swap(::SoC::ring_buffer<type, buffer_size>& lhs,
-                               ::SoC::ring_buffer<type, buffer_size>& rhs) noexcept(noexcept(lhs.swap(rhs)))
-    {
-        lhs.swap(rhs);
-    }
+        /**
+         * @brief 交换两个环形缓冲区的内容
+         *
+         * @param lhs 要交换的环形缓冲区
+         * @param rhs 要交换的环形缓冲区
+         */
+        constexpr inline friend void swap(ring_buffer& lhs, ring_buffer& rhs) noexcept(noexcept(lhs.swap(rhs))) { lhs.swap(rhs); }
+    };
 }  // namespace SoC

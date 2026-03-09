@@ -731,13 +731,13 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
         const auto check_self_swap{[&]
                                    {
                                        buffer1.swap(buffer1);
-                                       buffer2.swap(buffer2);
+                                       buffer2.swap(buffer2); // NOLINT(clang-analyzer-core.CallAndMessage)
                                        CHECK_EQ(buffer1, buffer1_gt);
                                        CHECK_EQ(buffer2, buffer2_gt);
                                    }};
         const auto check_swap{[&]
                               {
-                                  buffer1.swap(buffer2);
+                                  buffer1.swap(buffer2); // NOLINT(clang-analyzer-core.NonNullParamChecker)
                                   CHECK_EQ(buffer1, buffer2_gt);
                                   CHECK_EQ(buffer2, buffer1_gt);
                                   // 恢复原状

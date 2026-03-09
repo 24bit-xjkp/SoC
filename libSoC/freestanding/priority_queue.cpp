@@ -255,12 +255,16 @@ export namespace SoC
             ::std::ranges::pop_heap(::std::span{buffer}.subspan(0, tail), comp);
             buffer[--tail].value.~type();
         }
-    };
 
-    template <typename type, ::std::size_t buffer_size, template <typename> typename comp_t>
-    void swap(::SoC::priority_queue<type, buffer_size, comp_t>& lhs,
-              ::SoC::priority_queue<type, buffer_size, comp_t>& rhs) noexcept(noexcept(lhs.swap(rhs)))
-    {
-        lhs.swap(rhs);
-    }
+        /**
+         * @brief 交换两个优先队列的内容
+         *
+         * @param lhs 要交换的优先队列
+         * @param rhs 要交换的优先队列
+         */
+        constexpr inline friend void swap(priority_queue& lhs, priority_queue& rhs) noexcept(noexcept(lhs.swap(rhs)))
+        {
+            lhs.swap(rhs);
+        }
+    };
 }  // namespace SoC

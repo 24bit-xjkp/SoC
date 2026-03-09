@@ -919,13 +919,12 @@ export namespace SoC
         {
             return lhs.value == rhs.value;
         }
-    };
 
-    template <typename type>
-    void swap(::SoC::union_wrapper<type>& lhs, ::SoC::union_wrapper<type>& rhs) noexcept(noexcept(lhs.swap(rhs)))
-    {
-        lhs.swap(rhs);
-    }
+        constexpr inline friend void swap(union_wrapper& lhs, union_wrapper& rhs) noexcept(noexcept(lhs.swap(rhs)))
+        {
+            lhs.swap(rhs);
+        }
+    };
 
     /**
      * @brief 可移动值类型，用于在移动语义下自动清空值
