@@ -54,18 +54,16 @@ export namespace SoC
             }
 
             constexpr inline value_type& operator* (this auto&& self) noexcept(::SoC::optional_noexcept)
-            {
-                return *self.handle.promise().ptr;
-            }
+            { return *self.handle.promise().ptr; }
         };
 
         struct sentinel
         {
             constexpr inline friend bool operator== (iterator iter, sentinel _ [[maybe_unused]]) noexcept
-            {
-                return iter.handle.done();
-            }
+            { return iter.handle.done(); }
         };
+
+        handle_t handle{};
 
     public:
         struct promise_type
@@ -118,9 +116,7 @@ export namespace SoC
              * @return 分配的内存指针
              */
             constexpr inline static void* operator new (::std::size_t size) noexcept(::SoC::is_noexcept_allocator<allocator_type>)
-            {
-                return allocator_type{}.allocate(size);
-            }
+            { return allocator_type{}.allocate(size); }
 
 #if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
             /**
@@ -131,9 +127,7 @@ export namespace SoC
              */
             constexpr inline static void
                 operator delete (void* ptr, ::std::size_t size) noexcept(::SoC::is_noexcept_allocator<allocator_type>)
-            {
-                allocator_type{}.deallocate(ptr, size);
-            }
+            { allocator_type{}.deallocate(ptr, size); }
 #else
             /**
              * @brief 重载delete以使用分配器释放promise
@@ -167,8 +161,6 @@ export namespace SoC
             // NOLINTEND(readability-convert-member-functions-to-static)
 #endif
         };
-
-        handle_t handle{};
 
         /**
          * @brief 构造函数

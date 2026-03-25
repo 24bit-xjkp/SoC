@@ -7,28 +7,25 @@ if is_unit_test_support then
 end
 set_arch(os.arch())
 set_plat(get_config("host"))
+add_packages("doctest", "fakeit")
 
 target("unit_test_utils")
-    add_files("utils_interface.cpp", {public = true})
-    add_files("main.cpp")
+    add_files("test_framework.cpp")
     add_deps("SoC.freestanding.unit_test")
-    add_packages("doctest", "fakeit")
     set_kind("shared")
     add_rules("utils.symbols.export_all", {export_classes = true})
     set_default(false)
     set_enabled(is_unit_test_support)
 target_end()
 target("unit_test")
-    local regex = "*.cpp|main.cpp"
+    local regex = "*.cpp|test_framework.cpp"
     add_files(regex)
     add_deps("unit_test_utils")
-    add_packages("doctest", "fakeit")
     set_kind("binary")
-    set_policy("build.c++.modules.fallbackscanner", true)
     set_default(is_mode("coverage"))
     set_enabled(is_unit_test_support)
 
-    for _, file in ipairs(os.files(regex .. "|*_interface.cpp")) do
+    for _, file in ipairs(os.files(regex .. "|*_interface.cpp|utils_impl.cpp|main.cpp")) do
         local name = path.basename(file)
         add_tests(name, {runargs = {"-ts=" .. name}})
     end

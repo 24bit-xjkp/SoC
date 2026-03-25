@@ -4,8 +4,9 @@
  * @brief 测试环形缓冲区
  */
 
-import "test_framework.hpp";
-import SoC.unit_test;
+module;
+#include "test_framework.hpp"
+module SoC.unit_test;
 
 using namespace ::std::string_view_literals;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -32,14 +33,10 @@ namespace SoC::test
         using const_reverse_iterator = ::std::reverse_iterator<const_iterator>;
 
         [[nodiscard]] constexpr inline auto begin(this auto&& self) noexcept
-        {
-            return iterator_impl_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.head, &self};
-        }
+        { return iterator_impl_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.head, &self}; }
 
         [[nodiscard]] constexpr inline auto end(this auto&& self) noexcept
-        {
-            return iterator_impl_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.tail, &self};
-        }
+        { return iterator_impl_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.tail, &self}; }
 
         [[nodiscard]] constexpr inline const_iterator cbegin() const noexcept { return {head, this}; }
 
@@ -65,56 +62,38 @@ namespace SoC::test
         constexpr inline ring_buffer_iterator_t(base_t iter) noexcept : base_t{iter} {}
 
         constexpr inline friend ring_buffer_iterator_t& operator++ (ring_buffer_iterator_t& self) noexcept
-        {
-            return static_cast<ring_buffer_iterator_t&>(++static_cast<base_t&>(self));
-        }
+        { return static_cast<ring_buffer_iterator_t&>(++static_cast<base_t&>(self)); }
 
         constexpr inline friend ring_buffer_iterator_t operator++ (ring_buffer_iterator_t& self,
                                                                    int placehold [[maybe_unused]]) noexcept
-        {
-            return static_cast<base_t&>(self)++;
-        }
+        { return static_cast<base_t&>(self)++; }
 
         constexpr inline friend ring_buffer_iterator_t operator+ (const ring_buffer_iterator_t& self,
                                                                   ::std::ptrdiff_t offset) noexcept
-        {
-            return static_cast<const base_t&>(self) + offset;
-        }
+        { return static_cast<const base_t&>(self) + offset; }
 
         constexpr inline friend ring_buffer_iterator_t operator+ (::std::ptrdiff_t offset,
                                                                   const ring_buffer_iterator_t& self) noexcept
-        {
-            return offset + static_cast<const base_t&>(self);
-        }
+        { return offset + static_cast<const base_t&>(self); }
 
         constexpr inline friend ring_buffer_iterator_t& operator+= (ring_buffer_iterator_t& self,
                                                                     ::std::ptrdiff_t offset) noexcept
-        {
-            return static_cast<ring_buffer_iterator_t&>(static_cast<base_t&>(self) += offset);
-        }
+        { return static_cast<ring_buffer_iterator_t&>(static_cast<base_t&>(self) += offset); }
 
         constexpr inline friend ring_buffer_iterator_t& operator-- (ring_buffer_iterator_t& self) noexcept
-        {
-            return static_cast<ring_buffer_iterator_t&>(--static_cast<base_t&>(self));
-        }
+        { return static_cast<ring_buffer_iterator_t&>(--static_cast<base_t&>(self)); }
 
         constexpr inline friend ring_buffer_iterator_t operator-- (ring_buffer_iterator_t& self,
                                                                    int placehold [[maybe_unused]]) noexcept
-        {
-            return static_cast<base_t&>(self)--;
-        }
+        { return static_cast<base_t&>(self)--; }
 
         constexpr inline friend ring_buffer_iterator_t operator- (const ring_buffer_iterator_t& self,
                                                                   ::std::ptrdiff_t offset) noexcept
-        {
-            return static_cast<const base_t&>(self) - offset;
-        }
+        { return static_cast<const base_t&>(self) - offset; }
 
         constexpr inline friend ring_buffer_iterator_t& operator-= (ring_buffer_iterator_t& self,
                                                                     ::std::ptrdiff_t offset) noexcept
-        {
-            return static_cast<ring_buffer_iterator_t&>(static_cast<base_t&>(self) -= offset);
-        }
+        { return static_cast<ring_buffer_iterator_t&>(static_cast<base_t&>(self) -= offset); }
     };
 }  // namespace SoC::test
 
@@ -149,9 +128,7 @@ namespace
         test_struct& operator= (test_struct&&) noexcept = default;
 
         inline friend bool operator== (const test_struct& self, const test_struct& other) noexcept
-        {
-            return self.value == other.value;
-        }
+        { return self.value == other.value; }
     };
 
     using ring_buffer_t = ::SoC::test::ring_buffer<::test_struct, 4>;
@@ -731,13 +708,13 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
         const auto check_self_swap{[&]
                                    {
                                        buffer1.swap(buffer1);
-                                       buffer2.swap(buffer2); // NOLINT(clang-analyzer-core.CallAndMessage)
+                                       buffer2.swap(buffer2);  // NOLINT(clang-analyzer-core.CallAndMessage)
                                        CHECK_EQ(buffer1, buffer1_gt);
                                        CHECK_EQ(buffer2, buffer2_gt);
                                    }};
         const auto check_swap{[&]
                               {
-                                  buffer1.swap(buffer2); // NOLINT(clang-analyzer-core.NonNullParamChecker)
+                                  buffer1.swap(buffer2);  // NOLINT(clang-analyzer-core.NonNullParamChecker)
                                   CHECK_EQ(buffer1, buffer2_gt);
                                   CHECK_EQ(buffer2, buffer1_gt);
                                   // 恢复原状

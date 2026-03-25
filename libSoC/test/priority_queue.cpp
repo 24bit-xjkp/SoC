@@ -4,8 +4,9 @@
  * @brief 测试优先队列
  */
 
-import "test_framework.hpp";
-import SoC.unit_test;
+module;
+#include "test_framework.hpp"
+module SoC.unit_test;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define REGISTER_TEST_CASE(NAME) TEST_CASE("priority_queue/" NAME)

@@ -4,21 +4,26 @@
  * @brief SoC::generator单元测试
  */
 
-import "test_framework.hpp";
-import SoC.unit_test;
+module;
+#include "test_framework.hpp"
+module SoC.unit_test;
 
 namespace SoC::test
 {
-    template <typename value_type, ::SoC::is_static_allocator allocator_type>
+    extern "C++" template <typename value_type, ::SoC::is_static_allocator allocator_type>
     struct generator : ::SoC::generator<value_type, allocator_type>
     {
         using base_t = ::SoC::generator<value_type, allocator_type>;
         using typename base_t::handle_t;
         using typename base_t::iterator;
-        using typename base_t::promise_type;
         using typename base_t::sentinel;
 
-        constexpr inline generator(base_t generator) noexcept : base_t{::std::move(generator)} {}
+        struct promise_type : base_t::promise_type
+        {
+            constexpr inline generator get_return_object() noexcept { return generator{handle_t::from_promise(*this)}; }
+        };
+
+        generator(handle_t handle) noexcept : base_t{handle} {}
     };
 }  // namespace SoC::test
 

@@ -4,11 +4,13 @@
  * @brief SoC::heap单元测试支持模块
  */
 
-export module SoC.unit_test.heap;
-export import SoC.unit_test;
-import "test_framework.hpp";
+module;
+#include "test_framework.hpp"
+module SoC.unit_test:heap;
 
-export namespace SoC::test
+import SoC.freestanding;
+
+namespace SoC::test
 {
     /**
      * @brief 导出SoC::heap中的符号用于测试
@@ -36,7 +38,7 @@ export namespace SoC::test
     };
 }  // namespace SoC::test
 
-export namespace SoC::unit_test::heap
+namespace SoC::unit_test::heap
 {
     /// 测试使用堆空间的大小
     constexpr auto heap_size{128 * 1024zu};

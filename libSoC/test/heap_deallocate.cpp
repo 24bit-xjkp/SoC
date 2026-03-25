@@ -4,8 +4,10 @@
  * @brief SoC::heap释放函数单元测试
  */
 
-import "test_framework.hpp";
-import SoC.unit_test.heap;
+module;
+#include "test_framework.hpp"
+module SoC.unit_test;
+import :heap;
 
 using namespace ::std::string_view_literals;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
