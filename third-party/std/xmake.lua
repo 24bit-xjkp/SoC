@@ -3,7 +3,7 @@ if is_current_mode_support_fuzzer() then
     test_table["fuzzer"] = function () end
 end
 if is_current_mode_support_unit_test() then
-    test_table["unit_test"] = function () end
+    test_table["unit_test"] = function () set_default(false) end
 end
 register_target_with_test("SoC.std", function ()
     set_kind("object")

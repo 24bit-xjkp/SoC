@@ -3,6 +3,7 @@ if is_current_mode_support_unit_test() then
     test_table["unit_test"] = function ()
         add_deps("SoC.std.unit_test")
         add_defines("SOC_IN_UNIT_TEST", {public = true})
+        set_default(false)
     end
 end
 if is_current_mode_support_fuzzer() then
