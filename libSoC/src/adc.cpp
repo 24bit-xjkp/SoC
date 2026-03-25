@@ -126,9 +126,7 @@ namespace SoC
     }
 
     void ::SoC::adc_regular_group::set_continuous_mode(bool continuous_mode) const noexcept
-    {
-        ::LL_ADC_REG_SetContinuousMode(adc_ptr, continuous_mode ? LL_ADC_REG_CONV_CONTINUOUS : LL_ADC_REG_CONV_SINGLE);
-    }
+    { ::LL_ADC_REG_SetContinuousMode(adc_ptr, continuous_mode ? LL_ADC_REG_CONV_CONTINUOUS : LL_ADC_REG_CONV_SINGLE); }
 
     void ::SoC::adc_regular_group::set_dma_mode(::SoC::adc_regular_dma_mode dma_mode) noexcept
     {
@@ -279,7 +277,8 @@ namespace SoC
 
     void ::SoC::adc_regular_group::disable() const noexcept { ::LL_ADC_REG_StopConversionExtTrig(adc_ptr); }
 
-    bool ::SoC::adc_regular_group::get_flag_eocs() const noexcept { return static_cast<bool>(::LL_ADC_IsActiveFlag_EOCS(adc_ptr)); }
+    bool ::SoC::adc_regular_group::get_flag_eocs() const noexcept
+    { return static_cast<bool>(::LL_ADC_IsActiveFlag_EOCS(adc_ptr)); }
 
     void ::SoC::adc_regular_group::clear_flag_eocs() const noexcept { ::LL_ADC_ClearFlag_EOCS(adc_ptr); }
 
@@ -290,14 +289,10 @@ namespace SoC
     ::std::size_t(::SoC::adc_regular_group::get_result)() const noexcept { return ::LL_ADC_REG_ReadConversionData12(adc_ptr); }
 
     void ::SoC::adc_regular_group::disable_dma() const noexcept
-    {
-        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::SoC::to_underlying(::SoC::adc_regular_dma_mode::none));
-    }
+    { ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::SoC::to_underlying(::SoC::adc_regular_dma_mode::none)); }
 
     void ::SoC::adc_regular_group::set_dma() const noexcept
-    {
-        ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::SoC::to_underlying(dma_mode));
-    }
+    { ::LL_ADC_REG_SetDMATransfer(adc_ptr, ::SoC::to_underlying(dma_mode)); }
 
     void ::SoC::adc_regular_group::reset_dma() const noexcept
     {
@@ -329,16 +324,16 @@ namespace SoC
 
         constexpr auto sampling_time{::SoC::adc_sampling_time::cycles144};
         auto& regular_group{
-            *::new(adc_regular_group)::SoC::adc_regular_group{
-                                                              adc, ::SoC::adc_regular_trigger_source::software,
-                                                              true, ::SoC::adc_regular_dma_mode::limited,
-                                                              {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
-                                                              }
+            *new(adc_regular_group)::SoC::adc_regular_group{
+                                                            adc, ::SoC::adc_regular_trigger_source::software,
+                                                            true, ::SoC::adc_regular_dma_mode::limited,
+                                                            {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
+                                                            }
         };
-        auto& adc_dma_stream{*::new(dma_stream)::SoC::dma_stream{regular_group.enable_dma(dma,
-                                                                                          ::SoC::dma_mode::normal,
-                                                                                          ::SoC::dma_fifo_threshold::full,
-                                                                                          ::SoC::dma_memory_burst::inc8)}};
+        auto& adc_dma_stream{*new(dma_stream)::SoC::dma_stream{regular_group.enable_dma(dma,
+                                                                                        ::SoC::dma_mode::normal,
+                                                                                        ::SoC::dma_fifo_threshold::full,
+                                                                                        ::SoC::dma_memory_burst::inc8)}};
         adc.enable();
         adc_dma_stream.read(buffer->begin(), buffer->end());
         regular_group.enable(::SoC::adc_trig_edge::software);
@@ -436,14 +431,10 @@ namespace SoC
     }
 
     bool ::SoC::analog_watchdog::is_enabled() const noexcept
-    {
-        return ::LL_ADC_GetAnalogWDMonitChannels(adc_ptr) != LL_ADC_AWD_DISABLE;
-    }
+    { return ::LL_ADC_GetAnalogWDMonitChannels(adc_ptr) != LL_ADC_AWD_DISABLE; }
 
     void ::SoC::analog_watchdog::enable() const noexcept
-    {
-        ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::SoC::to_underlying(awd_channel));
-    }
+    { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::SoC::to_underlying(awd_channel)); }
 
     void ::SoC::analog_watchdog::disable() const noexcept { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, LL_ADC_AWD_DISABLE); }
 

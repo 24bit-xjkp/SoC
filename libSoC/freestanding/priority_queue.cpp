@@ -121,9 +121,7 @@ export namespace SoC
          */
         constexpr inline priority_queue(const priority_queue& other) noexcept(::std::is_nothrow_copy_constructible_v<type>) :
             tail{other.tail}, comp{other.comp}
-        {
-            ::std::ranges::uninitialized_copy(::std::span{other.buffer}.subspan(0, other.tail), buffer);
-        }
+        { ::std::ranges::uninitialized_copy(::std::span{other.buffer}.subspan(0, other.tail), buffer); }
 
         /**
          * @brief 移动构造优先队列
@@ -132,9 +130,7 @@ export namespace SoC
          */
         constexpr inline priority_queue(priority_queue&& other) noexcept(::std::is_nothrow_move_constructible_v<type>) :
             tail{other.tail}, comp{::std::move(other.comp)}
-        {
-            ::std::ranges::uninitialized_move(::std::span{other.buffer}.subspan(0, other.tail), buffer);
-        }
+        { ::std::ranges::uninitialized_move(::std::span{other.buffer}.subspan(0, other.tail), buffer); }
 
         /**
          * @brief 交换优先队列内容
@@ -210,9 +206,7 @@ export namespace SoC
          * @return 首个元素的引用
          */
         [[nodiscard]] constexpr inline auto&& top(this auto&& self) noexcept
-        {
-            return ::std::forward_like<decltype(self)>(self.buffer[0].value);
-        }
+        { return ::std::forward_like<decltype(self)>(self.buffer[0].value); }
 
         /**
          * @brief 向优先队列添加元素
@@ -233,7 +227,7 @@ export namespace SoC
             {
                 ::SoC::always_check(!full(), "优先队列已满"sv);
             }
-            ::new(&buffer[tail++].value) type{::std::forward<decltype(args)>(args)...};
+            new(&buffer[tail++].value) type{::std::forward<decltype(args)>(args)...};
             ::std::ranges::push_heap(::std::span{buffer}.subspan(0, tail), comp);
         }
 
@@ -263,8 +257,6 @@ export namespace SoC
          * @param rhs 要交换的优先队列
          */
         constexpr inline friend void swap(priority_queue& lhs, priority_queue& rhs) noexcept(noexcept(lhs.swap(rhs)))
-        {
-            lhs.swap(rhs);
-        }
+        { lhs.swap(rhs); }
     };
 }  // namespace SoC

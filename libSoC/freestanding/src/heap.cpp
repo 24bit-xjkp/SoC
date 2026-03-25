@@ -35,8 +35,8 @@ namespace SoC
         for(auto&& page: metadata)
         {
             auto* free_block_list{reinterpret_cast<::SoC::detail::free_block_list_t*>(ptr)};
-            ::new(&page)::SoC::detail::heap_page_metadata{&page + 1, free_block_list, 0, page_shift};
-            ::new(free_block_list)::SoC::detail::free_block_list_t{nullptr};
+            new(&page)::SoC::detail::heap_page_metadata{&page + 1, free_block_list, 0, page_shift};
+            new(free_block_list)::SoC::detail::free_block_list_t{nullptr};
             ptr += page_size;
         }
         metadata.back().next_page = nullptr;
@@ -104,7 +104,7 @@ namespace SoC
         // 将空闲块指针指向数据区，对于页来说，完成了空闲链表的重新初始化
         // 对于其他大小的块，需要使用make_block_in_page函数重新初始化空闲链表
         old_head->free_block_list = ((old_head - metadata.data()) * page_size / ptr_size) + data;
-        ::new(old_head->free_block_list)::SoC::detail::free_block_list_t{nullptr};
+        new(old_head->free_block_list)::SoC::detail::free_block_list_t{nullptr};
         auto* old_page_head{::std::exchange(free_page_list.back(), old_head)};
         old_head->next_page = old_page_head;
         // 初始化块大小的左移量为页大小左移量
@@ -280,7 +280,7 @@ namespace SoC
             }
             used_block = 0;
             free_block_list = data + index * scaled_page_size;
-            ::new(free_block_list)::SoC::detail::free_block_list_t{nullptr};
+            new(free_block_list)::SoC::detail::free_block_list_t{nullptr};
             next_page = ::std::exchange(head, &metadata);
         }
     }
@@ -373,7 +373,7 @@ namespace SoC
                           "要释放的块所在页未完全分配，但其空闲块链表为空"sv);
         }
         auto* old_head{::std::exchange(free_block_list, page_ptr)};
-        ::new(page_ptr)::SoC::detail::free_block_list_t{old_head};
+        new(page_ptr)::SoC::detail::free_block_list_t{old_head};
         --used_block;
         if(old_head == nullptr) [[unlikely]]
         {

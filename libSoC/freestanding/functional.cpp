@@ -166,7 +166,7 @@ export namespace SoC
                 {
                     // 对于其他类型，采用拥有语义，进行动态分配
                     ptr = allocator.template allocate<no_ref_callable_t>();
-                    ::new(ptr) no_ref_callable_t{::std::forward<callable_t>(callable)};
+                    new(ptr) no_ref_callable_t{::std::forward<callable_t>(callable)};
                     destroy_callback = ::SoC::detail::function_destroy_callback<no_ref_callable_t>;
                 }
             }

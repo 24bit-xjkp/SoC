@@ -218,7 +218,7 @@ export
             auto dst_index = (dst_head + i) & dst_buffer_mask;
 
             // 移动构造到dst缓冲区
-            ::new(&dst_buffer[dst_index].value) type{::std::move(src_buffer[src_index].value)};
+            new(&dst_buffer[dst_index].value) type{::std::move(src_buffer[src_index].value)};
             // 析构src缓冲区中的原对象
             src_buffer[src_index].value.~type();
         }
@@ -333,9 +333,7 @@ export namespace SoC
              * @return 加法后的迭代器
              */
             constexpr inline friend iterator_t operator+ (const iterator_t& self, ::std::ptrdiff_t offset) noexcept
-            {
-                return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index + offset), self.ring_buffer_ptr};
-            }
+            { return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index + offset), self.ring_buffer_ptr}; }
 
             /**
              * @brief 迭代器加法运算符
@@ -345,9 +343,7 @@ export namespace SoC
              * @return 加法后的迭代器
              */
             constexpr inline friend iterator_t operator+ (::std::ptrdiff_t offset, const iterator_t& self) noexcept
-            {
-                return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index + offset), self.ring_buffer_ptr};
-            }
+            { return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index + offset), self.ring_buffer_ptr}; }
 
             /**
              * @brief 迭代器加法赋值运算符
@@ -396,9 +392,7 @@ export namespace SoC
              * @return 减法后的迭代器
              */
             constexpr inline friend iterator_t operator- (const iterator_t& self, ::std::ptrdiff_t offset) noexcept
-            {
-                return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index - offset), self.ring_buffer_ptr};
-            }
+            { return {static_cast<::SoC::detail::ring_buffer_size_t>(self.index - offset), self.ring_buffer_ptr}; }
 
             /**
              * @brief 迭代器减法运算符
@@ -438,9 +432,7 @@ export namespace SoC
              * @return 是否相等
              */
             constexpr inline friend bool operator== (const iterator_t& self, const iterator_t& other) noexcept
-            {
-                return self.index == other.index && self.ring_buffer_ptr == other.ring_buffer_ptr;
-            }
+            { return self.index == other.index && self.ring_buffer_ptr == other.ring_buffer_ptr; }
 
             /**
              * @brief 迭代器比较运算符
@@ -541,9 +533,7 @@ export namespace SoC
          */
         constexpr inline ring_buffer(const ring_buffer& other) noexcept(::std::is_nothrow_copy_constructible_v<value_type>) :
             tail{other.size()}
-        {
-            ::SoC::detail::ring_buffer_copy_constructor<value_type>(other.head, other.tail, other.buffer, buffer);
-        }
+        { ::SoC::detail::ring_buffer_copy_constructor<value_type>(other.head, other.tail, other.buffer, buffer); }
 
         /**
          * @brief 移动构造函数
@@ -617,9 +607,7 @@ export namespace SoC
          * @return 指向缓冲区开头的迭代器
          */
         [[nodiscard]] constexpr inline auto begin(this auto&& self) noexcept
-        {
-            return iterator_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.head, &self};
-        }
+        { return iterator_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.head, &self}; }
 
         /**
          * @brief 获取指向缓冲区开头的常量迭代器
@@ -634,9 +622,7 @@ export namespace SoC
          * @return 指向缓冲区末尾的迭代器
          */
         [[nodiscard]] constexpr inline auto end(this auto&& self) noexcept
-        {
-            return iterator_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.tail, &self};
-        }
+        { return iterator_t<::std::is_const_v<::std::remove_reference_t<decltype(self)>>>{self.tail, &self}; }
 
         /**
          * @brief 获取指向缓冲区末尾的常量迭代器
@@ -686,9 +672,7 @@ export namespace SoC
          * @return 缓冲区是否已满
          */
         [[nodiscard]] constexpr inline bool full() const noexcept
-        {
-            return static_cast<::SoC::detail::ring_buffer_size_t>(tail - head) == buffer_size;
-        }
+        { return static_cast<::SoC::detail::ring_buffer_size_t>(tail - head) == buffer_size; }
 
         /**
          * @brief 获取缓冲区已用大小
@@ -758,7 +742,7 @@ export namespace SoC
             {
                 ::SoC::always_check(!full(), "环形缓冲区已满"sv);
             }
-            ::new(&buffer[tail++ & buffer_mask].value) value_type{::std::forward<args_t>(args)...};
+            new(&buffer[tail++ & buffer_mask].value) value_type{::std::forward<args_t>(args)...};
         }
 
         /**
@@ -785,9 +769,7 @@ export namespace SoC
          * @return 两个环形缓冲区是否相等
          */
         constexpr inline friend bool operator== (const ring_buffer& lhs, const ring_buffer& rhs) noexcept
-        {
-            return ::std::ranges::equal(lhs, rhs);
-        }
+        { return ::std::ranges::equal(lhs, rhs); }
 
         /**
          * @brief 交换两个环形缓冲区的内容

@@ -173,7 +173,7 @@ TEST_SUITE("utils_wrapper" * ::doctest::description{"SoC实用包装体部分单
         {
             CHECK_EQ(ctor_cnt, 0zu);
             CHECK_EQ(dtor_cnt, 0zu);
-            ::new(&wrapper.value) test_struct{};
+            new(&wrapper.value) test_struct{};
             CHECK_EQ(ctor_cnt, 1zu);
             CHECK_EQ(dtor_cnt, 0zu);
             wrapper.value.~test_struct();
