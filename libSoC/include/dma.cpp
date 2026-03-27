@@ -17,12 +17,10 @@ namespace SoC::detail
      */
     enum class dma : ::std::uintptr_t
     {
-        /// 无效dma外设
-        invalid = 0,
         /// dma1外设
         dma1 = DMA1_BASE,
         /// dma2外设
-        dma2 = DMA2_BASE
+        dma2 = DMA2_BASE,
     };
 
     /**
@@ -46,7 +44,7 @@ namespace SoC::detail
         /// DMA数据流6
         st6 = LL_DMA_STREAM_6,
         /// DMA数据流7
-        st7 = LL_DMA_STREAM_7
+        st7 = LL_DMA_STREAM_7,
     };
 }  // namespace SoC::detail
 
@@ -60,7 +58,8 @@ export namespace SoC
     struct dma
     {
     private:
-        ::DMA_TypeDef* dma_ptr;
+        // dma外设指针
+        ::DMA_TypeDef* dma_ptr{};
 
     public:
         using dma_enum = ::SoC::detail::dma;
@@ -81,13 +80,27 @@ export namespace SoC
 
         inline dma(const dma&) noexcept = delete;
         inline dma& operator= (const dma&) noexcept = delete;
+
         /**
-         * @brief 移动构造函数
+         * @brief 转移dma外设的所有权
          *
-         * @param other 其他dma外设
+         * @param other 其他dma外设对象
          */
         dma(dma&& other) noexcept;
-        inline dma& operator= (dma&&) noexcept = delete;
+
+        /**
+         * @brief 转移dma外设的所有权
+         *
+         * @param other 其他dma外设对象
+         * @return dma& 本对象
+         */
+        dma& operator= (dma&& other) noexcept;
+
+        /**
+         * @brief 失能dma时钟，然后释放dma外设资源
+         *
+         */
+        void release() noexcept;
 
         /**
          * @brief 获取dma外设枚举
@@ -129,14 +142,22 @@ export namespace SoC
      */
     enum class dma_channel : ::std::size_t
     {
+        /// dma通道0
         ch0 = LL_DMA_CHANNEL_0,
+        /// dma通道1
         ch1 = LL_DMA_CHANNEL_1,
+        /// dma通道2
         ch2 = LL_DMA_CHANNEL_2,
+        /// dma通道3
         ch3 = LL_DMA_CHANNEL_3,
+        /// dma通道4
         ch4 = LL_DMA_CHANNEL_4,
+        /// dma通道5
         ch5 = LL_DMA_CHANNEL_5,
+        /// dma通道6
         ch6 = LL_DMA_CHANNEL_6,
-        ch7 = LL_DMA_CHANNEL_7
+        /// dma通道7
+        ch7 = LL_DMA_CHANNEL_7,
     };
 
     /**
@@ -150,7 +171,7 @@ export namespace SoC
         /// 无限次循环传输
         circle = LL_DMA_MODE_CIRCULAR,
         /// 外设控制传输时机
-        pfctrl = LL_DMA_MODE_PFCTRL
+        pfctrl = LL_DMA_MODE_PFCTRL,
     };
 
     /**
@@ -164,7 +185,7 @@ export namespace SoC
         /// 内存到外设
         m2p = LL_DMA_DIRECTION_MEMORY_TO_PERIPH,
         /// 内存到内存
-        m2m = LL_DMA_DIRECTION_MEMORY_TO_MEMORY
+        m2m = LL_DMA_DIRECTION_MEMORY_TO_MEMORY,
     };
 
     /**
@@ -178,7 +199,7 @@ export namespace SoC
         /// 2字节
         half_word = LL_DMA_MDATAALIGN_HALFWORD,
         /// 4字节
-        word = LL_DMA_MDATAALIGN_WORD
+        word = LL_DMA_MDATAALIGN_WORD,
     };
 
     /**
@@ -192,7 +213,7 @@ export namespace SoC
         /// 2字节
         half_word = LL_DMA_PDATAALIGN_HALFWORD,
         /// 4字节
-        word = LL_DMA_PDATAALIGN_WORD
+        word = LL_DMA_PDATAALIGN_WORD,
     };
 
     /**
@@ -201,10 +222,14 @@ export namespace SoC
      */
     enum class dma_priority : ::std::size_t
     {
+        /// 低优先级
         low = LL_DMA_PRIORITY_LOW,
+        /// 中等优先级
         medium = LL_DMA_PRIORITY_MEDIUM,
+        /// 高优先级
         high = LL_DMA_PRIORITY_HIGH,
-        very_high = LL_DMA_PRIORITY_VERYHIGH
+        /// 最高优先级
+        very_high = LL_DMA_PRIORITY_VERYHIGH,
     };
 
     /**
@@ -222,11 +247,11 @@ export namespace SoC
         /// 使用完整的fifo队列
         full = LL_DMA_FIFOTHRESHOLD_FULL,
         /// 不使用fifo
-        disable = -1zu
+        disable = -1zu,
     };
 
     /// dma fifo队列最大值
-    constexpr inline ::std::size_t dma_fifo_max_size{16};
+    constexpr inline ::std::size_t dma_fifo_max_size{16zu};
 
     /**
      * @brief dma内存侧突发宽度
@@ -234,9 +259,13 @@ export namespace SoC
      */
     enum class dma_memory_burst : ::std::size_t
     {
+        /// 单拍传输，即不使用突发
         single = LL_DMA_MBURST_SINGLE,
+        /// 4拍突发
         inc4 = LL_DMA_MBURST_INC4,
+        /// 8拍突发
         inc8 = LL_DMA_MBURST_INC8,
+        /// 16拍突发
         inc16 = LL_DMA_MBURST_INC16,
     };
 
@@ -246,9 +275,13 @@ export namespace SoC
      */
     enum class dma_periph_burst : ::std::size_t
     {
+        /// 单拍传输，即不使用突发
         single = LL_DMA_PBURST_SINGLE,
+        /// 4拍突发
         inc4 = LL_DMA_PBURST_INC4,
+        /// 8拍突发
         inc8 = LL_DMA_PBURST_INC8,
+        /// 16拍突发
         inc16 = LL_DMA_PBURST_INC16,
     };
 
@@ -262,15 +295,25 @@ export namespace SoC
         using enum dma_stream_enum;
 
     private:
-        ::SoC::moveable_value<::DMA_TypeDef*> dma_ptr;
-        dma_stream_enum stream;
-        ::SoC::dma_direction direction;
-        ::SoC::dma_mode mode;
-        ::SoC::dma_fifo_threshold fifo_threshold;
-        ::SoC::dma_memory_burst mem_burst;
-        ::SoC::dma_memory_data_size mem_data_size;
-        ::SoC::dma_periph_data_size pf_data_size;
-        ::SoC::dma_periph_burst pf_burst;
+        // dma外设指针
+        ::DMA_TypeDef* dma_ptr{};
+        // dma数据流枚举
+        dma_stream_enum stream{};
+        // dma传输方向枚举
+        ::SoC::dma_direction direction{};
+        // dma传输模式枚举
+        ::SoC::dma_mode mode{};
+        // dma fifo阈值枚举
+        ::SoC::dma_fifo_threshold fifo_threshold{};
+        // dma内存侧突发宽度枚举
+        ::SoC::dma_memory_burst mem_burst{};
+        // dma内存侧数据传输宽度枚举
+        ::SoC::dma_memory_data_size mem_data_size{};
+        // dma外设侧数据传输宽度枚举
+        ::SoC::dma_periph_data_size pf_data_size{};
+        // dma外设侧突发宽度枚举
+        ::SoC::dma_periph_burst pf_burst{};
+        // dma中断号
         ::IRQn_Type irqn{};
 
         /**
@@ -315,20 +358,6 @@ export namespace SoC
          *
          */
         void enable() const noexcept;
-
-        /**
-         * @brief 获取传输完成标志位掩码
-         *
-         * @return 传输完成标志位掩码
-         */
-        [[nodiscard]] auto get_tc_mask() const noexcept;
-
-        /**
-         * @brief 获取传输半完成标志位掩码
-         *
-         * @return 传输半完成标志位掩码
-         */
-        [[nodiscard]] auto get_ht_mask() const noexcept;
 
     public:
         /**
@@ -499,15 +528,34 @@ export namespace SoC
                             ::SoC::dma_periph_burst pf_burst) noexcept;
 
         /**
-         * @brief 关闭dma数据流
+         * @brief 清除标志，然后失能中断和dma数据流
          *
          */
         ~dma_stream() noexcept;
 
-        inline dma_stream(const dma_stream&) noexcept = delete;
-        inline dma_stream& operator= (const dma_stream&) noexcept = delete;
-        dma_stream(dma_stream&& other) noexcept = default;
-        inline dma_stream& operator= (dma_stream&&) noexcept = delete;
+        inline dma_stream(const dma_stream&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline dma_stream& operator= (const dma_stream&) noexcept = delete("对象独占外设资源，不能复制赋值");
+
+        /**
+         * @brief 转移dma外设资源的所有权
+         *
+         * @param other 其他dma数据流对象
+         */
+        dma_stream(dma_stream&& other) noexcept;
+
+        /**
+         * @brief 转移dma外设资源的所有权
+         *
+         * @param other 其他dma数据流对象
+         * @return dma_stream& 本对象
+         */
+        dma_stream& operator= (dma_stream&& other) noexcept;
+
+        /**
+         * @brief 清除标志，然后失能中断和dma数据流，释放dma外设资源
+         *
+         */
+        void release() noexcept;
 
         /**
          * @brief 设置内存侧数据宽度
@@ -616,6 +664,45 @@ export namespace SoC
         void clear_flag_ht() const noexcept;
 
         /**
+         * @brief 获取传输错误标记
+         *
+         * @return 传输错误标记
+         */
+        [[nodiscard]] bool get_flag_te() const noexcept;
+
+        /**
+         * @brief 清除传输错误标记
+         *
+         */
+        void clear_flag_te() const noexcept;
+
+        /**
+         * @brief 获取FIFO错误标记
+         *
+         * @return FIFO错误标记
+         */
+        [[nodiscard]] bool get_flag_fe() const noexcept;
+
+        /**
+         * @brief 清除FIFO错误标记
+         *
+         */
+        void clear_flag_fe() const noexcept;
+
+        /**
+         * @brief 获取直接模式错误标记
+         *
+         * @return 直接模式错误标记
+         */
+        [[nodiscard]] bool get_flag_dme() const noexcept;
+
+        /**
+         * @brief 清除直接模式错误标记
+         *
+         */
+        void clear_flag_dme() const noexcept;
+
+        /**
          * @brief 判断是否传输完成
          *
          * @note tc置位或dma数据流失能认为传输完成
@@ -692,6 +779,69 @@ export namespace SoC
          * @return 是否为传输半完成中断
          */
         [[nodiscard]] bool is_it_ht() const noexcept;
+
+        /**
+         * @brief 设置是否使能dma传输错误中断源
+         *
+         * @param enable 是否使能中断源
+         */
+        void set_it_te(bool enable) const noexcept;
+
+        /**
+         * @brief 获取是否使能dma传输错误中断源
+         *
+         * @return 是否使能中断源
+         */
+        [[nodiscard]] bool get_it_te() const noexcept;
+
+        /**
+         * @brief 判断发生的dma中断是否为传输错误中断
+         *
+         * @return 是否为传输错误中断
+         */
+        [[nodiscard]] bool is_it_te() const noexcept;
+
+        /**
+         * @brief 设置是否使能dmaFIFO错误中断源
+         *
+         * @param enable 是否使能中断源
+         */
+        void set_it_fe(bool enable) const noexcept;
+
+        /**
+         * @brief 获取是否使能dmaFIFO错误中断源
+         *
+         * @return 是否使能中断源
+         */
+        [[nodiscard]] bool get_it_fe() const noexcept;
+
+        /**
+         * @brief 判断发生的dma中断是否为FIFO错误中断
+         *
+         * @return 是否为FIFO错误中断
+         */
+        [[nodiscard]] bool is_it_fe() const noexcept;
+
+        /**
+         * @brief 设置是否使能dma直接模式错误中断源
+         *
+         * @param enable 是否使能中断源
+         */
+        void set_it_dme(bool enable) const noexcept;
+
+        /**
+         * @brief 获取是否使能dma直接模式错误中断源
+         *
+         * @return 是否使能中断源
+         */
+        [[nodiscard]] bool get_it_dme() const noexcept;
+
+        /**
+         * @brief 判断发生的dma中断是否为直接模式错误中断
+         *
+         * @return 是否为直接模式错误中断
+         */
+        [[nodiscard]] bool is_it_dme() const noexcept;
     };
 }  // namespace SoC
 
@@ -719,7 +869,8 @@ namespace SoC
      */
     export template <::std::same_as<::SoC::dma_stream> device_t>
     constexpr inline bool forbidden_output_device<device_t>{
-        ::SoC::detail::forbidden_dma_stream_as_io_device<device_t>::with_periph_object};
+        ::SoC::detail::forbidden_dma_stream_as_io_device<device_t>::with_periph_object,
+    };
 
     /**
      * @brief 禁止dma数据流作为输入设备
@@ -728,5 +879,6 @@ namespace SoC
      */
     export template <::std::same_as<::SoC::dma_stream> device_t>
     constexpr inline bool forbidden_input_device<device_t>{
-        ::SoC::detail::forbidden_dma_stream_as_io_device<device_t>::with_periph_object};
+        ::SoC::detail::forbidden_dma_stream_as_io_device<device_t>::with_periph_object,
+    };
 }  // namespace SoC

@@ -15,7 +15,6 @@ target("SoC.stm32")
     add_files("include/*.cpp", {public = true})
     add_files("src/*.cpp")
     add_extrafiles("assets/*")
-    set_pcxxheader("include/pch.hpp")
     add_includedirs("include")
     set_enabled(is_stm32_support)
 
