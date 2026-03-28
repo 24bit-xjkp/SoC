@@ -1123,6 +1123,7 @@ export namespace SoC
          *
          * @param preempt_priority 抢占中断优先级
          * @param sub_priority 响应中断优先级
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
          */
         void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept;
 
@@ -1130,12 +1131,14 @@ export namespace SoC
          * @brief 使能模拟看门狗中断
          *
          * @param encoded_priority 编码后的中断优先级
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
          */
         void enable_irq(::std::size_t encoded_priority) noexcept;
 
         /**
          * @brief 失能模拟看门狗中断
          *
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
          */
         void disable_irq() noexcept;
 
@@ -1143,6 +1146,7 @@ export namespace SoC
          * @brief 设置模拟看门狗中断源状态
          *
          * @param enable 模拟看门狗中断源是否使能
+         * @note 函数是并发安全的，可以在中断上下文中调用
          */
         void set_it_awd(bool enable) const noexcept;
 
