@@ -20,7 +20,7 @@ namespace SoC
      * @param adc adc枚举
      * @return apb2 grp1外设时钟使能位
      */
-    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline auto
+    [[using gnu: always_inline, artificial]] [[nodiscard]] constexpr inline ::std::size_t
         adc_enum2grp1_periph(::SoC::detail::adc adc) noexcept
     {
         auto shift{(::SoC::to_underlying(adc) - ::SoC::to_underlying(::SoC::detail::adc::adc1)) >> 8zu};
@@ -41,13 +41,36 @@ namespace SoC
         set_alignment(alignment);
     }
 
-    ::SoC::adc::~adc() noexcept
+    void ::SoC::adc::release() noexcept
     {
         if(adc_ptr != nullptr)
         {
             disable();
             ::LL_APB2_GRP1_DisableClock(::SoC::adc_enum2grp1_periph(get_adc_enum()));
+            adc_ptr = nullptr;
         }
+    }
+
+    ::SoC::adc::~adc() noexcept { release(); }
+
+    ::SoC::adc::adc(adc&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return; }
+        adc_ptr = ::std::exchange(other.adc_ptr, nullptr);
+        resolution = other.resolution;
+        alignment = other.alignment;
+        scan_mode = other.scan_mode;
+    }
+
+    ::SoC::adc& ::SoC::adc::operator= (adc&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return *this; }
+        release();
+        adc_ptr = ::std::exchange(other.adc_ptr, nullptr);
+        resolution = other.resolution;
+        alignment = other.alignment;
+        scan_mode = other.scan_mode;
+        return *this;
     }
 
     void ::SoC::adc::enable() const noexcept { ::LL_ADC_Enable(adc_ptr); }
@@ -95,6 +118,7 @@ namespace SoC
                 ::SoC::assert(ranks == 1, "adc在非扫描模式下，规则组内有且只有一个通道"sv);
             }
         }
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
         ::LL_ADC_REG_SetSequencerLength(adc_ptr, scan_ranks_table[ranks - 1]);
         set_trigger_source(trigger_source);
         set_continuous_mode(continuous_mode);
@@ -103,12 +127,13 @@ namespace SoC
 
         for(auto i{0zu}; auto&& [channel, sampling_time]: channel_list)
         {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
             ::LL_ADC_REG_SetSequencerRanks(adc_ptr, rank_table[i++], ::SoC::to_underlying(channel));
             ::LL_ADC_SetChannelSamplingTime(adc_ptr, ::SoC::to_underlying(channel), ::SoC::to_underlying(sampling_time));
         }
     }
 
-    ::SoC::adc_regular_group::~adc_regular_group() noexcept
+    void ::SoC::adc_regular_group::release() noexcept
     {
         if(adc_ptr != nullptr) [[likely]]
         {
@@ -116,7 +141,30 @@ namespace SoC
             clear_flag_ovr();
             disable_dma();
             disable();
+            adc_ptr = nullptr;
         }
+    }
+
+    ::SoC::adc_regular_group::~adc_regular_group() noexcept { release(); }
+
+    ::SoC::adc_regular_group::adc_regular_group(adc_regular_group&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return; }
+        adc_ptr = ::std::exchange(other.adc_ptr, nullptr);
+        ranks = other.ranks;
+        trigger_source = other.trigger_source;
+        dma_mode = other.dma_mode;
+    }
+
+    ::SoC::adc_regular_group& ::SoC::adc_regular_group::operator= (adc_regular_group&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return *this; }
+        release();
+        adc_ptr = ::std::exchange(other.adc_ptr, nullptr);
+        ranks = other.ranks;
+        trigger_source = other.trigger_source;
+        dma_mode = other.dma_mode;
+        return *this;
     }
 
     void ::SoC::adc_regular_group::set_trigger_source(::SoC::adc_regular_trigger_source trigger_source) noexcept
@@ -170,39 +218,26 @@ namespace SoC
         ::LL_ADC_REG_SetSequencerDiscont(adc_ptr, ::SoC::to_underlying(seq_discont));
     }
 
-    ::SoC::dma_stream(::SoC::adc_regular_group::enable_dma)(::SoC::dma& dma,
-                                                            ::SoC::dma_mode mode,
-                                                            ::SoC::dma_fifo_threshold fifo_threshold,
-                                                            ::SoC::dma_memory_burst burst,
-                                                            ::SoC::dma_priority priority,
-                                                            ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
+    auto ::SoC::adc_regular_group::enable_dma(::SoC::dma& dma,
+                                              ::SoC::dma_mode mode,
+                                              ::SoC::dma_fifo_threshold fifo_threshold,
+                                              ::SoC::dma_memory_burst burst,
+                                              ::SoC::dma_priority priority,
+                                              ::SoC::dma_stream::dma_stream_enum selected_stream) const noexcept
+        -> ::SoC::dma_stream
     {
         if constexpr(::SoC::use_full_assert)
         {
             ::SoC::assert(dma_mode != ::SoC::adc_regular_dma_mode::none, "该adc规则组已配置为不使用dma"sv);
             ::SoC::assert(dma.get_dma_enum() == ::SoC::dma::dma2, "该dma外设不能操作该adc"sv);
         }
-        const auto check_select_stream{[selected_stream](::SoC::dma_stream::dma_stream_enum allowed_stream1,
-                                                         ::SoC::dma_stream::dma_stream_enum allowed_stream2) noexcept
-                                       {
-                                           if constexpr(::SoC::use_full_assert)
-                                           {
-                                               ::SoC::assert(selected_stream == allowed_stream1 ||
-                                                                 selected_stream == allowed_stream2,
-                                                             "该dma不能使用指定的dma数据流"sv);
-                                           }
-                                           else
-                                           {
-                                               // 消除未使用捕获的警告
-                                               auto _{selected_stream};
-                                           }
-                                       }};
 
         using enum ::SoC::dma_stream::dma_stream_enum;
         using enum ::SoC::dma_channel;
         using enum ::SoC::adc::adc_enum;
         ::SoC::dma_channel channel{};
         ::SoC::dma_stream::dma_stream_enum stream{};
+        constexpr static auto check_select_stream_message{"该dma不能使用指定的dma数据流"sv};
         switch(get_adc_enum())
         {
             case adc1:
@@ -210,7 +245,10 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st0; }
                 else
                 {
-                    if constexpr(::SoC::use_full_assert) { check_select_stream(st0, st4); }
+                    if constexpr(::SoC::use_full_assert)
+                    {
+                        ::SoC::assert(selected_stream == st0 || selected_stream == st4, check_select_stream_message);
+                    }
                     stream = selected_stream;
                 }
                 break;
@@ -219,7 +257,10 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st2; }
                 else
                 {
-                    if constexpr(::SoC::use_full_assert) { check_select_stream(st2, st3); }
+                    if constexpr(::SoC::use_full_assert)
+                    {
+                        ::SoC::assert(selected_stream == st2 || selected_stream == st3, check_select_stream_message);
+                    }
                     stream = selected_stream;
                 }
                 break;
@@ -228,7 +269,10 @@ namespace SoC
                 if(selected_stream == no_selected_stream) [[likely]] { stream = st0; }
                 else
                 {
-                    if constexpr(::SoC::use_full_assert) { check_select_stream(st0, st1); }
+                    if constexpr(::SoC::use_full_assert)
+                    {
+                        ::SoC::assert(selected_stream == st0 || selected_stream == st1, check_select_stream_message);
+                    }
                     stream = selected_stream;
                 }
                 break;
@@ -255,14 +299,14 @@ namespace SoC
     {
         if constexpr(::SoC::use_full_assert)
         {
-            constexpr auto msg{"当且仅当adc触发源为软件触发时触发边沿应该设置为软件"sv};
+            constexpr static auto message{"当且仅当adc触发源为软件触发时触发边沿应该设置为软件"sv};
             if(trigger_source == ::SoC::adc_regular_trigger_source::software)
             {
-                ::SoC::assert(trig_edge == ::SoC::adc_trig_edge::software, msg);
+                ::SoC::assert(trig_edge == ::SoC::adc_trig_edge::software, message);
             }
             else
             {
-                ::SoC::assert(trig_edge != ::SoC::adc_trig_edge::software, msg);
+                ::SoC::assert(trig_edge != ::SoC::adc_trig_edge::software, message);
             }
         }
         if(trig_edge != ::SoC::adc_trig_edge::software)
@@ -303,6 +347,56 @@ namespace SoC
 
 namespace SoC
 {
+    ::SoC::adc_internal_channel::adc_internal_channel(internal_channel_enum internal_channel) noexcept :
+        internal_channel{internal_channel}
+    {
+        if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前adc内部通道不应处于使能状态"sv); }
+        enable();
+    }
+
+    ::SoC::adc_internal_channel::~adc_internal_channel() noexcept { release(); }
+
+    void ::SoC::adc_internal_channel::release() noexcept
+    {
+        if(internal_channel != none)
+        {
+            disable();
+            internal_channel = none;
+        }
+    }
+
+    ::SoC::adc_internal_channel::adc_internal_channel(adc_internal_channel&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return; }
+        internal_channel = ::std::exchange(other.internal_channel, none);
+    }
+
+    ::SoC::adc_internal_channel& ::SoC::adc_internal_channel::operator= (adc_internal_channel&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return *this; }
+        release();
+        internal_channel = ::std::exchange(other.internal_channel, none);
+        return *this;
+    }
+
+    void ::SoC::adc_internal_channel::enable() const noexcept
+    {
+        auto current_channels{::LL_ADC_GetCommonPathInternalCh(ADC)};
+        ::LL_ADC_SetCommonPathInternalCh(ADC, current_channels | ::SoC::to_underlying(internal_channel));
+    }
+
+    void ::SoC::adc_internal_channel::disable() const noexcept
+    {
+        auto current_channels{::LL_ADC_GetCommonPathInternalCh(ADC)};
+        ::LL_ADC_SetCommonPathInternalCh(ADC, current_channels & ~::SoC::to_underlying(internal_channel));
+    }
+
+    bool ::SoC::adc_internal_channel::is_enabled() const noexcept
+    { return (::LL_ADC_GetCommonPathInternalCh(ADC) & ::SoC::to_underlying(internal_channel)) != 0; }
+}  // namespace SoC
+
+namespace SoC
+{
     ::SoC::adc_calibrator::adc_calibrator(::SoC::adc& adc, ::SoC::dma& dma) noexcept :
         adc{adc}, internal_channel{::SoC::adc_internal_channel::vrefint | ::SoC::adc_internal_channel::temp_sensor},
         buffer{::SoC::ram_allocator.allocate<buffer_t>()},
@@ -322,18 +416,21 @@ namespace SoC
         old_alignment = adc.get_alignment();
         if(old_alignment != alignment) { adc.set_alignment(alignment); }
 
-        constexpr auto sampling_time{::SoC::adc_sampling_time::cycles144};
+        constexpr static auto sampling_time{::SoC::adc_sampling_time::cycles144};
         auto& regular_group{
             *new(adc_regular_group)::SoC::adc_regular_group{
                                                             adc, ::SoC::adc_regular_trigger_source::software,
                                                             true, ::SoC::adc_regular_dma_mode::limited,
                                                             {{::SoC::adc_channel::ch_vrefint, sampling_time}, {::SoC::adc_channel::ch_temp_sensor, sampling_time}},
-                                                            }
+                                                            },
         };
-        auto& adc_dma_stream{*new(dma_stream)::SoC::dma_stream{regular_group.enable_dma(dma,
-                                                                                        ::SoC::dma_mode::normal,
-                                                                                        ::SoC::dma_fifo_threshold::full,
-                                                                                        ::SoC::dma_memory_burst::inc8)}};
+        auto& adc_dma_stream{
+            *new(dma_stream)::SoC::dma_stream{
+                regular_group.enable_dma(dma,
+                                         ::SoC::dma_mode::normal,
+                                         ::SoC::dma_fifo_threshold::full,
+                                         ::SoC::dma_memory_burst::inc8)},  // NOLINT(readability-trailing-comma)
+        };
         adc.enable();
         adc_dma_stream.read(buffer->begin(), buffer->end());
         regular_group.enable(::SoC::adc_trig_edge::software);
@@ -352,9 +449,9 @@ namespace SoC
     ::std::pair<float, float>(::SoC::adc_calibrator::get_result)() const noexcept
     {
         ::SoC::wait_until([this] noexcept { return is_sample_ready(); });
-        constexpr float temp1{TEMPSENSOR_CAL1_TEMP};
-        constexpr float temp2{TEMPSENSOR_CAL2_TEMP};
-        constexpr float delta_temp{temp2 - temp1};
+        constexpr static float temp1{TEMPSENSOR_CAL1_TEMP};
+        constexpr static float temp2{TEMPSENSOR_CAL2_TEMP};
+        constexpr static float delta_temp{temp2 - temp1};
         auto temp_sensor1{static_cast<float>(*TEMPSENSOR_CAL1_ADDR)};
         auto temp_sensor2{static_cast<float>(*TEMPSENSOR_CAL2_ADDR)};
         auto k{(temp_sensor2 - temp_sensor1) / delta_temp};
@@ -363,11 +460,11 @@ namespace SoC
         /// 带隙基准电源标称值对应的adc值
         auto vrefint_typical{static_cast<float>(*VREFINT_CAL_ADDR)};
         /// 温度系数标称值30ppm/°C
-        constexpr auto vrefint_temp_coeff_typical{30e-6f};
+        constexpr static auto vrefint_temp_coeff_typical{30e-6f};
         /// 带隙基准电源温度标称值30°C
-        constexpr auto vrefint_temp_typical{30.f};
+        constexpr static auto vrefint_temp_typical{30.f};
         /// 测量内部基准电压和温度时使用的参考电压
-        constexpr auto vref{3.3f};
+        constexpr static auto vref{3.3f};
 
         /// adc采样Vrefint的平均值
         ::std::size_t raw_vrefint{};
@@ -379,7 +476,7 @@ namespace SoC
             raw_vrefint += vrefint;
             raw_temp += temp;
         }
-        constexpr auto size{buffer_t{}.size()};
+        constexpr static auto size{buffer_t{}.size()};
         raw_vrefint /= size;
         raw_temp /= size;
 
@@ -400,8 +497,8 @@ namespace SoC
             // 计算实际温度
             temp = (temp_cal - b) / k;
         }
-        constexpr auto max_adc_value{(1zu << 12zu) - 1};
-        constexpr float lsb{1.f / max_adc_value};
+        constexpr static auto max_adc_value{(1zu << 12zu) - 1};
+        constexpr static float lsb{1.f / max_adc_value};
         return ::std::pair{actual_vref * lsb, temp};
     }
 }  // namespace SoC
@@ -410,8 +507,9 @@ namespace SoC
 {
     ::SoC::analog_watchdog::analog_watchdog(::SoC::adc& adc,
                                             awd_enum channel,
-                                            ::std::size_t low_threshold,
-                                            ::std::size_t high_threshold) noexcept : adc_ptr{adc.get_adc()}, awd_channel{channel}
+                                            ::std::uint16_t low_threshold,
+                                            ::std::uint16_t high_threshold) noexcept :
+        adc_ptr{adc.get_adc()}, awd_channel{channel}, low_threshold{low_threshold}, high_threshold{high_threshold}
     {
         if constexpr(::SoC::use_full_assert) { ::SoC::assert(!is_enabled(), "初始化前此模拟看门狗不应处于使能状态"sv); }
         set_low_threshold(low_threshold);
@@ -419,53 +517,107 @@ namespace SoC
         enable();
     }
 
-    ::SoC::analog_watchdog::~analog_watchdog() noexcept
+    ::SoC::analog_watchdog::~analog_watchdog() noexcept { release(); }
+
+    void ::SoC::analog_watchdog::release() noexcept
     {
-        if(adc_ptr != nullptr) [[likely]]
+        if(adc_ptr != nullptr)
         {
             clear_flag_awd();
-            disable_irq();
+            set_it_awd(false);
             disable();
+            disable_irq();
             adc_ptr = nullptr;
         }
     }
 
+    ::SoC::analog_watchdog::analog_watchdog(analog_watchdog&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return; }
+        adc_ptr = ::std::exchange(other.adc_ptr, nullptr);
+        awd_channel = other.awd_channel;
+        low_threshold = other.low_threshold;
+        high_threshold = other.high_threshold;
+        nvic_irq_enabled = other.nvic_irq_enabled;
+    }
+
+    ::SoC::analog_watchdog& ::SoC::analog_watchdog::operator= (analog_watchdog&& other) noexcept
+    {
+        if(this == &other) [[unlikely]] { return *this; }
+        release();
+        adc_ptr = ::std::exchange(other.adc_ptr, nullptr);
+        awd_channel = other.awd_channel;
+        low_threshold = other.low_threshold;
+        high_threshold = other.high_threshold;
+        nvic_irq_enabled = other.nvic_irq_enabled;
+        return *this;
+    }
+
+    namespace
+    {
+        constexpr auto awd_disable{::SoC::to_underlying(::SoC::analog_watchdog::awd_disable)};
+    }
+
     bool ::SoC::analog_watchdog::is_enabled() const noexcept
-    { return ::LL_ADC_GetAnalogWDMonitChannels(adc_ptr) != LL_ADC_AWD_DISABLE; }
+    { return ::LL_ADC_GetAnalogWDMonitChannels(adc_ptr) != ::SoC::awd_disable; }
 
     void ::SoC::analog_watchdog::enable() const noexcept
     { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::SoC::to_underlying(awd_channel)); }
 
-    void ::SoC::analog_watchdog::disable() const noexcept { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, LL_ADC_AWD_DISABLE); }
+    void ::SoC::analog_watchdog::disable() const noexcept { ::LL_ADC_SetAnalogWDMonitChannels(adc_ptr, ::SoC::awd_disable); }
 
-    void ::SoC::analog_watchdog::set_low_threshold(::std::size_t threshold) noexcept
+    void ::SoC::analog_watchdog::set_low_threshold(::std::uint16_t threshold) noexcept
     {
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(threshold <= threshold_max, "模拟看门狗低门限值超出范围"sv);
+            ::SoC::assert(low_threshold < high_threshold, "低阈值应小于高阈值"sv);
+        }
         low_threshold = threshold;
         ::LL_ADC_SetAnalogWDThresholds(adc_ptr, LL_ADC_AWD_THRESHOLD_LOW, low_threshold);
     }
 
-    void ::SoC::analog_watchdog::set_high_threshold(::std::size_t threshold) noexcept
+    void ::SoC::analog_watchdog::set_high_threshold(::std::uint16_t threshold) noexcept
     {
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(threshold <= threshold_max, "模拟看门狗高门限值超出范围"sv);
+            ::SoC::assert(low_threshold < high_threshold, "低阈值应小于高阈值"sv);
+        }
         high_threshold = threshold;
         ::LL_ADC_SetAnalogWDThresholds(adc_ptr, LL_ADC_AWD_THRESHOLD_HIGH, high_threshold);
     }
 
-    // NOLINTBEGIN(readability-convert-member-functions-to-static)
-    void ::SoC::analog_watchdog::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept
+    void ::SoC::analog_watchdog::enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept
     {
-        ::SoC::enable_irq(irqn);
-        ::SoC::set_priority(irqn, preempt_priority, sub_priority);
+        if(!nvic_irq_enabled)
+        {
+            ::SoC::enable_irq(irqn);
+            ::SoC::set_priority(irqn, preempt_priority, sub_priority);
+            ++::SoC::detail::adc_irq_reference_counter;
+            nvic_irq_enabled = true;
+        }
     }
 
-    void ::SoC::analog_watchdog::enable_irq(::std::size_t encoded_priority) const noexcept
+    void ::SoC::analog_watchdog::enable_irq(::std::size_t encoded_priority) noexcept
     {
-        ::SoC::enable_irq(irqn);
-        ::SoC::set_priority(irqn, encoded_priority);
+        if(!nvic_irq_enabled)
+        {
+            ::SoC::enable_irq(irqn);
+            ::SoC::set_priority(irqn, encoded_priority);
+            ++::SoC::detail::adc_irq_reference_counter;
+            nvic_irq_enabled = true;
+        }
     }
 
-    void ::SoC::analog_watchdog::disable_irq() const noexcept { ::SoC::disable_irq(irqn); }
-
-    // NOLINTEND(readability-convert-member-functions-to-static)
+    void ::SoC::analog_watchdog::disable_irq() noexcept
+    {
+        if(nvic_irq_enabled && --::SoC::detail::adc_irq_reference_counter == 0)
+        {
+            ::SoC::disable_irq(irqn);
+            nvic_irq_enabled = false;
+        }
+    }
 
     void ::SoC::analog_watchdog::set_it_awd(bool enable) const noexcept
     {

@@ -17,9 +17,12 @@ namespace SoC::detail
      */
     enum class adc : ::std::uintptr_t
     {
+        /// adc1外设
         adc1 = ADC1_BASE,
+        /// adc2外设
         adc2 = ADC2_BASE,
-        adc3 = ADC3_BASE
+        /// adc3外设
+        adc3 = ADC3_BASE,
     };
 
     /**
@@ -30,12 +33,12 @@ namespace SoC::detail
     {
         /// 不使能内部通道
         none = LL_ADC_PATH_INTERNAL_NONE,
-        /// 内部带隙基准电压源通道
+        /// 内部参考电压通道
         vrefint = LL_ADC_PATH_INTERNAL_VREFINT,
         /// 内部温度传感器通道
         temp_sensor = LL_ADC_PATH_INTERNAL_TEMPSENSOR,
         /// 内部电池电压通道
-        vbat = LL_ADC_PATH_INTERNAL_VBAT
+        vbat = LL_ADC_PATH_INTERNAL_VBAT,
     };
 
     /**
@@ -45,10 +48,9 @@ namespace SoC::detail
      * @param rhs adc内部通道枚举
      * @return 组合后的adc内部通道枚举
      */
-    export constexpr inline adc_internal_channel operator| (adc_internal_channel lhs, adc_internal_channel rhs) noexcept
-    {
-        return static_cast<adc_internal_channel>(::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs));
-    }
+    export constexpr inline ::SoC::detail::adc_internal_channel operator| (::SoC::detail::adc_internal_channel lhs,
+                                                                           ::SoC::detail::adc_internal_channel rhs) noexcept
+    { return static_cast<::SoC::detail::adc_internal_channel>(::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)); }
 
     /**
      * @brief 模拟看门狗通道
@@ -56,74 +58,145 @@ namespace SoC::detail
      */
     enum class analog_watchdog : ::std::size_t
     {
+        /// 不使能模拟看门狗
+        awd_disable = LL_ADC_AWD_DISABLE,
+        /// 监视所有通道规则转换
         all_reg = LL_ADC_AWD_ALL_CHANNELS_REG,
+        /// 监视所有通道注入转换
         all_inj = LL_ADC_AWD_ALL_CHANNELS_INJ,
+        /// 监视所有通道规则和注入转换
         all_reg_inj = LL_ADC_AWD_ALL_CHANNELS_REG_INJ,
+        /// 监视外部通道0规则转换
         ch0_reg = LL_ADC_AWD_CHANNEL_0_REG,
+        /// 监视外部通道0注入转换
         ch0_inj = LL_ADC_AWD_CHANNEL_0_INJ,
+        /// 监视外部通道0规则和注入转换
         ch0_reg_inj = LL_ADC_AWD_CHANNEL_0_REG_INJ,
+        /// 监视外部通道1规则转换
         ch1_reg = LL_ADC_AWD_CHANNEL_1_REG,
+        /// 监视外部通道1注入转换
         ch1_inj = LL_ADC_AWD_CHANNEL_1_INJ,
+        /// 监视外部通道1规则和注入转换
         ch1_reg_inj = LL_ADC_AWD_CHANNEL_1_REG_INJ,
+        /// 监视外部通道2规则转换
         ch2_reg = LL_ADC_AWD_CHANNEL_2_REG,
+        /// 监视外部通道2注入转换
         ch2_inj = LL_ADC_AWD_CHANNEL_2_INJ,
+        /// 监视外部通道2规则和注入转换
         ch2_reg_inj = LL_ADC_AWD_CHANNEL_2_REG_INJ,
+        /// 监视外部通道3规则转换
         ch3_reg = LL_ADC_AWD_CHANNEL_3_REG,
+        /// 监视外部通道3注入转换
         ch3_inj = LL_ADC_AWD_CHANNEL_3_INJ,
+        /// 监视外部通道3规则和注入转换
         ch3_reg_inj = LL_ADC_AWD_CHANNEL_3_REG_INJ,
+        /// 监视外部通道4规则转换
         ch4_reg = LL_ADC_AWD_CHANNEL_4_REG,
+        /// 监视外部通道4注入转换
         ch4_inj = LL_ADC_AWD_CHANNEL_4_INJ,
+        /// 监视外部通道4规则和注入转换
         ch4_reg_inj = LL_ADC_AWD_CHANNEL_4_REG_INJ,
+        /// 监视外部通道5规则转换
         ch5_reg = LL_ADC_AWD_CHANNEL_5_REG,
+        /// 监视外部通道5注入转换
         ch5_inj = LL_ADC_AWD_CHANNEL_5_INJ,
+        /// 监视外部通道5规则和注入转换
         ch5_reg_inj = LL_ADC_AWD_CHANNEL_5_REG_INJ,
+        /// 监视外部通道6规则转换
         ch6_reg = LL_ADC_AWD_CHANNEL_6_REG,
+        /// 监视外部通道6注入转换
         ch6_inj = LL_ADC_AWD_CHANNEL_6_INJ,
+        /// 监视外部通道6规则和注入转换
         ch6_reg_inj = LL_ADC_AWD_CHANNEL_6_REG_INJ,
+        /// 监视外部通道7规则转换
         ch7_reg = LL_ADC_AWD_CHANNEL_7_REG,
+        /// 监视外部通道7注入转换
         ch7_inj = LL_ADC_AWD_CHANNEL_7_INJ,
+        /// 监视外部通道7规则和注入转换
         ch7_reg_inj = LL_ADC_AWD_CHANNEL_7_REG_INJ,
+        /// 监视外部通道8规则转换
         ch8_reg = LL_ADC_AWD_CHANNEL_8_REG,
+        /// 监视外部通道8注入转换
         ch8_inj = LL_ADC_AWD_CHANNEL_8_INJ,
+        /// 监视外部通道8规则和注入转换
         ch8_reg_inj = LL_ADC_AWD_CHANNEL_8_REG_INJ,
+        /// 监视外部通道9规则转换
         ch9_reg = LL_ADC_AWD_CHANNEL_9_REG,
+        /// 监视外部通道9注入转换
         ch9_inj = LL_ADC_AWD_CHANNEL_9_INJ,
+        /// 监视外部通道9规则和注入转换
         ch9_reg_inj = LL_ADC_AWD_CHANNEL_9_REG_INJ,
+        /// 监视外部通道10规则转换
         ch10_reg = LL_ADC_AWD_CHANNEL_10_REG,
+        /// 监视外部通道10注入转换
         ch10_inj = LL_ADC_AWD_CHANNEL_10_INJ,
+        /// 监视外部通道10规则和注入转换
         ch10_reg_inj = LL_ADC_AWD_CHANNEL_10_REG_INJ,
+        /// 监视外部通道11规则转换
         ch11_reg = LL_ADC_AWD_CHANNEL_11_REG,
+        /// 监视外部通道11注入转换
         ch11_inj = LL_ADC_AWD_CHANNEL_11_INJ,
+        /// 监视外部通道11规则和注入转换
         ch11_reg_inj = LL_ADC_AWD_CHANNEL_11_REG_INJ,
+        /// 监视外部通道12规则转换
         ch12_reg = LL_ADC_AWD_CHANNEL_12_REG,
+        /// 监视外部通道12注入转换
         ch12_inj = LL_ADC_AWD_CHANNEL_12_INJ,
+        /// 监视外部通道12规则和注入转换
         ch12_reg_inj = LL_ADC_AWD_CHANNEL_12_REG_INJ,
+        /// 监视外部通道13规则转换
         ch13_reg = LL_ADC_AWD_CHANNEL_13_REG,
+        /// 监视外部通道13注入转换
         ch13_inj = LL_ADC_AWD_CHANNEL_13_INJ,
+        /// 监视外部通道13规则和注入转换
         ch13_reg_inj = LL_ADC_AWD_CHANNEL_13_REG_INJ,
+        /// 监视外部通道14规则转换
         ch14_reg = LL_ADC_AWD_CHANNEL_14_REG,
+        /// 监视外部通道14注入转换
         ch14_inj = LL_ADC_AWD_CHANNEL_14_INJ,
+        /// 监视外部通道14规则和注入转换
         ch14_reg_inj = LL_ADC_AWD_CHANNEL_14_REG_INJ,
+        /// 监视外部通道15规则转换
         ch15_reg = LL_ADC_AWD_CHANNEL_15_REG,
+        /// 监视外部通道15注入转换
         ch15_inj = LL_ADC_AWD_CHANNEL_15_INJ,
+        /// 监视外部通道15规则和注入转换
         ch15_reg_inj = LL_ADC_AWD_CHANNEL_15_REG_INJ,
+        /// 监视外部通道16规则转换
         ch16_reg = LL_ADC_AWD_CHANNEL_16_REG,
+        /// 监视外部通道16注入转换
         ch16_inj = LL_ADC_AWD_CHANNEL_16_INJ,
+        /// 监视外部通道16规则和注入转换
         ch16_reg_inj = LL_ADC_AWD_CHANNEL_16_REG_INJ,
+        /// 监视外部通道17规则转换
         ch17_reg = LL_ADC_AWD_CHANNEL_17_REG,
+        /// 监视外部通道17注入转换
         ch17_inj = LL_ADC_AWD_CHANNEL_17_INJ,
+        /// 监视外部通道17规则和注入转换
         ch17_reg_inj = LL_ADC_AWD_CHANNEL_17_REG_INJ,
+        /// 监视外部通道18规则转换
         ch18_reg = LL_ADC_AWD_CHANNEL_18_REG,
+        /// 监视外部通道18注入转换
         ch18_inj = LL_ADC_AWD_CHANNEL_18_INJ,
+        /// 监视外部通道18规则和注入转换
         ch18_reg_inj = LL_ADC_AWD_CHANNEL_18_REG_INJ,
+        /// 监视内部参考电压通道规则转换
         vrefint_reg = LL_ADC_AWD_CH_VREFINT_REG,
+        /// 监视内部参考电压通道注入转换
         vrefint_inj = LL_ADC_AWD_CH_VREFINT_INJ,
+        /// 监视内部参考电压通道规则和注入转换
         vrefint_reg_inj = LL_ADC_AWD_CH_VREFINT_REG_INJ,
+        /// 监视内部温度传感器通道规则转换
         temp_sensor_reg = LL_ADC_AWD_CH_TEMPSENSOR_REG,
+        /// 监视内部温度传感器通道注入转换
         temp_sensor_inj = LL_ADC_AWD_CH_TEMPSENSOR_INJ,
+        /// 监视内部温度传感器通道规则和注入转换
         temp_sensor_reg_inj = LL_ADC_AWD_CH_TEMPSENSOR_REG_INJ,
+        /// 监视内部电池电压通道规则转换
         vbat_reg = LL_ADC_AWD_CH_VBAT_REG,
+        /// 监视内部电池电压通道注入转换
         vbat_inj = LL_ADC_AWD_CH_VBAT_INJ,
+        /// 监视内部电池电压通道规则和注入转换
         vbat_reg_inj = LL_ADC_AWD_CH_VBAT_REG_INJ,
     };
 
@@ -136,9 +209,10 @@ namespace SoC::detail
      */
     export constexpr inline ::SoC::detail::analog_watchdog operator| (::SoC::detail::analog_watchdog lhs,
                                                                       ::SoC::detail::analog_watchdog rhs) noexcept
-    {
-        return ::SoC::detail::analog_watchdog{::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)};
-    }
+    { return ::SoC::detail::analog_watchdog{::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)}; }
+
+    /// adc中断引用计数器，用于判断何时失能NVIC侧adc中断
+    constinit ::std::uint8_t adc_irq_reference_counter{};
 }  // namespace SoC::detail
 
 export namespace SoC
@@ -157,7 +231,7 @@ export namespace SoC
         /// 8位分辨率，最小转换时间8个ADC时钟周期
         bit8 = LL_ADC_RESOLUTION_8B,
         /// 6位分辨率，最小转换时间6个ADC时钟周期
-        bit6 = LL_ADC_RESOLUTION_6B
+        bit6 = LL_ADC_RESOLUTION_6B,
     };
 
     /**
@@ -169,7 +243,7 @@ export namespace SoC
         /// 右对齐，高位进行填充
         right = LL_ADC_DATA_ALIGN_RIGHT,
         /// 左对齐，低位进行填充
-        left = LL_ADC_DATA_ALIGN_LEFT
+        left = LL_ADC_DATA_ALIGN_LEFT,
     };
 
     /**
@@ -178,12 +252,17 @@ export namespace SoC
      */
     struct adc
     {
+        // adc外设枚举
         using adc_enum = ::SoC::detail::adc;
 
     private:
-        ::ADC_TypeDef* adc_ptr;
+        // adc外设指针
+        ::ADC_TypeDef* adc_ptr{};
+        // adc分辨率
         ::SoC::adc_resolution resolution{};
+        // adc数据对齐方式
         ::SoC::adc_data_alignment alignment{};
+        // 是否为扫描模式
         bool scan_mode{};
 
     public:
@@ -208,10 +287,29 @@ export namespace SoC
          */
         ~adc() noexcept;
 
-        adc(const adc&) noexcept = delete;
-        adc& operator= (const adc&) noexcept = delete;
-        adc(adc&&) noexcept;
-        adc& operator= (adc&&) noexcept = delete;
+        inline adc(const adc&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline adc& operator= (const adc&) noexcept = delete("对象独占外设资源，不能复制赋值");
+
+        /**
+         * @brief 转移adc外设资源的所有权
+         *
+         * @param other 其他adc外设对象
+         */
+        adc(adc&& other) noexcept;
+
+        /**
+         * @brief 转移adc外设资源的所有权
+         *
+         * @param other 其他adc外设对象
+         * @return adc& 本对象
+         */
+        adc& operator= (adc&& other) noexcept;
+
+        /**
+         * @brief 失能adc外设，然后关闭时钟，释放adc外设资源
+         *
+         */
+        void release() noexcept;
 
         /**
          * @brief 获取adc外设指针
@@ -331,12 +429,12 @@ export namespace SoC
         ch17 = LL_ADC_CHANNEL_17,
         /// 外部通道18
         ch18 = LL_ADC_CHANNEL_18,
-        /// 电池供电电压通道
+        /// 内部电池供电电压通道
         ch_vbat = LL_ADC_CHANNEL_VBAT,
         /// 内部参考电压通道
         ch_vrefint = LL_ADC_CHANNEL_VREFINT,
         /// 内部温度传感器通道
-        ch_temp_sensor = LL_ADC_CHANNEL_TEMPSENSOR
+        ch_temp_sensor = LL_ADC_CHANNEL_TEMPSENSOR,
     };
 
     /**
@@ -442,7 +540,7 @@ export namespace SoC
         /// 有限次dma，对应dma单次传输
         limited = LL_ADC_REG_DMA_TRANSFER_LIMITED,
         /// 无限次dma，对应dma循环传输
-        unlimited = LL_ADC_REG_DMA_TRANSFER_UNLIMITED
+        unlimited = LL_ADC_REG_DMA_TRANSFER_UNLIMITED,
     };
 
     /**
@@ -475,7 +573,7 @@ export namespace SoC
         // 下降沿触发
         falling = LL_ADC_REG_TRIG_EXT_FALLING,
         // 上升沿和下降沿均触发
-        rising_falling = LL_ADC_REG_TRIG_EXT_RISINGFALLING
+        rising_falling = LL_ADC_REG_TRIG_EXT_RISINGFALLING,
     };
 
     /**
@@ -485,30 +583,36 @@ export namespace SoC
     struct adc_regular_group
     {
     private:
-        ::SoC::moveable_value<::ADC_TypeDef*> adc_ptr;
-        ::std::size_t ranks;
+        // adc外设指针
+        ::ADC_TypeDef* adc_ptr{};
+        // adc通道数
+        ::std::size_t ranks{};
+        // 触发源
         ::SoC::adc_regular_trigger_source trigger_source{};
+        // dma模式
         ::SoC::adc_regular_dma_mode dma_mode{};
 
         /// adc通道转换顺序表
-        constexpr inline static auto rank_table{::std::to_array<::std::uint16_t>({
-            LL_ADC_REG_RANK_1,
-            LL_ADC_REG_RANK_2,
-            LL_ADC_REG_RANK_3,
-            LL_ADC_REG_RANK_4,
-            LL_ADC_REG_RANK_5,
-            LL_ADC_REG_RANK_6,
-            LL_ADC_REG_RANK_7,
-            LL_ADC_REG_RANK_8,
-            LL_ADC_REG_RANK_9,
-            LL_ADC_REG_RANK_10,
-            LL_ADC_REG_RANK_11,
-            LL_ADC_REG_RANK_12,
-            LL_ADC_REG_RANK_13,
-            LL_ADC_REG_RANK_14,
-            LL_ADC_REG_RANK_15,
-            LL_ADC_REG_RANK_16,
-        })};
+        constexpr inline static auto rank_table{
+            ::std::to_array<::std::uint16_t>({
+                LL_ADC_REG_RANK_1,
+                LL_ADC_REG_RANK_2,
+                LL_ADC_REG_RANK_3,
+                LL_ADC_REG_RANK_4,
+                LL_ADC_REG_RANK_5,
+                LL_ADC_REG_RANK_6,
+                LL_ADC_REG_RANK_7,
+                LL_ADC_REG_RANK_8,
+                LL_ADC_REG_RANK_9,
+                LL_ADC_REG_RANK_10,
+                LL_ADC_REG_RANK_11,
+                LL_ADC_REG_RANK_12,
+                LL_ADC_REG_RANK_13,
+                LL_ADC_REG_RANK_14,
+                LL_ADC_REG_RANK_15,
+                LL_ADC_REG_RANK_16,
+            }),
+        };
 
         /// adc通道数对应配置表
         constexpr inline static ::std::array scan_ranks_table{
@@ -530,7 +634,7 @@ export namespace SoC
             LL_ADC_REG_SEQ_SCAN_ENABLE_16RANKS,
         };
 
-        /// 没有选定的dma数据流，即使用模式配置
+        /// 没有选定的dma数据流，即使用默认配置
         constexpr inline static auto no_selected_stream{static_cast<::SoC::dma_stream::dma_stream_enum>(-1)};
 
     public:
@@ -547,9 +651,7 @@ export namespace SoC
          * @return adc外设枚举
          */
         [[nodiscard]] inline ::SoC::adc::adc_enum get_adc_enum() const noexcept
-        {
-            return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr.value);
-        }
+        { return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
 
         /**
          * @brief 获取adc规则组中通道数量
@@ -590,15 +692,34 @@ export namespace SoC
                                    ::SoC::adc_regular_seq_discont seq_discont = ::SoC::adc_regular_seq_discont::disable) noexcept;
 
         /**
-         * @brief 失能adc规则组，但不会停止已经开始的转换
+         * @brief 失能adc规则组，清除标志并失能dma，但不会停止已经开始的转换
          *
          */
         ~adc_regular_group() noexcept;
 
-        adc_regular_group(const adc_regular_group&) noexcept = delete;
-        adc_regular_group& operator= (const adc_regular_group&) noexcept = delete;
-        adc_regular_group(adc_regular_group&& other) noexcept = default;
-        adc_regular_group& operator= (adc_regular_group&&) noexcept = delete;
+        inline adc_regular_group(const adc_regular_group&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline adc_regular_group& operator= (const adc_regular_group&) noexcept = delete("对象独占外设资源，不能复制赋值");
+
+        /**
+         * @brief 转移adc外设规则组资源的所有权
+         *
+         * @param other 其他adc规则组对象
+         */
+        adc_regular_group(adc_regular_group&& other) noexcept;
+
+        /**
+         * @brief 转移adc外设规则组资源的所有权
+         *
+         * @param other 其他adc规则组对象
+         * @return adc_regular_group& 本对象
+         */
+        adc_regular_group& operator= (adc_regular_group&& other) noexcept;
+
+        /**
+         * @brief 失能adc规则组，清除标志并失能dma，然后释放adc规则组资源，但不会停止已经开始的转换
+         *
+         */
+        void release() noexcept;
 
         /**
          * @brief 设置adc规则组触发源
@@ -722,26 +843,74 @@ export namespace SoC
         using internal_channel_enum = ::SoC::detail::adc_internal_channel;
         using enum internal_channel_enum;
 
+    private:
+        // adc内部通道枚举
+        internal_channel_enum internal_channel;
+
+    public:
         /**
          * @brief 使能adc内部通道
          *
+         * @note 如果内部通道已使能，会断言失败
          * @param internal_channel 要使能的内部通道
          */
-        inline adc_internal_channel(internal_channel_enum internal_channel) noexcept
-        {
-            ::LL_ADC_SetCommonPathInternalCh(ADC, ::SoC::to_underlying(internal_channel));
-        }
+        adc_internal_channel(internal_channel_enum internal_channel) noexcept;
 
         /**
-         * @brief 失能所有adc内部通道
+         * @brief 失能adc内部通道
          *
          */
-        ~adc_internal_channel() noexcept { ::LL_ADC_SetCommonPathInternalCh(ADC, ::SoC::to_underlying(none)); }
+        ~adc_internal_channel() noexcept;
 
-        inline adc_internal_channel(const adc_internal_channel&) noexcept = delete;
-        inline adc_internal_channel& operator= (const adc_internal_channel&) noexcept = delete;
-        inline adc_internal_channel(adc_internal_channel&&) noexcept = delete;
-        inline adc_internal_channel& operator= (adc_internal_channel&&) noexcept = delete;
+        inline adc_internal_channel(const adc_internal_channel&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline adc_internal_channel& operator= (const adc_internal_channel&) noexcept = delete("对象独占外设资源，不能复制赋值");
+
+        /**
+         * @brief 移动构造函数
+         *
+         * @param other 其他adc内部通道对象
+         */
+        adc_internal_channel(adc_internal_channel&& other) noexcept;
+
+        /**
+         * @brief 移动赋值运算符
+         *
+         * @param other 其他adc内部通道对象
+         * @return adc_internal_channel& 本对象
+         */
+        adc_internal_channel& operator= (adc_internal_channel&& other) noexcept;
+
+        /**
+         * @brief 获取当前使能的adc内部通道枚举
+         *
+         * @return 使能的adc内部通道枚举
+         */
+        [[nodiscard]] inline internal_channel_enum get_channel() const noexcept { return internal_channel; }
+
+        /**
+         * @brief 失能adc内部通道，释放adc内部通道资源
+         *
+         */
+        void release() noexcept;
+
+        /**
+         * @brief 使能adc内部通道
+         *
+         */
+        void enable() const noexcept;
+
+        /**
+         * @brief 失能adc内部通道
+         *
+         */
+        void disable() const noexcept;
+
+        /**
+         * @brief 判断adc内部通道是否使能
+         *
+         * @return 是否使能
+         */
+        [[nodiscard]] bool is_enabled() const noexcept;
     };
 
     /**
@@ -751,19 +920,30 @@ export namespace SoC
     struct adc_calibrator
     {
     private:
+        // adc外设对象
         ::SoC::adc& adc;
-        [[no_unique_address]] ::SoC::adc_internal_channel internal_channel;
+        // adc内部通道对象
+        ::SoC::adc_internal_channel internal_channel;
+        // adc校准缓冲区类型
         using buffer_t = ::std::array<::std::array<::std::uint16_t, 2>, 8>;
+        // adc校准缓冲区指针
         ::SoC::unique_ptr<buffer_t> buffer;
+        // adc外设旧采样模式
         bool old_scan_mode;
+        // adc外设旧分辨率
         ::SoC::adc_resolution old_resolution;
+        // adc外设旧对齐方式
         ::SoC::adc_data_alignment old_alignment;
 
+        // adc校准分辨率
         constexpr inline static auto resolution{::SoC::adc_resolution::bit12};
+        // adc校准采样模式
         constexpr inline static auto scan_mode{true};
+        // adc校准对齐方式
         constexpr inline static auto alignment{::SoC::adc_data_alignment::right};
-
+        // adc校准规则组对象指针
         ::SoC::unique_ptr<::SoC::adc_regular_group> adc_regular_group;
+        // adc校准dma数据流对象指针
         ::SoC::unique_ptr<::SoC::dma_stream> dma_stream;
 
     public:
@@ -771,7 +951,7 @@ export namespace SoC
          * @brief 创建adc校准器，不会阻塞控制流
          *
          * @note 会开启adc内部通道，使用SoC::ram_allocator分配和释放内存
-         * @param adc adc外设对象
+         * @param adc adc外设对象，在F407上只能使用ADC1
          * @param dma dma外设对象
          */
         explicit adc_calibrator(::SoC::adc& adc, ::SoC::dma& dma) noexcept;
@@ -812,39 +992,68 @@ export namespace SoC
         using awd_enum = ::SoC::detail::analog_watchdog;
 
     private:
-        ::SoC::moveable_value<::ADC_TypeDef*> adc_ptr;
-        awd_enum awd_channel;
-        ::std::size_t low_threshold{};
-        ::std::size_t high_threshold{};
-        // 由于clang会崩溃，因此硬编码枚举号
-        constexpr inline static ::IRQn_Type irqn{static_cast<::IRQn_Type>(18)};
+        // adc外设指针
+        ::ADC_TypeDef* adc_ptr{};
+        // 模拟看门狗通道枚举
+        awd_enum awd_channel{};
+        // 低门限
+        ::std::uint16_t low_threshold{};
+        // 高门限
+        ::std::uint16_t high_threshold{};
+        // 模拟看门狗中断NVIC侧是否使能
+        bool nvic_irq_enabled{};
+        // ADC中断号
+        constexpr inline static auto irqn{::IRQn_Type::ADC_IRQn};
 
     public:
         using enum awd_enum;
 
+        /// 模拟看门狗门限最大值，共12位
+        constexpr inline static ::std::uint16_t threshold_max{(1u << 12u) - 1};
+
         /**
-         * @brief 配置adc模拟看门狗，会使能看门狗
+         * @brief 配置adc模拟看门狗，会使能模拟看门狗
          *
          * @param adc adc外设
          * @param channel 要监视的通道
-         * @param low_threshold 低门限
-         * @param high_threshold 高门限
+         * @param low_threshold 低门限，范围为[0, threshold_max]
+         * @param high_threshold 高门限，范围为[0, threshold_max]
          */
         explicit analog_watchdog(::SoC::adc& adc,
                                  awd_enum channel,
-                                 ::std::size_t low_threshold,
-                                 ::std::size_t high_threshold) noexcept;
+                                 ::std::uint16_t low_threshold,
+                                 ::std::uint16_t high_threshold) noexcept;
 
         /**
-         * @brief 失能看门狗
+         * @brief 清除标志，关闭中断，然后失能模拟看门狗
          *
+         * @note 由于所有ADC中断共用一个NVIC入口，所以只会在无其他对象使用adc中断时失能NVIC侧中断
          */
         ~analog_watchdog() noexcept;
 
-        analog_watchdog(const analog_watchdog&) noexcept = delete;
-        analog_watchdog& operator= (const analog_watchdog&) noexcept = delete;
-        analog_watchdog(analog_watchdog&&) noexcept = default;
-        analog_watchdog& operator= (analog_watchdog&&) noexcept = delete;
+        inline analog_watchdog(const analog_watchdog&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline analog_watchdog& operator= (const analog_watchdog&) noexcept = delete("对象独占外设资源，不能赋值");
+
+        /**
+         * @brief 转移adc模拟看门狗资源的所有权
+         *
+         * @param other 其他对象
+         */
+        analog_watchdog(analog_watchdog&& other) noexcept;
+        /**
+         * @brief 转移adc模拟看门狗资源的所有权
+         *
+         * @param other 其他对象
+         * @return analog_watchdog& 本对象
+         */
+        analog_watchdog& operator= (analog_watchdog&& other) noexcept;
+
+        /**
+         * @brief 清除标志，关闭中断，然后失能模拟看门狗，释放模拟看门狗资源
+         *
+         * @note 由于所有ADC中断共用一个NVIC入口，所以只会在无其他对象使用adc中断时失能NVIC侧中断
+         */
+        void release() noexcept;
 
         /**
          * @brief 获取adc外设指针
@@ -859,9 +1068,7 @@ export namespace SoC
          * @return adc外设枚举
          */
         [[nodiscard]] inline ::SoC::adc::adc_enum get_adc_enum() const noexcept
-        {
-            return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr.value);
-        }
+        { return ::SoC::bit_cast<::SoC::adc::adc_enum>(adc_ptr); }
 
         /**
          * @brief 获取模拟看门狗监视的通道
@@ -892,26 +1099,24 @@ export namespace SoC
         /**
          * @brief 设置低门限
          *
-         * @param threshold 门限值
+         * @param threshold 门限值，范围为[0, threshold_max]
          */
-        void set_low_threshold(::std::size_t threshold) noexcept;
+        void set_low_threshold(::std::uint16_t threshold) noexcept;
 
         /**
          * @brief 设置高门限
          *
-         * @param threshold 门限值
+         * @param threshold 门限值，范围为[0, threshold_max]
          */
-        void set_high_threshold(::std::size_t threshold) noexcept;
+        void set_high_threshold(::std::uint16_t threshold) noexcept;
 
         /**
          * @brief 获取门限值
          *
          * @return std::pair{低门限, 高门限}
          */
-        [[nodiscard]] inline ::std::pair<::std::size_t, ::std::size_t> get_threshold() const noexcept
-        {
-            return ::std::pair{low_threshold, high_threshold};
-        }
+        [[nodiscard]] inline ::std::pair<::std::uint16_t, ::std::uint16_t> get_threshold() const noexcept
+        { return ::std::pair{low_threshold, high_threshold}; }
 
         /**
          * @brief 使能模拟看门狗中断
@@ -919,20 +1124,20 @@ export namespace SoC
          * @param preempt_priority 抢占中断优先级
          * @param sub_priority 响应中断优先级
          */
-        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept;
+        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept;
 
         /**
          * @brief 使能模拟看门狗中断
          *
          * @param encoded_priority 编码后的中断优先级
          */
-        void enable_irq(::std::size_t encoded_priority) const noexcept;
+        void enable_irq(::std::size_t encoded_priority) noexcept;
 
         /**
          * @brief 失能模拟看门狗中断
          *
          */
-        void disable_irq() const noexcept;
+        void disable_irq() noexcept;
 
         /**
          * @brief 设置模拟看门狗中断源状态
