@@ -336,6 +336,7 @@ export namespace SoC
          *
          * @param encoded_priority 编码后的优先级
          * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
+         * @note 在多根中断线使用同一NVIC中断入口时，后续调用设置的优先级将覆盖之前的优先级
          */
         void enable_irq(::std::size_t encoded_priority) noexcept;
 
@@ -345,8 +346,30 @@ export namespace SoC
          * @param preempt_priority 抢占优先级
          * @param sub_priority 响应优先级
          * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
+         * @note 在多根中断线使用同一NVIC中断入口时，后续调用设置的优先级将覆盖之前的优先级
          */
         void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept;
+
+        /**
+         * @brief 尝试使能NVIC侧外部中断
+         *
+         * 当NVIC侧外部中断未使能时使能中断并返回true，否则直接返回false。调用后对象始终获得NVIC侧外部中断所有权。
+         * @param encoded_priority 编码后的优先级
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
+         * @return 是否真正使能NVIC侧外部中断
+         */
+        [[nodiscard]] bool try_enable_irq(::std::size_t encoded_priority) noexcept;
+
+        /**
+         * @brief 尝试使能NVIC侧外部中断
+         *
+         * 当NVIC侧外部中断未使能时使能中断并返回true，否则直接返回false。调用后对象始终获得NVIC侧外部中断所有权。
+         * @param preempt_priority 抢占优先级
+         * @param sub_priority 响应优先级
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
+         * @return 是否真正使能NVIC侧外部中断
+         */
+        [[nodiscard]] bool try_enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept;
 
         /**
          * @brief 失能NVIC侧外部中断

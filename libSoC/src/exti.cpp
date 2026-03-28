@@ -311,6 +311,30 @@ namespace SoC
         }
     }
 
+    bool ::SoC::exti_line::try_enable_irq(::std::size_t encoded_priority) noexcept
+    {
+        if(!is_irq_enabled)
+        {
+            auto&& ref{::SoC::exti_line_enum2irq_reference_counter(line)};
+            is_irq_enabled = true;
+            if(++ref == 1)
+            {
+                if constexpr(::SoC::use_full_assert)
+                {
+                    ::SoC::assert(irqn != ::IRQn_Type{}, "该外部中断线不支持NVIC中断，只支持事件"sv);
+                }
+                ::SoC::enable_irq(irqn);
+                ::SoC::set_priority(irqn, encoded_priority);
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    bool ::SoC::exti_line::try_enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept
+    { return try_enable_irq(::SoC::encode_priority(preempt_priority, sub_priority)); }
+
     void ::SoC::exti_line::set_it(bool enable) const noexcept
     {
         if(enable) { ::LL_EXTI_EnableIT_0_31(::SoC::to_underlying(line)); }
