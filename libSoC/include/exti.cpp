@@ -66,25 +66,33 @@ namespace SoC::detail
         /// 外部中断线22
         line22 = LL_EXTI_LINE_22,
         /// 所有外部中断线
-        all = LL_EXTI_LINE_ALL_0_31
+        all = LL_EXTI_LINE_ALL_0_31,
     };
 
     /**
      * @brief 外部中断关联的gpio端口枚举
      *
      */
-    enum class exti_gpio_port : ::std::size_t
+    enum class exti_gpio_port : ::std::uint8_t
     {
+        /// GPIO A
         pa = LL_SYSCFG_EXTI_PORTA,
+        /// GPIO B
         pb = LL_SYSCFG_EXTI_PORTB,
+        /// GPIO C
         pc = LL_SYSCFG_EXTI_PORTC,
+        /// GPIO D
         pd = LL_SYSCFG_EXTI_PORTD,
+        /// GPIO E
         pe = LL_SYSCFG_EXTI_PORTE,
+        /// GPIO F
         pf = LL_SYSCFG_EXTI_PORTF,
+        /// GPIO G
         pg = LL_SYSCFG_EXTI_PORTG,
+        /// GPIO H
         ph = LL_SYSCFG_EXTI_PORTH,
+        /// GPIO I
         pi = LL_SYSCFG_EXTI_PORTI,
-        none = -1zu
     };
 
     /**
@@ -94,11 +102,8 @@ namespace SoC::detail
      * @param rhs 外部中断线枚举
      * @return 拼接后的外部中断线枚举
      */
-    export constexpr inline ::SoC::detail::exti_line operator| (::SoC::detail::exti_line lhs,
-                                                                ::SoC::detail::exti_line rhs) noexcept
-    {
-        return ::SoC::detail::exti_line{::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)};
-    }
+    constexpr inline ::SoC::detail::exti_line operator| (::SoC::detail::exti_line lhs, ::SoC::detail::exti_line rhs) noexcept
+    { return ::SoC::detail::exti_line{::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)}; }
 
     /**
      * @brief 萃取外部中断线枚举
@@ -108,9 +113,11 @@ namespace SoC::detail
      * @return 外部中断线枚举是否包含在掩码中
      */
     constexpr inline bool operator& (::SoC::detail::exti_line value, ::SoC::detail::exti_line mask) noexcept
-    {
-        return (::SoC::to_underlying(value) & ::SoC::to_underlying(mask)) != ::std::underlying_type_t<::SoC::detail::exti_line>{};
-    }
+    { return (::SoC::to_underlying(value) & ::SoC::to_underlying(mask)) != ::std::underlying_type_t<::SoC::detail::exti_line>{}; }
+
+    /// 中断线NVIC侧中断引用计数器
+    /// 对应中断线0, 1, 2, 3, 4, 5-9, 10-15的NVIC侧中断
+    constinit inline ::std::array<::std::uint8_t, 7> exti_line_irq_reference_counter{};
 }  // namespace SoC::detail
 
 export namespace SoC
@@ -122,8 +129,8 @@ export namespace SoC
     struct syscfg
     {
     private:
-        /// 析构时是否需要关闭时钟
-        bool need_stop_clock{true};
+        /// 系统控制器时钟是否使能
+        bool clock_enabled{};
         /// 外设时钟号
         constexpr inline static auto periph{LL_APB2_GRP1_PERIPH_SYSCFG};
 
@@ -140,29 +147,41 @@ export namespace SoC
          */
         ~syscfg() noexcept;
 
-        inline syscfg(const syscfg&) noexcept = delete;
-        inline syscfg& operator= (const syscfg&) = delete;
-        syscfg(syscfg&&) noexcept;
-        inline syscfg& operator= (syscfg&&) = delete;
+        inline syscfg(const syscfg&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline syscfg& operator= (const syscfg&) noexcept = delete("对象独占外设资源，不能复制赋值");
+        inline syscfg& operator= (syscfg&&) noexcept = delete("系统配置控制器全局唯一，不能移动赋值");
+
+        /**
+         * @brief 转移系统配置控制器的所有权
+         *
+         * @param other 其他系统配置控制器对象
+         */
+        syscfg(syscfg&& other) noexcept;
+
+        /**
+         * @brief 失能系统控制器时钟，释放系统配置控制器的所有权
+         *
+         */
+        void release() noexcept;
 
         /**
          * @brief 使能系统控制器时钟
          *
          */
-        void enable() const noexcept;
+        void enable() noexcept;
 
         /**
          * @brief 失能系统控制器时钟
          *
          */
-        void disable() const noexcept;
+        void disable() noexcept;
 
         /**
          * @brief 判断系统控制器时钟是否使能
          *
          * @return 系统控制器时钟是否使能
          */
-        [[nodiscard]] bool is_enabled() const noexcept;
+        [[nodiscard]] static bool is_enabled() noexcept;
     };
 
     /**
@@ -171,9 +190,14 @@ export namespace SoC
      */
     enum class exti_trigger_source : ::std::uint8_t
     {
+        /// 无触发源
+        none = 0,
+        /// 上升沿触发
         rising = 1,
+        /// 下降沿触发
         falling = 2,
-        rising_falling = rising | falling
+        /// 双边沿触发
+        rising_falling = rising | falling,
     };
 
     /**
@@ -186,40 +210,34 @@ export namespace SoC
         using enum exti_line_enum;
 
     private:
-        ::SoC::detail::exti_gpio_port gpio_port;
-        ::SoC::moveable_value<exti_line_enum> line;
+        /// 中断线枚举
+        exti_line_enum line;
+        /// 中断向量号
         ::IRQn_Type irqn;
-
-        /// 线枚举默认值
-        constexpr inline static exti_line_enum default_lines{-1zu};
+        /// gpio端口枚举
+        ::SoC::detail::exti_gpio_port gpio_port;
+        /// 触发源
+        ::SoC::exti_trigger_source trigger_source;
+        /// 中断是否使能
+        bool is_irq_enabled{};
 
         /// 5-9线掩码
         constexpr inline static exti_line_enum line5_9{line5 | line6 | line7 | line8 | line9};
-
         /// 10-15线掩码
         constexpr inline static exti_line_enum line10_15{line10 | line11 | line12 | line13 | line14 | line15};
-
-        /**
-         * @brief 检查中断线枚举是否合法
-         *
-         * @param lines 中断线枚举
-         * @param location 源代码位置
-         * @return 若lines为default_lines则返回当前对象管理的中断线，否则返回lines
-         */
-        [[nodiscard]] exti_line_enum
-            check_lines(exti_line_enum lines, ::std::source_location location = ::std::source_location::current()) const noexcept;
 
     public:
         /**
          * @brief 根据gpio引脚配置线中断
          *
          * @param syscfg 系统控制器
+         * @param line 中断线枚举，每个对象管理一根中断线，不能为all
          * @param gpio_port gpio端口
          * @param trigger_source 触发源
          */
         explicit exti_line(::SoC::syscfg& syscfg,
-                           ::SoC::gpio_port::port_enum gpio_port,
                            exti_line_enum line,
+                           ::SoC::gpio_port::port_enum gpio_port,
                            ::SoC::exti_trigger_source trigger_source) noexcept;
 
         /**
@@ -234,7 +252,14 @@ export namespace SoC
          *
          * @return 中断线枚举
          */
-        [[nodiscard]] inline exti_line_enum get_lines() const noexcept { return line; }
+        [[nodiscard]] inline exti_line_enum get_line() const noexcept { return line; }
+
+        /**
+         * @brief 获取中断线触发源
+         *
+         * @return 中断线触发源
+         */
+        [[nodiscard]] inline ::SoC::exti_trigger_source get_trigger_source() const noexcept { return trigger_source; }
 
         /**
          * @brief 清除中断线的触发源
@@ -242,77 +267,127 @@ export namespace SoC
          */
         ~exti_line() noexcept;
 
-        inline exti_line(const exti_line&) noexcept = delete;
-        inline exti_line& operator= (const exti_line&) = delete;
-        exti_line(exti_line&&) noexcept = default;
-        inline exti_line& operator= (exti_line&&) = delete;
+        inline exti_line(const exti_line&) noexcept = delete("对象独占外设资源，不能复制构造");
+        inline exti_line& operator= (const exti_line&) noexcept = delete("对象独占外设资源，不能复制赋值");
 
         /**
-         * @brief 设置线触发源
+         * @brief 转移中断线的所有权
          *
-         * @param trigger_source 触发源
+         * @param other 其他中断线对象
          */
-        void set_trigger_source(::SoC::exti_trigger_source trigger_source) const noexcept;
+        exti_line(exti_line&& other) noexcept;
 
         /**
-         * @brief 清除线触发源
+         * @brief 转移中断线的所有权
          *
-         * @param lines 要清除的线，默认使用当前对象中全部中断线
-         * @note 线需要在当前对象中初始化
+         * @param other 其他中断线对象
+         * @return 本对象
          */
-        void clear_trigger_source() const noexcept;
+        exti_line& operator= (exti_line&& other) noexcept;
+
+        /**
+         * @brief 清除标志，失能中断线，关闭NVIC中断，然后释放中断线的所有权
+         *
+         */
+        void release() noexcept;
+
+        /**
+         * @brief 设置中断线触发源
+         *
+         * @param trigger_source 触发源，设置为none以清空触发源，即失能该中断线
+         */
+        void set_trigger_source(::SoC::exti_trigger_source trigger_source) noexcept;
+
+        /**
+         * @brief 设置gpio端口枚举
+         *
+         * @param gpio_port gpio端口枚举
+         */
+        void set_gpio_port(::SoC::gpio_port::port_enum gpio_port) noexcept;
+
+        /**
+         * @brief 清除gpio端口枚举
+         *
+         * @note 将syscfg寄存器和对象内存储的gpio端口枚举还原为syscfg寄存器复位值0，即GPIO A
+         */
+        void clear_gpio_port() noexcept;
+
+        /**
+         * @brief 使能中断线
+         *
+         */
+        void enable() const noexcept;
+
+        /**
+         * @brief 失能中断线
+         *
+         */
+        void disable() const noexcept;
+
+        /**
+         * @brief 判断中断线是否使能
+         *
+         * @return 中断线是否使能
+         */
+        [[nodiscard]] bool is_enabled() const noexcept;
 
         /**
          * @brief 使能外部中断
          *
          * @param encoded_priority 编码后的优先级
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
          */
-        void enable_irq(::std::size_t encoded_priority) const noexcept;
+        void enable_irq(::std::size_t encoded_priority) noexcept;
 
         /**
-         * @brief 使能外部中断
+         * @brief 使能NVIC侧外部中断
          *
          * @param preempt_priority 抢占优先级
          * @param sub_priority 响应优先级
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
          */
-        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) const noexcept;
+        void enable_irq(::std::size_t preempt_priority, ::std::size_t sub_priority) noexcept;
 
         /**
-         * @brief 失能外部中断
+         * @brief 失能NVIC侧外部中断
          *
+         * @note 函数是非并发安全的，NVIC侧中断操作应该在非中断上下文中进行
          */
-        void disable_irq() const noexcept;
+        void disable_irq() noexcept;
 
         /**
          * @brief 设置中断源是否使能
          *
          * @param enable 是否使能中断
-         * @param lines 要设置的线
+         * @note 外设侧函数是并发安全的，可以在中断上下文中调用
          */
-        void set_it(bool enable, exti_line_enum lines = default_lines) const noexcept;
+        void set_it(bool enable) const noexcept;
 
         /**
          * @brief 判断中断源是否使能
          *
-         * @param lines 要判断的线
          * @return 中断源是否使能
          */
-        [[nodiscard]] bool get_it(exti_line_enum lines = default_lines) const noexcept;
+        [[nodiscard]] bool get_it() const noexcept;
 
         /**
          * @brief 获取中断线标志
          *
-         * @param lines 要获取标志的线
-         * @return true
-         * @return false
+         * @return 中断线标志
          */
-        [[nodiscard]] bool get_flag_it(exti_line_enum lines = default_lines) const noexcept;
+        [[nodiscard]] bool get_flag_it() const noexcept;
 
         /**
          * @brief 清除中断线标志
          *
-         * @param lines 要清除标志的线
          */
-        void clear_flag_it(exti_line_enum lines = default_lines) const noexcept;
+        void clear_flag_it() const noexcept;
+
+        /**
+         * @brief 判断是否是本对象管理的中断线上的中断
+         *
+         * @return 是否是本对象管理的中断线上的中断
+         */
+        [[nodiscard]] bool is_it_enabled() const noexcept;
     };
 }  // namespace SoC
