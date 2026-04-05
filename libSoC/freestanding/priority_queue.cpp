@@ -223,11 +223,8 @@ export namespace SoC
             {
                 ::SoC::fuzzer_assert(!full(), error_code::priority_queue_full);
             }
-            else
-            {
-                ::SoC::always_check(!full(), "优先队列已满"sv);
-            }
-            new(&buffer[tail++].value) type{::std::forward<decltype(args)>(args)...};
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(!full(), "优先队列已满"sv); }
+            new(&buffer[tail++].value) type(::std::forward<args_t>(args)...);
             ::std::ranges::push_heap(::std::span{buffer}.subspan(0, tail), comp);
         }
 
@@ -242,10 +239,7 @@ export namespace SoC
             {
                 ::SoC::fuzzer_assert(!empty(), error_code::priority_queue_empty);
             }
-            else
-            {
-                ::SoC::always_check(!empty(), "优先队列已空"sv);
-            }
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(!empty(), "优先队列已空"sv); }
             ::std::ranges::pop_heap(::std::span{buffer}.subspan(0, tail), comp);
             buffer[--tail].value.~type();
         }

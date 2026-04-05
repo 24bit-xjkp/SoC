@@ -57,7 +57,12 @@ namespace
         friend auto operator<=> (const test_struct&, const test_struct&) = default;
         friend bool operator== (const test_struct&, const test_struct&) = default;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+
         friend auto operator== (const test_struct& lhs, ::std::size_t rhs) noexcept { return lhs.value == rhs; }
+
+#pragma clang diagnostic pop
     };
 }  // namespace
 
