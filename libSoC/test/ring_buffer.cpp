@@ -698,6 +698,62 @@ TEST_SUITE("ring_buffer" * ::doctest::description{"测试环形缓冲区"})
         CHECK_EQ(buffer1, buffer2);
     }
 
+    REGISTER_TEST_CASE("operator[]" * ::doctest::description{"测试环形缓冲区的索引运算符"})
+    {
+        ::ring_buffer_t buffer{};
+        ::std::vector<::test_struct> ground_truth_table{};
+        for(auto i: ::std::views::iota(0zu, buffer.capacity()))
+        {
+            buffer.emplace_back(i);
+            ground_truth_table.emplace_back(i);
+        }
+
+        const auto check{
+            [&]
+            {
+                for(auto i: ::std::views::iota(0zu, buffer.capacity())) { CHECK_EQ(buffer[i], ground_truth_table[i]); }
+            },
+        };
+        const auto check_overflow{
+            [&]
+            {
+                CHECK_THROWS_WITH_AS_MESSAGE(buffer[buffer.capacity()],
+                                             ::doctest::Contains{"索引超出缓冲区范围"},
+                                             ::SoC::assert_failed_exception,
+                                             "索引超出缓冲区范围应当断言失败"sv);
+            },
+        };
+
+        SUBCASE("continuous data")
+        {
+            check();
+            check_overflow();
+        }
+        SUBCASE("discontinuous data")
+        {
+            auto _{buffer.front()};
+            buffer.pop_front();
+            buffer.emplace_back(_);
+            _ = ground_truth_table.front();
+            ground_truth_table.erase(ground_truth_table.begin());
+            ground_truth_table.emplace_back(_);
+            check();
+            check_overflow();
+        }
+        SUBCASE("wrap-around data")
+        {
+            auto size{buffer.size()};
+            buffer.head = -1zu - 2;
+            buffer.tail = buffer.head + size;
+            // 索引变为01 10 11 00，相当于pop再push
+            auto _{ground_truth_table.front()};
+            ground_truth_table.erase(ground_truth_table.begin());
+            ground_truth_table.emplace_back(_);
+            check();
+            check_overflow();
+        }
+    }
+
     /// @test 测试环形缓冲区的交换函数
     REGISTER_TEST_CASE("swap" * ::doctest::description{"测试环形缓冲区的交换函数"})
     {

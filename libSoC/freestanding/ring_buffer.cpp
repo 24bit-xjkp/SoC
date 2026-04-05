@@ -700,10 +700,7 @@ export namespace SoC
             {
                 ::SoC::fuzzer_assert(!self.empty(), error_code::empty);
             }
-            else
-            {
-                ::SoC::always_check(!self.empty(), "环形缓冲区已空"sv);
-            }
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(!self.empty(), "环形缓冲区已空"sv); }
             return self.buffer[self.head & buffer_mask].value;
         }
 
@@ -719,10 +716,7 @@ export namespace SoC
             {
                 ::SoC::fuzzer_assert(!self.empty(), error_code::empty);
             }
-            else
-            {
-                ::SoC::always_check(!self.empty(), "环形缓冲区已空"sv);
-            }
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(!self.empty(), "环形缓冲区已空"sv); }
             return self.buffer[(self.tail - 1) & buffer_mask].value;
         }
 
@@ -738,11 +732,8 @@ export namespace SoC
         {
             using namespace ::std::string_view_literals;
             if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer)) { ::SoC::fuzzer_assert(!full(), error_code::full); }
-            else
-            {
-                ::SoC::always_check(!full(), "环形缓冲区已满"sv);
-            }
-            new(&buffer[tail++ & buffer_mask].value) value_type{::std::forward<args_t>(args)...};
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(!full(), "环形缓冲区已满"sv); }
+            new(&buffer[tail++ & buffer_mask].value) value_type(::std::forward<args_t>(args)...);
         }
 
         /**
@@ -753,10 +744,7 @@ export namespace SoC
         {
             using namespace ::std::string_view_literals;
             if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer)) { ::SoC::fuzzer_assert(!empty(), error_code::empty); }
-            else
-            {
-                ::SoC::always_check(!empty(), "环形缓冲区已空"sv);
-            }
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(!empty(), "环形缓冲区已空"sv); }
             auto&& ref{buffer[head++ & buffer_mask].value};
             ref.~value_type();
         }
@@ -770,6 +758,17 @@ export namespace SoC
          */
         constexpr inline friend bool operator== (const ring_buffer& lhs, const ring_buffer& rhs) noexcept
         { return ::std::ranges::equal(lhs, rhs); }
+
+        constexpr inline auto&& operator[] (this auto&& self, ::std::size_t index) noexcept(::SoC::optional_noexcept)
+        {
+            using namespace ::std::string_view_literals;
+            if constexpr(::SoC::is_build_mode(::SoC::build_mode::fuzzer))
+            {
+                ::SoC::fuzzer_assert(index < self.size(), error_code::out_of_range);
+            }
+            else if constexpr(::SoC::use_full_assert) { ::SoC::assert(index < self.size(), "索引超出缓冲区范围"sv); }
+            return self.buffer[(self.head + index) & buffer_mask].value;
+        }
 
         /**
          * @brief 交换两个环形缓冲区的内容
