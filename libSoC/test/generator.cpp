@@ -14,6 +14,7 @@ namespace SoC::test
     struct generator : ::SoC::generator<value_type, allocator_type>
     {
         using base_t = ::SoC::generator<value_type, allocator_type>;
+        using base_t::handle;
         using typename base_t::handle_t;
         using typename base_t::iterator;
         using typename base_t::sentinel;
@@ -63,6 +64,13 @@ TEST_SUITE("generator" * ::doctest::description{"SoC::generator单元测试"})
         }
         CHECK_EQ(allocate_cnt, 1);
         CHECK_EQ(deallocate_cnt, 1);
+    }
+
+    REGISTER_TEST_CASE("raii" * ::doctest::description{"测试RAII是否能正常工作"})
+    {
+        auto generator{[] static -> ::generator { co_return; }()};
+        auto _{::std::move(generator)};
+        CHECK_EQ(generator.handle, nullptr);
     }
 
     /// @test 测试co_yield能否正常工作
