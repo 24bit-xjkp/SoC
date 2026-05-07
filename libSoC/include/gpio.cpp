@@ -34,7 +34,7 @@ namespace SoC::detail
         /// 端口H
         ph,
         /// 端口I
-        pi
+        pi,
     };
 
     /**
@@ -89,9 +89,7 @@ namespace SoC::detail
      * @return 拼接后的gpio引脚枚举
      */
     export constexpr inline ::SoC::detail::gpio_pin operator| (::SoC::detail::gpio_pin lhs, ::SoC::detail::gpio_pin rhs) noexcept
-    {
-        return static_cast<::SoC::detail::gpio_pin>(::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs));
-    }
+    { return static_cast<::SoC::detail::gpio_pin>(::SoC::to_underlying(lhs) | ::SoC::to_underlying(rhs)); }
 
     /**
      * @brief 萃取gpio引脚枚举
@@ -101,9 +99,7 @@ namespace SoC::detail
      * @return gpio引脚枚举是否包含在掩码中
      */
     constexpr inline ::std::size_t operator& (::SoC::detail::gpio_pin lhs, ::SoC::detail::gpio_pin rhs) noexcept
-    {
-        return ::SoC::to_underlying(lhs) & ::SoC::to_underlying(rhs);
-    }
+    { return ::SoC::to_underlying(lhs) & ::SoC::to_underlying(rhs); }
 }  // namespace SoC::detail
 
 export namespace SoC
@@ -198,7 +194,7 @@ export namespace SoC
         /// 功能复用模式
         alternate,
         /// 模拟模式
-        analog
+        analog,
     };
 
     /**
@@ -216,7 +212,7 @@ export namespace SoC
         /// 超高速 ~100MHz
         very_high = 3,
         /// 默认速度为低速
-        default_speed = low
+        default_speed = low,
     };
 
     /**
@@ -230,7 +226,7 @@ export namespace SoC
         /// 开漏输出
         open_drain = 1,
         /// 默认输出模式为推挽输出
-        default_type = push_pull
+        default_type = push_pull,
     };
 
     /**
@@ -246,7 +242,7 @@ export namespace SoC
         /// 下拉电阻
         pull_down = 2,
         /// 默认无上下拉电阻
-        default_pull = no_pull
+        default_pull = no_pull,
     };
 
     /**
@@ -288,7 +284,7 @@ export namespace SoC
         /// 复用功能15
         af15 = LL_GPIO_AF_15,
         /// 默认复用号为非法值，用于检查输入
-        default_af = -1zu
+        default_af = -1zu,
     };
 
     /**
@@ -412,7 +408,17 @@ export namespace SoC
          * @param level 为true设置引脚为高电平，为false设置引脚为低电平
          * @param pin_in 输入引脚列表，默认使用当前对象中全部引脚
          */
-        void write(bool level, pin_enum pin_in = default_pins) const noexcept;
+        void set(bool level, pin_enum pin_in = default_pins) const noexcept;
+
+        /**
+         * @brief 根据输入字的每一位设置指定引脚的状态
+         *
+         * @note 开漏输出下高电平设置引脚为高阻态，低电平设置引脚为接地
+         * @note 引脚需要在当前对象中初始化
+         * @param word 输入字，每一位对应一个引脚
+         * @param pin_in 输入引脚列表，只有指定的引脚才会被设置，默认使用当前对象中全部引脚
+         */
+        void set(::std::uint16_t word, pin_enum pin_in = default_pins) const noexcept;
 
         /**
          * @brief 读取指定引脚的状态
@@ -424,5 +430,15 @@ export namespace SoC
          * @return false 有引脚为低电平
          */
         [[nodiscard]] bool read(pin_enum pin_in = default_pins) const noexcept;
+
+        /**
+         * @brief 读取指定引脚的状态
+         *
+         * @note 支持除模拟外的模式，根据对象中引脚的状态自动选择
+         * @note 引脚需要在当前对象中初始化
+         * @param pin_in 输入引脚列表，只有指定的引脚才会被读取，默认使用当前对象中全部引脚
+         * @return ::std::uint16_t 每一位对应一个引脚的状态
+         */
+        [[nodiscard]] ::std::uint16_t read_word(pin_enum pin_in = default_pins) const noexcept;
     };
 }  // namespace SoC

@@ -120,6 +120,7 @@ namespace SoC
         {
             if constexpr(::SoC::use_full_assert)
             {
+                // NOLINTNEXTLINE(readability-redundant-parentheses)
                 ::SoC::assert((pin_in & pin) == ::SoC::to_underlying(pin_in), "访问未绑定到当前对象的引脚"sv, location);
             }
             return pin_in;
@@ -155,12 +156,23 @@ namespace SoC
         ::LL_GPIO_ResetOutputPin(gpio, ::SoC::to_underlying(pin_in));
     }
 
-    void ::SoC::gpio_pin::write(bool level, pin_enum pin_in) const noexcept
+    void ::SoC::gpio_pin::set(bool level, pin_enum pin_in) const noexcept
     {
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
-        pin_in = check_pin(pin_in);
+        ::std::uint32_t pin_mask{::SoC::to_underlying(check_pin(pin_in))};
         // 低16位置1，高16位清零
-        gpio->BSRR = ::SoC::to_underlying(pin) << static_cast<unsigned int>(!level) * 16zu;
+        gpio->BSRR = pin_mask << (level ? 0zu : 16zu);
+    }
+
+    void ::SoC::gpio_pin::set(::std::uint16_t word, pin_enum pin_in) const noexcept
+    {
+        if constexpr(::SoC::use_full_assert) { check_output_mode(); }
+        ::std::uint32_t pin_mask{::SoC::to_underlying(check_pin(pin_in))};
+        ::std::uint32_t word32{word};
+        // 低16位置1，高16位清零
+        auto set_mask{word32 & pin_mask};
+        auto reset_mask{~word32 & pin_mask};
+        gpio->BSRR = set_mask | reset_mask << 16zu;
     }
 
     bool ::SoC::gpio_pin::read(pin_enum pin_in) const noexcept
@@ -178,5 +190,15 @@ namespace SoC
         {
             return static_cast<bool>(::LL_GPIO_IsInputPinSet(gpio, ::SoC::to_underlying(pin_in)));
         }
+    }
+
+    auto ::SoC::gpio_pin::read_word(pin_enum pin_in) const noexcept -> ::std::uint16_t
+    {
+        if constexpr(::SoC::use_full_assert)
+        {
+            ::SoC::assert(mode != ::SoC::gpio_mode::analog, "模拟模式下不支持读取数据寄存器"sv);
+        }
+        auto pin_mask{::SoC::to_underlying(check_pin(pin_in))};
+        return (mode == ::SoC::gpio_mode::output ? gpio->ODR : gpio->IDR) & pin_mask;
     }
 }  // namespace SoC
