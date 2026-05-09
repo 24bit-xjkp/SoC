@@ -160,8 +160,17 @@ namespace SoC
     {
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         ::std::uint32_t pin_mask{::SoC::to_underlying(check_pin(pin_in))};
-        // 低16位置1，高16位清零
+#ifdef __clang__
+        // 修复clang错失优化问题，参见https://github.com/llvm/llvm-project/issues/196488
+        auto temp{static_cast<::std::uint32_t>(!level)};
+        // 插入内联汇编，阻止clang根据bool表达式生成条件转移操作(cmp, mov, itne, movne)
+        // 插入汇编后clang可正确使用eor和lsls实现，减少2条指令
+        asm volatile("" : "+r"(temp));  // NOLINT(*-no-assembler)
+        // 低16位写1置位引脚，高16位写1复位引脚
+        gpio->BSRR = pin_mask << (temp << 4zu);
+#else
         gpio->BSRR = pin_mask << (level ? 0zu : 16zu);
+#endif
     }
 
     void ::SoC::gpio_pin::set(::std::uint16_t word, pin_enum pin_in) const noexcept
@@ -169,7 +178,7 @@ namespace SoC
         if constexpr(::SoC::use_full_assert) { check_output_mode(); }
         ::std::uint32_t pin_mask{::SoC::to_underlying(check_pin(pin_in))};
         ::std::uint32_t word32{word};
-        // 低16位置1，高16位清零
+        // 低16位写1置位引脚，高16位写1复位引脚
         auto set_mask{word32 & pin_mask};
         auto reset_mask{~word32 & pin_mask};
         gpio->BSRR = set_mask | reset_mask << 16zu;
