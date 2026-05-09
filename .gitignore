@@ -5,3 +5,4 @@ build
 __pycache__
 doc
 gcm.cache
+.marscode
